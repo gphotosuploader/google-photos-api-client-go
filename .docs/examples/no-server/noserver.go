@@ -21,7 +21,10 @@ func main() {
 	// ask the user to authenticate on google in the browser
 	photosClient, err := gphotosclient.NewClient(
 		gphotosclient.AuthenticateUser(
-			gphotoslib.NewOAuthConfig(apiAppCredentials),
+			gphotoslib.NewOAuthConfig(gphotoslib.APIAppCredentials{
+				ClientID:     "________________",
+				ClientSecret: "____________________"},
+			),
 		),
 	)
 	if err != nil {
