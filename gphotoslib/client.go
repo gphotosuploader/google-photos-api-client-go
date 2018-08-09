@@ -1,4 +1,4 @@
-package gphotosclient
+package gphotoslib
 
 import (
 	"fmt"
@@ -19,22 +19,22 @@ const basePath = "https://photoslibrary.googleapis.com/"
 
 // PhotosClient is a client for uploading a media.
 // photoslibrary does not provide `/v1/uploads` API so we implement here.
-type PhotosClient struct {
+type Client struct {
 	*photoslibrary.Service
 	Client *http.Client
 }
 
 // New constructs a new PhotosClient from an oauth httpClient
-func New(httpClient *http.Client) (photosClient *PhotosClient, err error) {
+func NewClient(httpClient *http.Client) (photosClient *Client, err error) {
 	photosLibraryClient, err := photoslibrary.New(httpClient)
 	if err != nil {
 		return nil, err
 	}
-	return &PhotosClient{photosLibraryClient, httpClient}, nil
+	return &Client{photosLibraryClient, httpClient}, nil
 }
 
 // GetUploadToken sends the media and returns the UploadToken.
-func (client *PhotosClient) GetUploadToken(r io.Reader, filename string) (token string, err error) {
+func (client *Client) GetUploadToken(r io.Reader, filename string) (token string, err error) {
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/uploads", basePath, apiVersion), r)
 	if err != nil {
 		return "", err
@@ -56,7 +56,7 @@ func (client *PhotosClient) GetUploadToken(r io.Reader, filename string) (token 
 }
 
 // Upload actually uploads the media and activates it on google photos
-func (client *PhotosClient) UploadFile(filePath string) (*photoslibrary.MediaItem, error) {
+func (client *Client) UploadFile(filePath string) (*photoslibrary.MediaItem, error) {
 	filename := path.Base(filePath)
 	log.Printf("Uploading %s", filename)
 
