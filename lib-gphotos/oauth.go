@@ -1,4 +1,4 @@
-package gphotoslib
+package gphotos
 
 import (
 	"golang.org/x/oauth2"

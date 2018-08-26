@@ -1,4 +1,4 @@
-package gphotoslib
+package gphotos
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"github.com/palantir/stacktrace"
+	"golang.org/x/oauth2"
 
 	photoslibrary "google.golang.org/api/photoslibrary/v1"
 )
@@ -21,16 +22,55 @@ const basePath = "https://photoslibrary.googleapis.com/"
 // photoslibrary does not provide `/v1/uploads` API so we implement here.
 type Client struct {
 	*photoslibrary.Service
-	Client *http.Client
+	*http.Client
+	token *oauth2.Token
 }
 
+// Token returns the value of the token used by the gphotos Client
+// Cannot be used to set the token
+func (c *Client) Token() *oauth2.Token {
+	if c.token == nil {
+		return nil
+	}
+	return &(*c.token)
+}
+
+// type ClientConstructorOption func() (*Client, error)
+
+// func FromToken(token *oauth2.Token) ClientConstructorOption {
+// 	return func() (*Client, error) {
+// 		httpClient := oauth2.NewClient(nil, oauth2.StaticTokenSource(token))
+// 		photo NewClient(FromHTTPClient(httpClient))
+// 	}
+// }
+
+// func FromHTTPClient(httpClient *http.Client,maybeToken ...*oauth2.Token) ClientConstructorOption {
+
+// 	return func() (*Client, error) {
+// 		photosService, err := photoslibrary.New(httpClient)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return &Client{photosService, httpClient, nil}, nil
+// 	}
+// }
+
 // New constructs a new PhotosClient from an oauth httpClient
-func NewClient(httpClient *http.Client) (photosClient *Client, err error) {
-	photosLibraryClient, err := photoslibrary.New(httpClient)
+func NewClient(oauthHTTPClient *http.Client, maybeToken ...*oauth2.Token) (*Client, error) {
+	var token *oauth2.Token
+	switch len(maybeToken) {
+	case 0:
+	case 1:
+		token = maybeToken[0]
+	default:
+		return nil, stacktrace.NewError("NewClient() parameters should have maximum 1 token")
+	}
+
+	photosService, err := photoslibrary.New(oauthHTTPClient)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{photosLibraryClient, httpClient}, nil
+	return &Client{photosService, oauthHTTPClient, token}, nil
 }
 
 // GetUploadToken sends the media and returns the UploadToken.
