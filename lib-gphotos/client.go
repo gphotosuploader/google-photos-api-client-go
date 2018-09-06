@@ -35,26 +35,6 @@ func (c *Client) Token() *oauth2.Token {
 	return &(*c.token)
 }
 
-// type ClientConstructorOption func() (*Client, error)
-
-// func FromToken(token *oauth2.Token) ClientConstructorOption {
-// 	return func() (*Client, error) {
-// 		httpClient := oauth2.NewClient(nil, oauth2.StaticTokenSource(token))
-// 		photo NewClient(FromHTTPClient(httpClient))
-// 	}
-// }
-
-// func FromHTTPClient(httpClient *http.Client,maybeToken ...*oauth2.Token) ClientConstructorOption {
-
-// 	return func() (*Client, error) {
-// 		photosService, err := photoslibrary.New(httpClient)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return &Client{photosService, httpClient, nil}, nil
-// 	}
-// }
-
 // New constructs a new PhotosClient from an oauth httpClient
 func NewClient(oauthHTTPClient *http.Client, maybeToken ...*oauth2.Token) (*Client, error) {
 	var token *oauth2.Token
@@ -79,7 +59,9 @@ func (client *Client) GetUploadToken(r io.Reader, filename string) (token string
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Add("X-Goog-Upload-File-Name", filename)
+	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
 	res, err := client.Client.Do(req)
 	if err != nil {
@@ -96,7 +78,16 @@ func (client *Client) GetUploadToken(r io.Reader, filename string) (token string
 }
 
 // Upload actually uploads the media and activates it on google photos
-func (client *Client) UploadFile(filePath string) (*photoslibrary.MediaItem, error) {
+func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
+	// validate parameters
+	if len(pAlbumID) > 1 {
+		return nil, stacktrace.NewError("parameters can't include more than one albumID'")
+	}
+	var albumID string
+	if len(pAlbumID) == 1 {
+		albumID = pAlbumID[0]
+	}
+
 	filename := path.Base(filePath)
 	log.Printf("Uploading %s", filename)
 
@@ -112,6 +103,7 @@ func (client *Client) UploadFile(filePath string) (*photoslibrary.MediaItem, err
 	}
 
 	batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
+		AlbumId: albumID,
 		NewMediaItems: []*photoslibrary.NewMediaItem{
 			&photoslibrary.NewMediaItem{
 				Description:     filename,
@@ -134,3 +126,51 @@ func (client *Client) UploadFile(filePath string) (*photoslibrary.MediaItem, err
 	log.Printf("%s uploaded successfully as %s", filename, result.MediaItem.Id)
 	return result.MediaItem, nil
 }
+
+func (client *Client) AlbumByName(name string) (album *photoslibrary.Album, found bool, err error) {
+	listAlbumsResponse, err := client.Albums.List().Do()
+	if err != nil {
+		return nil, false, stacktrace.Propagate(err, "failed listing albums")
+	}
+	for _, album := range listAlbumsResponse.Albums {
+		if album.Title == name {
+			return album, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
+func (client *Client) GetOrCreateAlbumByName(albumName string) (*photoslibrary.Album, error) {
+	// validate params
+	{
+		if albumName == "" {
+			return nil, stacktrace.NewError("albumName can't be empty")
+		}
+	}
+
+	// try to find album by name
+	album, found, err := client.AlbumByName(albumName)
+	if err != nil {
+		return nil, err
+	}
+	if found && album != nil {
+		return client.Albums.Get(album.Id).Do()
+	}
+
+	// else create album
+	return client.Albums.Create(&photoslibrary.CreateAlbumRequest{
+		Album: &photoslibrary.Album{
+			Title: albumName,
+		},
+	}).Do()
+}
+
+// func (client *Client) UpsertAlbum(album photoslibrary.Album) (*photoslibrary.Album, error) {
+// 	if album.Id != "" {
+// 		getAlbumResponse, err := client.Albums.Get(album.Id).Fields()
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		getAlbumResponse.Album
+// 	}
+// }
