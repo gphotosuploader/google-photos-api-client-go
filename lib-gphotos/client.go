@@ -105,6 +105,7 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 	}
 
 	retry := true
+	retryCount := 0
 	for retry != false {
 		retry = false
 		batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
@@ -122,6 +123,13 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 				log.Printf("Rate limit reached, sleeping for 10 seconds...")
 				time.Sleep(10 * time.Second)
 				retry = true
+				retryCount++
+				continue
+			} else if retryCount < 3 {
+				log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
+				time.Sleep(10 * time.Second)
+				retry = true
+				retryCount++
 				continue
 			}
 			return nil, stacktrace.Propagate(err, "failed adding media %s", filename)
