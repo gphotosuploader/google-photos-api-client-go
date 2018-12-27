@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/palantir/stacktrace"
@@ -119,11 +119,14 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 		}).Do()
 		if err != nil {
 			// handle rate limit error by sleeping and retrying
-			if strings.HasPrefix(err.Error(), "googleapi: Error 429") {
-				log.Printf("Rate limit reached, sleeping for 10 seconds...")
-				time.Sleep(10 * time.Second)
+			if batchResponse.ServerResponse.HTTPStatusCode == 429 {
+				after, err := strconv.ParseInt(batchResponse.ServerResponse.Header.Get("Retry-After"), 10, 64)
+				if err != nil || after == 0 {
+					after = 10
+				}
+				log.Printf("Rate limit reached, sleeping for %d seconds...", after)
+				time.Sleep(time.Duration(after) * time.Second)
 				retry = true
-				retryCount++
 				continue
 			} else if retryCount < 3 {
 				log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
