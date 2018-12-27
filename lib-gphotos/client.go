@@ -14,6 +14,7 @@ import (
 	"github.com/palantir/stacktrace"
 	"golang.org/x/oauth2"
 
+	"google.golang.org/api/googleapi"
 	photoslibrary "google.golang.org/api/photoslibrary/v1"
 )
 
@@ -119,9 +120,8 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 		}).Do()
 		if err != nil {
 			// handle rate limit error by sleeping and retrying
-			if batchResponse != nil && batchResponse.ServerResponse != nil &&
-				batchResponse.ServerResponse.HTTPStatusCode == 429 {
-				after, err := strconv.ParseInt(batchResponse.ServerResponse.Header.Get("Retry-After"), 10, 64)
+			if err.(*googleapi.Error).Code == 429 {
+				after, err := strconv.ParseInt(err.(*googleapi.Error).Header.Get("Retry-After"), 10, 64)
 				if err != nil || after == 0 {
 					after = 10
 				}
