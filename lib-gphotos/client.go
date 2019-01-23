@@ -8,10 +8,13 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
+	"time"
 
 	"github.com/palantir/stacktrace"
 	"golang.org/x/oauth2"
 
+	"google.golang.org/api/googleapi"
 	photoslibrary "google.golang.org/api/photoslibrary/v1"
 )
 
@@ -102,29 +105,52 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 		return nil, stacktrace.Propagate(err, "failed getting uploadToken for %s", filename)
 	}
 
-	batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
-		AlbumId: albumID,
-		NewMediaItems: []*photoslibrary.NewMediaItem{
-			&photoslibrary.NewMediaItem{
-				Description:     filename,
-				SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
+	retry := true
+	retryCount := 0
+	for retry != false {
+		retry = false
+		batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
+			AlbumId: albumID,
+			NewMediaItems: []*photoslibrary.NewMediaItem{
+				&photoslibrary.NewMediaItem{
+					Description:     filename,
+					SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
+				},
 			},
-		},
-	}).Do()
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed adding media %s", filename)
-	}
+		}).Do()
+		if err != nil {
+			// handle rate limit error by sleeping and retrying
+			if err.(*googleapi.Error).Code == 429 {
+				after, err := strconv.ParseInt(err.(*googleapi.Error).Header.Get("Retry-After"), 10, 64)
+				if err != nil || after == 0 {
+					after = 10
+				}
+				log.Printf("Rate limit reached, sleeping for %d seconds...", after)
+				time.Sleep(time.Duration(after) * time.Second)
+				retry = true
+				continue
+			} else if retryCount < 3 {
+				log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
+				time.Sleep(10 * time.Second)
+				retry = true
+				retryCount++
+				continue
+			}
+			return nil, stacktrace.Propagate(err, "failed adding media %s", filename)
+		}
 
-	if batchResponse == nil || len(batchResponse.NewMediaItemResults) != 1 {
-		return nil, stacktrace.NewError("len(batchResults) should be 1")
-	}
-	result := batchResponse.NewMediaItemResults[0]
-	if result.Status.Message != "OK" {
-		return nil, stacktrace.NewError("status message should be OK, found: %s", result.Status.Message)
-	}
+		if batchResponse == nil || len(batchResponse.NewMediaItemResults) != 1 {
+			return nil, stacktrace.NewError("len(batchResults) should be 1")
+		}
+		result := batchResponse.NewMediaItemResults[0]
+		if result.Status.Message != "OK" {
+			return nil, stacktrace.NewError("status message should be OK, found: %s", result.Status.Message)
+		}
 
-	log.Printf("%s uploaded successfully as %s", filename, result.MediaItem.Id)
-	return result.MediaItem, nil
+		log.Printf("%s uploaded successfully as %s", filename, result.MediaItem.Id)
+		return result.MediaItem, nil
+	}
+	return nil, nil
 }
 
 func (client *Client) AlbumByName(name string) (album *photoslibrary.Album, found bool, err error) {
