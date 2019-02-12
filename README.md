@@ -1,9 +1,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/nmrshll/gphotos-uploader-api-client-go)](https://goreportcard.com/report/github.com/nmrshll/gphotos-uploader-api-client-go)
 
 # Google photos API client (Go library)
-The [official google photos client](google.golang.org/api/photoslibrary/v1) doesn't have upload functionality, this repo aims to complete it with upload functionality and improve ease of use for classic use cases.   
+The [official google photos client](https://google.golang.org/api/photoslibrary/v1) doesn't have upload functionality, this repo aims to complete it with upload functionality and improve ease of use for classic use cases.   
 
-It contains three packages, [github.com/nmrshll/google-photos-api-client-go/gphotoslib](github.com/nmrshll/google-photos-api-client-go/gphotoslib) simply wraps the official library to offer the same functionality plus upload,
+It contains three packages, [github.com/nmrshll/google-photos-api-client-go/lib-gphotos](https://github.com/nmrshll/google-photos-api-client-go/tree/master/lib-gphotos) simply wraps the official library to offer the same functionality plus upload,
 the two other packages try to make it easier to use in classic cases:    
 - [noserver-gphotosclient](github.com/nmrshll/google-photos-api-client-go/noserver-gphotosclient) for CLI tool or desktop/mobile app (when your app is fully client-side and doesn't have its own server-side part): [examples]()    
 - [server-gphotosclient](github.com/nmrshll/google-photos-api-client-go/server-gphotosclient) for classic web apps that have a server side: [examples]()
