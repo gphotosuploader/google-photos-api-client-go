@@ -91,18 +91,18 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 		albumID = pAlbumID[0]
 	}
 
-	filename := path.Base(filePath)
-	log.Printf("Uploading %s", filename)
+	log.Printf("Uploading %s", filePath)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed opening file")
+		return nil, stacktrace.Propagate(err, "failed opening file %s", filePath)
 	}
 	defer file.Close()
 
+	filename := path.Base(filePath)
 	uploadToken, err := client.GetUploadToken(file, filename)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed getting uploadToken for %s", filename)
+		return nil, stacktrace.Propagate(err, "failed getting uploadToken for %s", filePath)
 	}
 
 	retry := true
@@ -115,7 +115,7 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 			AlbumId: albumID,
 			NewMediaItems: []*photoslibrary.NewMediaItem{
 				{
-					Description:     filename,
+					Description:     filePath,
 					SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
 				},
 			},
