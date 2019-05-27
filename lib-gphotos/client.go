@@ -125,7 +125,7 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 			if err.(*googleapi.Error).Code == 429 {
 				after, err := strconv.ParseInt(err.(*googleapi.Error).Header.Get("Retry-After"), 10, 64)
 				if err != nil || after == 0 {
-					after = 10
+					after = 60
 				}
 				log.Printf("Rate limit reached, sleeping for %d seconds...", after)
 				time.Sleep(time.Duration(after) * time.Second)
