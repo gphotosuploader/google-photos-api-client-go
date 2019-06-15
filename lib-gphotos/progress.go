@@ -23,8 +23,8 @@ func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
 }
 
 func (pr *ReadProgressReporter) report() {
-	fmt.Printf("Sent %d of %d bytes\n", pr.sent, pr.max)
+	fmt.Printf("\rSent %d of %d bytes", pr.sent, pr.max)
 	if pr.atEOF {
-		fmt.Println("DONE")
+		fmt.Println("\nUpload done")
 	}
 }
