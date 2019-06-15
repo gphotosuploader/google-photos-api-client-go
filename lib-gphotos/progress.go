@@ -6,10 +6,11 @@ import (
 )
 
 type ReadProgressReporter struct {
-	r     io.Reader
-	max   int
-	sent  int
-	atEOF bool
+	r        io.Reader
+	max      int
+	sent     int
+	atEOF    bool
+	fileSize int
 }
 
 func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
@@ -23,7 +24,7 @@ func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
 }
 
 func (pr *ReadProgressReporter) report() {
-	fmt.Printf("\rSent %d of %d bytes", pr.sent, pr.max)
+	fmt.Printf("\rSent %d of %d bytes (total file size: %d)", pr.sent, pr.max, pr.fileSize)
 	if pr.atEOF {
 		fmt.Println("\nUpload done")
 	}

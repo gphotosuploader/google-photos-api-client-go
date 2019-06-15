@@ -117,7 +117,7 @@ func (c *Client) GetUploadToken(r io.ReadSeeker, filename, uploadURL string, fil
 	log.Printf("Uploading content to '%s'\n", uploadURL)
 
 	contentLength := int(fileSize - offset)
-	req, err := http.NewRequest("POST", uploadURL, &ReadProgressReporter{r: r, max: contentLength})
+	req, err := http.NewRequest("POST", uploadURL, &ReadProgressReporter{r: r, max: contentLength, fileSize: int(fileSize)})
 	if err != nil {
 		log.Printf("DEBUG: Error '%s'\n", err)
 		return "", uploadURL, err
