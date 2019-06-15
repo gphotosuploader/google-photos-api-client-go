@@ -24,7 +24,8 @@ func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
 }
 
 func (pr *ReadProgressReporter) report() {
-	fmt.Printf("\rSent %d of %d bytes (total file size: %d)", pr.sent, pr.max, pr.fileSize)
+	percent := (pr.fileSize - pr.max + pr.sent) * 100 / pr.fileSize
+	fmt.Printf("\r[%d%%] Sent %d of %d bytes (total file size: %d)", percent, pr.sent, pr.max, pr.fileSize)
 	if pr.atEOF {
 		fmt.Println("\nUpload done")
 	}
