@@ -119,7 +119,7 @@ func (c *Client) GetUploadToken(r io.ReadSeeker, filename, uploadURL string, fil
 	contentLength := int(fileSize - offset)
 	req, err := http.NewRequest("POST", uploadURL, &ReadProgressReporter{r: r, max: contentLength, fileSize: int(fileSize)})
 	if err != nil {
-		log.Printf("DEBUG: Error '%s'\n", err)
+		log.Printf("Failed to prepare request: Error '%s'\n", err)
 		return "", uploadURL, err
 	}
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", contentLength))
@@ -128,14 +128,14 @@ func (c *Client) GetUploadToken(r io.ReadSeeker, filename, uploadURL string, fil
 
 	res, err := c.Client.Do(req)
 	if err != nil {
-		log.Printf("DEBUG: Error 2 '%s'\n", err)
+		log.Printf("\nFailed to process request '%s'\n", err)
 		return "", uploadURL, err
 	}
 	defer res.Body.Close()
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("DEBUG: Error 3 '%s'\n", err)
+		log.Printf("Failed to read response '%s'\n", err)
 		return "", uploadURL, err
 	}
 	uploadToken := string(b)
