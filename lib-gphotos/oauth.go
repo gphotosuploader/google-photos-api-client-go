@@ -1,18 +1,9 @@
 package gphotos
 
 import (
+	photoslibrary "github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	photoslibrary "google.golang.org/api/photoslibrary/v1"
-)
-
-var (
-// OAuthConfig = oauth2.Config{
-// 	ClientID:     config.API_APP_CREDENTIALS.ClientID,
-// 	ClientSecret: config.API_APP_CREDENTIALS.ClientSecret,
-// 	Scopes:       []string{photoslibrary.PhotoslibraryScope},
-// 	Endpoint:     google.Endpoint,
-// }
 )
 
 type APIAppCredentials struct {

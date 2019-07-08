@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/url"
 
-	multierror "github.com/hashicorp/go-multierror"
-	gphotos "github.com/nmrshll/google-photos-api-client-go/lib-gphotos"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
+	"github.com/hashicorp/go-multierror"
 	oauth2ns "github.com/nmrshll/oauth2-noserver"
 	"github.com/palantir/stacktrace"
 	"golang.org/x/oauth2"

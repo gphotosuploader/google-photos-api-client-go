@@ -14,8 +14,8 @@ import (
 	"github.com/palantir/stacktrace"
 	"golang.org/x/oauth2"
 
+	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"google.golang.org/api/googleapi"
-	photoslibrary "google.golang.org/api/photoslibrary/v1"
 )
 
 const apiVersion = "v1"
@@ -112,7 +112,7 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 		batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
 			AlbumId: albumID,
 			NewMediaItems: []*photoslibrary.NewMediaItem{
-				&photoslibrary.NewMediaItem{
+				{
 					Description:     filename,
 					SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
 				},
@@ -190,13 +190,3 @@ func (client *Client) GetOrCreateAlbumByName(albumName string) (*photoslibrary.A
 		},
 	}).Do()
 }
-
-// func (client *Client) UpsertAlbum(album photoslibrary.Album) (*photoslibrary.Album, error) {
-// 	if album.Id != "" {
-// 		getAlbumResponse, err := client.Albums.Get(album.Id).Fields()
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		getAlbumResponse.Album
-// 	}
-// }
