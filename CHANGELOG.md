@@ -1,0 +1,23 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## 1.0.1
+### Added
+- Add semantic versioning to this package
+- Add Go module support
+- Add MIT license
+
+### Changed
+- Clean up of useless files / directories
+- Update package documentation
+
+### Fixed
+- Fix issue #8 on parent repository [here](https://github.com/nmrshll/google-photos-api-client-go/issues/8)
+
+### Removed
+- Removed `Makefile` support
+
+## 1.0.0
+Initial release after clone it from [original repository](https://github.com/nmrshll/google-photos-api-client-go). Latest commit was [3dac07f](https://github.com/nmrshll/google-photos-api-client-go/commit/3dac07f1b07f249ac4a9805b9d60afe0f68c34b2)
