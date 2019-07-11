@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ### Added
 - Add semantic versioning to this package
 - Add Go module support
+- Add MIT license
 
 ### Changed
 - Clean up of useless files / directories
