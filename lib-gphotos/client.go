@@ -107,8 +107,10 @@ func (client *Client) UploadFile(filePath string, pAlbumID ...string) (*photosli
 
 	retry := true
 	retryCount := 0
-	for retry != false {
-		retry = false
+	for retry {
+		// TODO: Refactor how retries are done. We should add exponential backoff
+		// https://developers.google.com/photos/library/guides/best-practices#retrying-failed-requests
+		retry = false //nolint
 		batchResponse, err := client.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
 			AlbumId: albumID,
 			NewMediaItems: []*photoslibrary.NewMediaItem{

@@ -53,7 +53,7 @@ func WithUserLoginHint(loginHint string) AuthenticateUserOption {
 func AuthenticateUser(oauthConfig *oauth2.Config, options ...AuthenticateUserOption) ClientConstructorOption {
 	var funcConfig AuthenticateUserFuncConfig
 	for _, optionFunc := range options {
-		optionFunc(&funcConfig)
+		_ = optionFunc(&funcConfig)
 	}
 
 	// apply oauth2ns options
