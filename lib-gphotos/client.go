@@ -161,7 +161,11 @@ func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary
 func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileSize int64, uploadURL *string) (uploadToken string, err error) {
 	var offset int64
 
-	if uploadURL != nil && *uploadURL != "" {
+	if uploadURL == nil {
+		uploadURL = new(string)
+	}
+
+	if *uploadURL != "" {
 		log.Printf("Checking status of upload URL '%s'\n", *uploadURL)
 		// Query previous upload status and get offset if active
 		req, err := http.NewRequest("POST", *uploadURL, nil)
@@ -194,7 +198,7 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 		}
 	}
 
-	if uploadURL == nil || *uploadURL == "" {
+	if *uploadURL == "" {
 		// Get new upload URL
 		log.Printf("Getting new upload URL for '%s'\n", filename)
 		req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/uploads", basePath, apiVersion), nil)
