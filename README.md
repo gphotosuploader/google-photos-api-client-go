@@ -1,6 +1,6 @@
 # Google Photos API client (Go library)
-[![Build Status](https://img.shields.io/travis/gphotosuploader/google-photos-api-client-go.svg?style=flat-square)](https://travis-ci.com/gphotosuploader/google-photos-api-client-go)
-
+[![Build Status](https://img.shields.io/travis/com/gphotosuploader/google-photos-api-client-go.svg?style=flat-square)](https://travis-ci.com/gphotosuploader/google-photos-api-client-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gphotosuploader/google-photos-api-client-go)](https://goreportcard.com/report/github.com/gphotosuploader/google-photos-api-client-go)
 
 This is a [Google Photos API client]() based on the official Google Photos API client library, that [was removed](https://code-review.googlesource.com/c/google-api-go-client/+/39951) from [Google API client library for Go](https://godoc.org/google.golang.org/api) and it was mirrored [here](https://github.com/gphotosuploader/googlemirror). 
 
