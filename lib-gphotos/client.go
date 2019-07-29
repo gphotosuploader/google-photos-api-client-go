@@ -326,7 +326,7 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 		}
 
 		// Clear uploadURL as upload was completed
-		uploadURL = new(string)
+		*uploadURL = ""
 
 		log.Printf("%s uploaded successfully as %s", filePath, result.MediaItem.Id)
 		return result.MediaItem, nil
