@@ -188,7 +188,10 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 			offset, err = strconv.ParseInt(res.Header.Get("X-Goog-Upload-Size-Received"), 10, 0)
 			if err == nil && offset > 0 && offset < fileSize {
 				// Skip already uploaded part of the file
-				r.Seek(offset, io.SeekStart)
+				_, err := r.Seek(offset, io.SeekStart)
+				if err != nil {
+					return "", err
+				}
 			}
 		} else {
 			// Other known statuses "final" and "cancelled" are both considered an Error by the official Ruby client
