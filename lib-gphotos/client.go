@@ -110,7 +110,7 @@ func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary
 	for retry {
 		// TODO: Refactor how retries are done. We should add exponential backoff
 		// https://developers.google.com/photos/library/guides/best-practices#retrying-failed-requests
-		retry = false //nolint
+		retry = false // nolint
 		batchResponse, err := c.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
 			AlbumId: albumID,
 			NewMediaItems: []*photoslibrary.NewMediaItem{
@@ -288,7 +288,7 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 	for retry {
 		// TODO: Refactor how retries are done. We should add exponential backoff
 		// https://developers.google.com/photos/library/guides/best-practices#retrying-failed-requests
-		retry = false //nolint
+		retry = false // nolint
 		batchResponse, err := c.MediaItems.BatchCreate(&photoslibrary.BatchCreateMediaItemsRequest{
 			AlbumId: albumID,
 			NewMediaItems: []*photoslibrary.NewMediaItem{
@@ -335,42 +335,4 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 		return result.MediaItem, nil
 	}
 	return nil, nil
-}
-
-func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found bool, err error) {
-	listAlbumsResponse, err := c.Albums.List().Do()
-	if err != nil {
-		return nil, false, stacktrace.Propagate(err, "failed listing albums")
-	}
-	for _, album := range listAlbumsResponse.Albums {
-		if album.Title == name {
-			return album, true, nil
-		}
-	}
-	return nil, false, nil
-}
-
-func (c *Client) GetOrCreateAlbumByName(albumName string) (*photoslibrary.Album, error) {
-	// validate params
-	{
-		if albumName == "" {
-			return nil, stacktrace.NewError("albumName can't be empty")
-		}
-	}
-
-	// try to find album by name
-	album, found, err := c.AlbumByName(albumName)
-	if err != nil {
-		return nil, err
-	}
-	if found && album != nil {
-		return c.Albums.Get(album.Id).Do()
-	}
-
-	// else create album
-	return c.Albums.Create(&photoslibrary.CreateAlbumRequest{
-		Album: &photoslibrary.Album{
-			Title: albumName,
-		},
-	}).Do()
 }
