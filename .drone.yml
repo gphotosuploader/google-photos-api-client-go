@@ -1,0 +1,31 @@
+---
+kind: pipeline
+name: go-1-11
+
+steps:
+  - name: test-lint-build
+    image: golang:1.11
+    volumes:
+      - name: deps
+        path: /go
+    commands:
+      - make test COVERAGE_FILE=coverage.txt
+      - make lint
+
+  - name: coverage
+    image: plugins/codecov
+    settings:
+      required: true
+      token:
+        from_secret: codecov_token
+    files:
+     - coverage.txt
+
+volumes:
+  - name: deps
+    temp: {}
+---
+kind: signature
+hmac: 35e5fc870ab883e2c74b9b5c53a4fbe906f132354f07e834f0a90d07c1d1035b
+
+...

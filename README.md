@@ -1,6 +1,10 @@
 # Google Photos API client (Go library)
-[![Build Status](https://img.shields.io/travis/com/gphotosuploader/google-photos-api-client-go.svg?style=flat-square)](https://travis-ci.com/gphotosuploader/google-photos-api-client-go)
+[![Build Status](https://cloud.drone.io/api/badges/gphotosuploader/google-photos-api-client-go/status.svg)](https://cloud.drone.io/gphotosuploader/google-photos-api-client-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gphotosuploader/google-photos-api-client-go)](https://goreportcard.com/report/github.com/gphotosuploader/google-photos-api-client-go)
+[![codebeat badge](https://codebeat.co/badges/c0ab08dd-11b3-406e-bbcc-b9d4a90aedf6)](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-master)
+[![codecov](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go/branch/master/graph/badge.svg)](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go)
+[![GitHub release](https://img.shields.io/github/release/gphotosuploader/google-photos-api-client-go.svg)](https://github.com/gphotosuploader/google-photos-api-client-go/releases/latest)
+[![GitHub](https://img.shields.io/github/license/gphotosuploader/google-photos-api-client-go.svg)](LICENSE)
 
 This is a [Google Photos API client]() based on the official Google Photos API client library, that [was removed](https://code-review.googlesource.com/c/google-api-go-client/+/39951) from [Google API client library for Go](https://godoc.org/google.golang.org/api) and it was mirrored [here](https://github.com/gphotosuploader/googlemirror). 
 
