@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// ReadProgressReporter represents read progress.
 type ReadProgressReporter struct {
 	r        io.Reader
 	max      int

@@ -3,6 +3,7 @@ package gphotos
 import (
 	"context"
 	"errors"
+
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
@@ -11,6 +12,7 @@ const (
 )
 
 var (
+	// ErrAlbumNotFound represents a failure to find the album.
 	ErrAlbumNotFound = errors.New("specified album was not found")
 )
 
@@ -60,7 +62,7 @@ func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found boo
 // GetOrCreateAlbumByName returns an Album with the specified album name.
 // If the album doesn't exists it will try to create it.
 func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, error) {
-	ctx := context.TODO() // TODO: ctx should be received (breaking change)
+	ctx := context.TODO()                    // TODO: ctx should be received (breaking change)
 	album, found, err := c.AlbumByName(name) // TODO: ctx should be passed (breaking change)
 	if err != nil {
 		return nil, err
