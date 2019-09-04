@@ -12,6 +12,7 @@ const (
 )
 
 var (
+	// ErrAlbumNotFound represents a failure to find the album.
 	ErrAlbumNotFound = errors.New("specified album was not found")
 )
 
