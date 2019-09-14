@@ -145,7 +145,7 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 		status := res.Header.Get("X-Goog-Upload-Status")
 		log.Printf("Status of upload URL '%s' is '%s'\n", *uploadURL, status)
 		if status == "active" {
-			offset, err = strconv.ParseInt(res.Header.Get("X-Goog-Upload-Size-Received"), 10, 0)
+			offset, err = strconv.ParseInt(res.Header.Get("X-Goog-Upload-Size-Received"), 10, 64)
 			if err == nil && offset > 0 && offset < fileSize {
 				// Skip already uploaded part of the file
 				_, err := r.Seek(offset, io.SeekStart)
@@ -186,8 +186,9 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 
 	log.Printf("Uploading content to '%s'\n", *uploadURL)
 
-	contentLength := int(fileSize - offset)
-	req, err := http.NewRequest("POST", *uploadURL, &ReadProgressReporter{r: r, max: contentLength, fileSize: int(fileSize)})
+	contentLength := fileSize - offset
+	reporter := DefaultReadProgressReporter(r, fileSize, offset)
+	req, err := http.NewRequest("POST", *uploadURL, &reporter)
 	if err != nil {
 		log.Printf("Failed to prepare request: Error '%s'\n", err)
 		return "", err
