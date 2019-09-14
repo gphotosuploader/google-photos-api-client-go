@@ -3,10 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.0.5
 ### Added
 - Code quality reporting using [Codebeat](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-master).
 - Code coverage reporting using [codecov](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go).
+
+### Fixed
+- `ReadProgressReporter` was giving panic at some circumstances. There was a problem casting `int64` to `int`. (#17)
+- Fix progress calculations for files big sized. 
 
 ### Changed
 - CI platform is now [drone.io](https://drone.io).
