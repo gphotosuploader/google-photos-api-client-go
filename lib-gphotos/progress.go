@@ -32,7 +32,7 @@ func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
 	if err == io.EOF {
 		pr.atEOF = true
 	}
-	err = pr.report()
+	_ = pr.report()
 	return n, err
 }
 
