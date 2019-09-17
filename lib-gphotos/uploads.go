@@ -184,10 +184,8 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 		*uploadURL = res.Header.Get("X-Goog-Upload-URL")
 	}
 
-	log.Printf("Uploading content to '%s'\n", *uploadURL)
-
 	contentLength := fileSize - offset
-	reporter := DefaultReadProgressReporter(r, fileSize, offset)
+	reporter := DefaultReadProgressReporter(r, filename, fileSize, offset)
 	req, err := http.NewRequest("POST", *uploadURL, &reporter)
 	if err != nil {
 		log.Printf("Failed to prepare request: Error '%s'\n", err)
@@ -292,7 +290,7 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 		// Clear uploadURL as upload was completed
 		*uploadURL = ""
 
-		log.Printf("%s uploaded successfully as %s", filePath, result.MediaItem.Id)
+		log.Printf("File uploaded successfully: file=%s", filePath)
 		return result.MediaItem, nil
 	}
 	return nil, nil
