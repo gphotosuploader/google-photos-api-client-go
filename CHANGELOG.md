@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.0.7
+### Added
+- A new Logger has been added to be shared across the whole package. See `logger.go`.
+- Tests for almost all the code, except `uploads.go` that needs a lot of refactor.
+- Package's documentation and examples of use.
+
+### Changed
+- `xerrors` is used instead of `errors`. Preparing code for Go 1.13 release.
+
+### Deprecated
+- `Token()` method has been deprecated. Current package implementation doesn't need to have OAuth token.
+
 ## 1.0.6
 ### Fixed
 - Fix progress logging. (#19)
