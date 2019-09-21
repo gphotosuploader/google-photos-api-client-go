@@ -25,7 +25,7 @@ type Client struct {
 //
 // `httpClient` is an HTTP Client with authentication credentials.
 //
-// DEPRECATED: `maybeToken` will disappear in the next MAJOR version.
+// `maybeToken` will disappear in the next MAJOR version.
 // This package doesn't need Client.token anymore, used `Client.Client` instead.
 func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, error) {
 	var token *oauth2.Token
@@ -34,7 +34,7 @@ func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, e
 		return nil, xerrors.New("client is nil")
 	}
 
-	if len(maybeToken) > 1 {
+	if len(maybeToken) > 0 {
 		token = maybeToken[0]
 	}
 
