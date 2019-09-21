@@ -4,7 +4,7 @@ Wraps the Google Photos package provided by Google, and now removed:
 https://github.com/gphotosuploader/googlemirror.
 
 Usage:
-	import "github.com/gphotosuploader/google-photos-api-client/gphotos"
+	import "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
 
 Construct a new Google Photos client, then use the various services on the client to
 access different parts of the Google Photos API. For example:
