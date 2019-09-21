@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -12,13 +11,14 @@ import (
 	"time"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-	"github.com/palantir/stacktrace"
+	"golang.org/x/xerrors"
 	"google.golang.org/api/googleapi"
 )
 
 // GetUploadToken sends the media and returns the UploadToken.
 func (c *Client) GetUploadToken(r io.Reader, filename string) (token string, err error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/uploads", basePath, apiVersion), r)
+	url := googleapi.ResolveRelative(c.Service.BasePath, "v1/uploads")
+	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +44,7 @@ func (c *Client) GetUploadToken(r io.Reader, filename string) (token string, err
 func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
 	// validate parameters
 	if len(pAlbumID) > 1 {
-		return nil, stacktrace.NewError("parameters can't include more than one albumID'")
+		return nil, xerrors.New("parameters can't include more than one albumID'")
 	}
 	var albumID string
 	if len(pAlbumID) == 1 {
@@ -52,17 +52,17 @@ func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary
 	}
 
 	filename := path.Base(filePath)
-	log.Printf("Uploading %s", filename)
+	c.log.Printf("Uploading %s", filename)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed opening file")
+		return nil, xerrors.Errorf("failed opening file: err=%w", err)
 	}
 	defer file.Close()
 
 	uploadToken, err := c.GetUploadToken(file, filename)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed getting uploadToken for %s", filename)
+		return nil, xerrors.Errorf("failed getting uploadToken for %s: err=%w", filename, err)
 	}
 
 	retry := true
@@ -87,30 +87,30 @@ func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary
 				if err != nil || after == 0 {
 					after = 10
 				}
-				log.Printf("Rate limit reached, sleeping for %d seconds...", after)
+				c.log.Printf("Rate limit reached, sleeping for %d seconds...", after)
 				time.Sleep(time.Duration(after) * time.Second)
 				retry = true
 				continue
 			} else if retryCount < 3 {
-				log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
+				c.log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
 				time.Sleep(10 * time.Second)
 				retry = true
 				retryCount++
 				continue
 			}
-			return nil, stacktrace.Propagate(err, "failed adding media %s", filename)
+			return nil, xerrors.Errorf("failed adding media: file=%s, err=%w", filename, err)
 		}
 
 		if batchResponse == nil || len(batchResponse.NewMediaItemResults) != 1 {
-			return nil, stacktrace.NewError("len(batchResults) should be 1")
+			return nil, xerrors.New("len(batchResults) should be 1")
 		}
 		result := batchResponse.NewMediaItemResults[0]
 		if result.Status.Message != "OK" && result.Status.Message != "Success" {
 			// TODO: We should use a different field like `googleapi.ServerResponse`
-			return nil, stacktrace.NewError("status message should be OK/Succecc, found: %s", result.Status.Message)
+			return nil, xerrors.Errorf("Unexpected status message: want=OK/Success, found=%s", result.Status.Message)
 		}
 
-		log.Printf("%s uploaded successfully as %s", filename, result.MediaItem.Id)
+		c.log.Printf("%s uploaded successfully as %s", filename, result.MediaItem.Id)
 		return result.MediaItem, nil
 	}
 	return nil, nil
@@ -126,7 +126,7 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 	}
 
 	if *uploadURL != "" {
-		log.Printf("Checking status of upload URL '%s'\n", *uploadURL)
+		c.log.Printf("Checking status of upload URL '%s'\n", *uploadURL)
 		// Query previous upload status and get offset if active
 		req, err := http.NewRequest("POST", *uploadURL, nil)
 		if err != nil {
@@ -143,7 +143,7 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 
 		// Get upload status
 		status := res.Header.Get("X-Goog-Upload-Status")
-		log.Printf("Status of upload URL '%s' is '%s'\n", *uploadURL, status)
+		c.log.Printf("Status of upload URL '%s' is '%s'\n", *uploadURL, status)
 		if status == "active" {
 			offset, err = strconv.ParseInt(res.Header.Get("X-Goog-Upload-Size-Received"), 10, 64)
 			if err == nil && offset > 0 && offset < fileSize {
@@ -163,8 +163,9 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 
 	if *uploadURL == "" {
 		// Get new upload URL
-		log.Printf("Getting new upload URL for '%s'\n", filename)
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/uploads", basePath, apiVersion), nil)
+		c.log.Printf("Getting new upload URL for '%s'\n", filename)
+		url := googleapi.ResolveRelative(c.Service.BasePath, "v1/uploads")
+		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
 			return "", err
 		}
@@ -188,7 +189,7 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 	reporter := DefaultReadProgressReporter(r, filename, fileSize, offset)
 	req, err := http.NewRequest("POST", *uploadURL, &reporter)
 	if err != nil {
-		log.Printf("Failed to prepare request: Error '%s'\n", err)
+		c.log.Printf("Failed to prepare request: Error '%s'\n", err)
 		return "", err
 	}
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", contentLength))
@@ -197,14 +198,14 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 
 	res, err := c.Client.Do(req)
 	if err != nil {
-		log.Printf("\nFailed to process request '%s'\n", err)
+		c.log.Printf("Failed to process request '%s'", err)
 		return "", err
 	}
 	defer res.Body.Close()
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("Failed to read response '%s'\n", err)
+		c.log.Printf("Failed to read response '%s'", err)
 		return "", err
 	}
 	uploadToken = string(b)
@@ -216,30 +217,30 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
 	// validate parameters
 	if len(pAlbumID) > 1 {
-		return nil, stacktrace.NewError("parameters can't include more than one albumID'")
+		return nil, xerrors.New("parameters can't include more than one albumID")
 	}
 	var albumID string
 	if len(pAlbumID) == 1 {
 		albumID = pAlbumID[0]
 	}
 
-	log.Printf("Uploading %s", filePath)
+	c.log.Printf("Uploading %s", filePath)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed opening file %s", filePath)
+		return nil, xerrors.Errorf("failed opening file:  file=%s, err=%w", filePath, err)
 	}
 	defer file.Close()
 
 	fileStat, err := file.Stat()
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed getting file size %s", filePath)
+		return nil, xerrors.Errorf("failed getting file size: file=%s, err=%w", filePath, err)
 	}
 	fileSize := fileStat.Size()
 
 	uploadToken, err := c.getUploadTokenResumable(file, filePath, fileSize, uploadURL)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed getting uploadToken for %s", filePath)
+		return nil, xerrors.Errorf("failed getting uploadToken: file=%s, err=%w", filePath, err)
 	}
 
 	retry := true
@@ -264,33 +265,33 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 				if err != nil || after == 0 {
 					after = 60
 				}
-				log.Printf("Rate limit reached, sleeping for %d seconds...", after)
+				c.log.Printf("Rate limit reached, sleeping for %d seconds...", after)
 				time.Sleep(time.Duration(after) * time.Second)
 				retry = true
 				continue
 			} else if retryCount < 3 {
-				log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
+				c.log.Printf("Error during upload, sleeping for 10 seconds before retrying...")
 				time.Sleep(10 * time.Second)
 				retry = true
 				retryCount++
 				continue
 			}
-			return nil, stacktrace.Propagate(err, "failed adding media %s", filePath)
+			return nil, xerrors.Errorf("failed adding media: file=%s, err=%w", filePath, err)
 		}
 
 		if batchResponse == nil || len(batchResponse.NewMediaItemResults) != 1 {
-			return nil, stacktrace.NewError("len(batchResults) should be 1")
+			return nil, xerrors.New("len(batchResults) should be 1")
 		}
 		result := batchResponse.NewMediaItemResults[0]
 		if result.Status.Message != "OK" && result.Status.Message != "Success" {
 			// TODO: We should use a different field like `googleapi.ServerResponse`
-			return nil, stacktrace.NewError("status message should be OK/Success, found: %s", result.Status.Message)
+			return nil, xerrors.Errorf("Unexpected status message: want=OK/Success, found=%s", result.Status.Message)
 		}
 
 		// Clear uploadURL as upload was completed
 		*uploadURL = ""
 
-		log.Printf("File uploaded successfully: file=%s", filePath)
+		c.log.Printf("File uploaded successfully: file=%s", filePath)
 		return result.MediaItem, nil
 	}
 	return nil, nil

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 )
 
 // ReadProgressReporter represents read progress.
@@ -21,7 +20,7 @@ type ReadProgressReporter struct {
 func DefaultReadProgressReporter(r io.Reader, filename string, size, sent int64) ReadProgressReporter {
 	return ReadProgressReporter{
 		r:      r,
-		logger: log.New(os.Stdout, LogPrefix, log.LstdFlags),
+		logger: defaultLogger(),
 
 		filename: filename,
 		size:     size,
