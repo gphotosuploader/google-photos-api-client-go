@@ -4,10 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/xerrors"
-
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
+	"golang.org/x/oauth2"
 )
 
 // Client is a client for uploading a media.
@@ -29,10 +27,6 @@ type Client struct {
 // This package doesn't need Client.token anymore, used `Client.Client` instead.
 func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, error) {
 	var token *oauth2.Token
-
-	if httpClient == nil {
-		return nil, xerrors.New("client is nil")
-	}
 
 	if len(maybeToken) > 0 {
 		token = maybeToken[0]

@@ -13,6 +13,13 @@ import (
 func TestNewClient(t *testing.T) {
 	want := http.DefaultClient
 
+	t.Run("WithoutEmptyHTTPClient", func(t *testing.T) {
+		_, err := gphotos.NewClient(nil)
+		if err == nil {
+			t.Errorf("error was expected here")
+		}
+	})
+
 	t.Run("WithoutToken", func(t *testing.T) {
 		got, err := gphotos.NewClient(want)
 		if err != nil {
