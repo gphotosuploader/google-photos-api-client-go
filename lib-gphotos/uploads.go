@@ -15,57 +15,43 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-// GetUploadToken sends the media and returns the UploadToken.
-func (c *Client) GetUploadToken(r io.Reader, filename string) (token string, err error) {
-	url := googleapi.ResolveRelative(c.Service.BasePath, "v1/uploads")
-	req, err := http.NewRequest("POST", url, r)
-	if err != nil {
-		return "", err
-	}
-
-	filename = path.Base(filename)
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Add("X-Goog-Upload-File-Name", filename)
-	req.Header.Set("X-Goog-Upload-Protocol", "raw")
-
-	res, err := c.Client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-	uploadToken := string(b)
-	return uploadToken, nil
+type FileItem struct {
+	reader io.ReadSeeker
+	size   int64
+	name   string
 }
 
-// UploadFile actually uploads the media and activates it on google photos
-func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
+// UploadFileResumable actually uploads the media and activate it on google photos
+// The uploadURL parameter will be updated
+func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
 	ctx := context.TODO() // TODO: ctx should be received (breaking change)
 
 	// validate parameters
 	if len(pAlbumID) > 1 {
-		return nil, xerrors.New("parameters can't include more than one albumID'")
+		return nil, xerrors.New("parameters can't include more than one albumID")
 	}
 	var albumID string
 	if len(pAlbumID) == 1 {
 		albumID = pAlbumID[0]
 	}
 
-	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s, type=not-resumable", filePath)
+	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s, type=resumable", filePath)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, xerrors.Errorf("failed opening file: err=%w", err)
+		return nil, xerrors.Errorf("failed opening file:  file=%s, err=%w", filePath, err)
 	}
 	defer file.Close()
 
-	uploadToken, err := c.GetUploadToken(file, filePath)
+	fileStat, err := file.Stat()
 	if err != nil {
-		return nil, xerrors.Errorf("failed getting uploadToken for %s: err=%w", filePath, err)
+		return nil, xerrors.Errorf("failed getting file size: file=%s, err=%w", filePath, err)
+	}
+	fileSize := fileStat.Size()
+
+	uploadToken, err := c.getUploadTokenResumable(file, filePath, fileSize, uploadURL)
+	if err != nil {
+		return nil, xerrors.Errorf("failed getting uploadToken: file=%s, err=%w", filePath, err)
 	}
 
 	c.log.Printf("[DEBUG] File has been uploaded: file=%s", filePath)
@@ -76,37 +62,11 @@ func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary
 		return nil, xerrors.Errorf("Error while trying to create this media item, err=%s", err)
 	}
 
+	// Clear uploadURL as upload was completed
+	*uploadURL = ""
+
 	c.log.Printf("File uploaded and media item created successfully: file=%s", filePath)
 	return mediaItem, nil
-}
-
-func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken, albumID, filename string) (*photoslibrary.MediaItem, error) {
-	req := photoslibrary.BatchCreateMediaItemsRequest{
-		AlbumId: albumID,
-		NewMediaItems: []*photoslibrary.NewMediaItem{
-			{
-				Description:     filename,
-				SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
-			},
-		},
-	}
-
-	res, err := c.retryableMediaItemBatchCreateDo(ctx, &req, filename)
-	if err != nil {
-		return nil, err
-	}
-
-	if res == nil || len(res.NewMediaItemResults) != 1 {
-		return nil, xerrors.New("len(batchResults) should be 1")
-	}
-
-	result := res.NewMediaItemResults[0]
-	// `result.Status.Code` has the GRPC code returned by Google Photos API. Values can be obtained at
-	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
-	if result.Status.Code != 0 {
-		return nil, xerrors.New(result.Status.Message)
-	}
-	return result.MediaItem, nil
 }
 
 // getUploadTokenResumable sends the media and returns the UploadToken.
@@ -212,37 +172,57 @@ func (c *Client) getUploadTokenResumable(r io.ReadSeeker, filename string, fileS
 	return uploadToken, nil
 }
 
-// UploadFileResumable actually uploads the media and activate it on google photos
-// The uploadURL parameter will be updated
-func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
+// GetUploadToken sends the media and returns the UploadToken.
+func (c *Client) GetUploadToken(r io.Reader, filename string) (token string, err error) {
+	url := googleapi.ResolveRelative(c.Service.BasePath, "v1/uploads")
+	req, err := http.NewRequest("POST", url, r)
+	if err != nil {
+		return "", err
+	}
+
+	filename = path.Base(filename)
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Add("X-Goog-Upload-File-Name", filename)
+	req.Header.Set("X-Goog-Upload-Protocol", "raw")
+
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	uploadToken := string(b)
+	return uploadToken, nil
+}
+
+// UploadFile actually uploads the media and activates it on google photos
+func (c *Client) UploadFile(filePath string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
 	ctx := context.TODO() // TODO: ctx should be received (breaking change)
 
 	// validate parameters
 	if len(pAlbumID) > 1 {
-		return nil, xerrors.New("parameters can't include more than one albumID")
+		return nil, xerrors.New("parameters can't include more than one albumID'")
 	}
 	var albumID string
 	if len(pAlbumID) == 1 {
 		albumID = pAlbumID[0]
 	}
 
-	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s, type=resumable", filePath)
+	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s, type=not-resumable", filePath)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, xerrors.Errorf("failed opening file:  file=%s, err=%w", filePath, err)
+		return nil, xerrors.Errorf("failed opening file: err=%w", err)
 	}
 	defer file.Close()
 
-	fileStat, err := file.Stat()
+	uploadToken, err := c.GetUploadToken(file, filePath)
 	if err != nil {
-		return nil, xerrors.Errorf("failed getting file size: file=%s, err=%w", filePath, err)
-	}
-	fileSize := fileStat.Size()
-
-	uploadToken, err := c.getUploadTokenResumable(file, filePath, fileSize, uploadURL)
-	if err != nil {
-		return nil, xerrors.Errorf("failed getting uploadToken: file=%s, err=%w", filePath, err)
+		return nil, xerrors.Errorf("failed getting uploadToken for %s: err=%w", filePath, err)
 	}
 
 	c.log.Printf("[DEBUG] File has been uploaded: file=%s", filePath)
@@ -253,9 +233,35 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 		return nil, xerrors.Errorf("Error while trying to create this media item, err=%s", err)
 	}
 
-	// Clear uploadURL as upload was completed
-	*uploadURL = ""
-
 	c.log.Printf("File uploaded and media item created successfully: file=%s", filePath)
 	return mediaItem, nil
+}
+
+func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken, albumID, filename string) (*photoslibrary.MediaItem, error) {
+	req := photoslibrary.BatchCreateMediaItemsRequest{
+		AlbumId: albumID,
+		NewMediaItems: []*photoslibrary.NewMediaItem{
+			{
+				Description:     filename,
+				SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
+			},
+		},
+	}
+
+	res, err := c.retryableMediaItemBatchCreateDo(ctx, &req, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	if res == nil || len(res.NewMediaItemResults) != 1 {
+		return nil, xerrors.New("len(batchResults) should be 1")
+	}
+
+	result := res.NewMediaItemResults[0]
+	// `result.Status.Code` has the GRPC code returned by Google Photos API. Values can be obtained at
+	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
+	if result.Status.Code != 0 {
+		return nil, xerrors.New(result.Status.Message)
+	}
+	return result.MediaItem, nil
 }
