@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+### Unreleased
+### Changed
+- Refactor how Google response is checked. It's following Google Photos best practices. (#10)
+- Refactor to simplify some methods and avoid DRY.
+
 ## 1.0.7
 ### Added
 - A new Logger has been added to be shared across the whole package. See `logger.go`.
