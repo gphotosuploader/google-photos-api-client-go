@@ -1,7 +1,8 @@
-package gphotos
+package uploader
 
 import (
 	"bytes"
+	"io/ioutil"
 	"log"
 	"math"
 	"strings"
@@ -23,8 +24,9 @@ func TestReadProgressReporter_completedPercentString(t *testing.T) {
 		{sent: math.MaxInt64 / 2, size: math.MaxInt64, want: "50%"},
 	}
 
+	l := log.New(ioutil.Discard, "", 0)
 	for tn, tt := range testData {
-		r := DefaultReadProgressReporter(nil, "testTest", tt.size, tt.sent)
+		r := DefaultReadProgressReporter(nil, "testTest", tt.size, tt.sent, l)
 		got := r.completedPercentString()
 		if got != tt.want {
 			t.Errorf("test number %d failed: got=%s, want=%s", tn+1, got, tt.want)
