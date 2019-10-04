@@ -42,7 +42,7 @@ type Uploader struct {
 // of non valid configuration.
 // The client must have the proper permissions to upload files.
 //
-// Use OptionResumeUploads(...), OptionLog(...) and OptionEndpoint(...) to
+// Use OptionResumableUploads(...), OptionLog(...) and OptionEndpoint(...) to
 // customize configuration.
 func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
 	u := &Uploader{
@@ -65,9 +65,9 @@ func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
 
 }
 
-// OptionResumeUploads enables resumable uploads.
+// OptionResumableUploads enables resumable uploads.
 // Resumable uploads needs an UploadSessionStore to keep upload session information.
-func OptionResumeUploads(store UploadSessionStore) func(*Uploader) {
+func OptionResumableUploads(store UploadSessionStore) Option {
 	return func(c *Uploader) {
 		c.resume = true
 		c.store = store
@@ -75,14 +75,14 @@ func OptionResumeUploads(store UploadSessionStore) func(*Uploader) {
 }
 
 // OptionLog sets the logger to log messages.
-func OptionLog(l *log.Logger) func(*Uploader) {
+func OptionLog(l *log.Logger) Option {
 	return func(c *Uploader) {
 		c.log = l
 	}
 }
 
 // OptionEndpoint sets the URL of the endpoint to upload to.
-func OptionEndpoint(url string) func(*Uploader) {
+func OptionEndpoint(url string) Option {
 	return func(c *Uploader) {
 		c.url = url
 	}

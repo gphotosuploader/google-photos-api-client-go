@@ -19,6 +19,14 @@ type Upload struct {
 	finished bool
 }
 
+func NewUpload(r io.ReadSeeker, name string, size int64) *Upload {
+	return &Upload{
+		r:    r,
+		name: name,
+		size: size,
+	}
+}
+
 // Upload returns the Google Photos upload token for an Upload object.
 func (u *Uploader) Upload(ctx context.Context, upload *Upload) (string, error) {
 	if u.resume {
