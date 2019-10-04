@@ -26,7 +26,13 @@ func TestReadProgressReporter_completedPercentString(t *testing.T) {
 
 	l := log.New(ioutil.Discard, "", 0)
 	for tn, tt := range testData {
-		r := DefaultReadProgressReporter(nil, "testTest", tt.size, tt.sent, l)
+		r := ReadProgressReporter{
+			r:        nil,
+			logger:   l,
+			filename: "testTest",
+			size:     tt.size,
+			sent:     tt.sent,
+		}
 		got := r.completedPercentString()
 		if got != tt.want {
 			t.Errorf("test number %d failed: got=%s, want=%s", tn+1, got, tt.want)
@@ -36,16 +42,16 @@ func TestReadProgressReporter_completedPercentString(t *testing.T) {
 
 func TestReadProgressReporter_report(t *testing.T) {
 	var testData = []struct {
-		atEOF bool
-		want  string
+		finished bool
+		want     string
 	}{
 		{
-			atEOF: false,
-			want:  "[10%] Sent 10 of 100 bytes: file=testTest",
+			finished: false,
+			want:     "[10%] Sent 10 of 100 bytes: file=testTest",
 		},
 		{
-			atEOF: true,
-			want:  "Upload completed: file=testTest",
+			finished: true,
+			want:     "Upload completed: file=testTest",
 		},
 	}
 
@@ -60,7 +66,7 @@ func TestReadProgressReporter_report(t *testing.T) {
 			filename: "testTest",
 			size:     100,
 			sent:     10,
-			atEOF:    tt.atEOF,
+			finished: tt.finished,
 		}
 
 		r.report()
@@ -81,7 +87,7 @@ func TestReadProgressReporter_Read(t *testing.T) {
 		filename: "testTest",
 		size:     int64(len(want)),
 		sent:     0,
-		atEOF:    false,
+		finished: false,
 	}
 
 	buf := make([]byte, len(want))
