@@ -91,7 +91,7 @@ func (u *Upload) fingerprint() string {
 // offsetFromPreviousSession returns the bytes already uploaded in previous upload sessions.
 func (u *Uploader) offsetFromPreviousSession(ctx context.Context, upload *Upload) int64 {
 	// Get any previous session for this Upload
-	url, _ := u.store.Get(upload.fingerprint())
+	url := u.store.Get(upload.fingerprint())
 
 	// Query previous upload status and get offset if active.
 	req, err := http.NewRequest("POST", url, nil)
@@ -111,7 +111,7 @@ func (u *Uploader) offsetFromPreviousSession(ctx context.Context, upload *Upload
 	if status != "active" {
 		// Other known statuses "final" and "cancelled" are both considered as already completed.
 		// Let's restart the upload from scratch.
-		_ = u.store.Delete(upload.fingerprint())
+		u.store.Delete(upload.fingerprint())
 		return 0
 	}
 
@@ -124,7 +124,7 @@ func (u *Uploader) offsetFromPreviousSession(ctx context.Context, upload *Upload
 
 func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (string, error) {
 	// Get any previous session for this Upload
-	url, _ := u.store.Get(upload.fingerprint())
+	url := u.store.Get(upload.fingerprint())
 
 	_, err := upload.r.Seek(upload.sent, io.SeekStart)
 	if err != nil {
@@ -183,7 +183,7 @@ func (u *Uploader) createUploadSession(ctx context.Context, upload *Upload) (str
 
 	// Read upload url
 	url := res.Header.Get("X-Goog-Upload-URL")
-	_ = u.store.Set(upload.fingerprint(), url)
+	u.store.Set(upload.fingerprint(), url)
 
 	// Start upload session
 	return u.resumeUploadSession(ctx, upload)
