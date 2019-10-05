@@ -4,7 +4,7 @@
 //
 //	// The returned DB instance is safe for concurrent use. Which mean that all
 //	// DB's methods may be called concurrently from multiple goroutine.
-//	db, err := leveldbstore.NewLevelDBStore("path/to/db")
+//	db, err := leveldbstore.NewStore("path/to/db")
 //	...
 //	defer db.Close()
 //	...
@@ -22,16 +22,14 @@ package leveldbstore
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/store"
 )
 
 type LevelDBStore struct {
 	db *leveldb.DB
 }
 
-// NewLevelDBStore create a new Store implemented by LevelDB
-func NewLevelDBStore(path string) (store.Store, error) {
+// NewStore create a new Store implemented by LevelDB
+func NewStore(path string) (*LevelDBStore, error) {
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {
 		return nil, err

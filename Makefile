@@ -17,6 +17,10 @@ cover: test ## Run all the tests and opens the coverage report
 	@echo "--> Openning coverage report..."
 	@go tool cover -html=$(COVERAGE_FILE)
 
+build: ## Build the app
+	@echo "--> Building..."
+	@go build ./...
+
 .PHONY: clean
 clean: ## Clean all built artifacts
 	@echo "--> Cleaning all built artifacts..."

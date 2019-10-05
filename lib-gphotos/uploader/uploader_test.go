@@ -55,10 +55,10 @@ func TestNewUploader(t *testing.T) {
 
 type mockUploadSessionStore struct {}
 
-func (m *mockUploadSessionStore) Get(f string) string {
-	return f
+func (m *mockUploadSessionStore) Get(f string) []byte {
+	return []byte(f)
 }
 
-func (m *mockUploadSessionStore) Set(f, u string) {}
+func (m *mockUploadSessionStore) Set(f string, u []byte) {}
 
 func (m *mockUploadSessionStore) Delete(f string) {}

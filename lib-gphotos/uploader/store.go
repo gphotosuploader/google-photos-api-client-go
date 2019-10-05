@@ -1,7 +1,7 @@
 package uploader
 
 type UploadSessionStore interface {
-	Get(fingerprint string) string
-	Set(fingerprint, url string)
+	Get(fingerprint string) []byte
+	Set(fingerprint string, url []byte)
 	Delete(fingerprint string)
 }
