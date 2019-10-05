@@ -14,6 +14,7 @@ import (
 type AuthorizedClient oauth2ns.AuthorizedClient
 type ClientConstructorOption func() (*AuthorizedClient, error)
 
+// DEPRECATED
 func NewClient(options ...ClientConstructorOption) (client *Client, merr error) {
 	if len(options) == 0 {
 		return nil, stacktrace.NewError("NewClient expects at least one option")
@@ -42,6 +43,7 @@ type AuthenticateUserFuncConfig struct {
 	userLoginHint string
 }
 
+// DEPRECATED
 func WithUserLoginHint(loginHint string) AuthenticateUserOption {
 	return func(config *AuthenticateUserFuncConfig) error {
 		config.userLoginHint = loginHint
@@ -50,6 +52,7 @@ func WithUserLoginHint(loginHint string) AuthenticateUserOption {
 }
 
 // AuthenticateUser() option creates a new http.Client with a bearer access token
+// DEPRECATED
 func AuthenticateUser(oauthConfig *oauth2.Config, options ...AuthenticateUserOption) ClientConstructorOption {
 	var funcConfig AuthenticateUserFuncConfig
 	for _, optionFunc := range options {
@@ -73,6 +76,7 @@ func AuthenticateUser(oauthConfig *oauth2.Config, options ...AuthenticateUserOpt
 	}
 }
 
+// DEPRECATED
 func FromToken(oauthConfig *oauth2.Config, token *oauth2.Token) ClientConstructorOption {
 	return func() (*AuthorizedClient, error) {
 		return &AuthorizedClient{
