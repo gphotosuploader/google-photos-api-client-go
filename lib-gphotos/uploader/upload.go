@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"path"
 	"strconv"
 
 	"golang.org/x/xerrors"
@@ -73,21 +71,10 @@ func (u *Uploader) uploadWithResumeCapability(ctx context.Context, upload *Uploa
 func (u *Uploader) uploadWithoutResumeCapability(ctx context.Context, upload *Upload) (string, error) {
 	u.log.Printf("[DEBUG] Initiating file upload: type=non-resumable, file=%s", upload.name)
 
-	r := &ReadProgressReporter{
-		r:        upload.r,
-		filename: upload.name,
-		size:     upload.size,
-		sent:     upload.sent,
-		logger:   u.log,
-	}
-	req, err := http.NewRequest("POST", u.url, r)
+	req, err := createRawUploadRequest(u.url, upload, u.log)
 	if err != nil {
 		return "", err
 	}
-
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Add("X-Goog-Upload-File-Name", path.Base(upload.name))
-	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
 	res, err := u.c.Do(req.WithContext(ctx))
 	if err != nil {
@@ -114,12 +101,10 @@ func (u *Uploader) offsetFromPreviousSession(ctx context.Context, upload *Upload
 	url := string(u.store.Get(upload.fingerprint()))
 
 	// Query previous upload status and get offset if active.
-	req, err := http.NewRequest("POST", url, nil)
+	req, err := createQueryOffsetRequest(url)
 	if err != nil {
 		return 0
 	}
-	req.Header.Set("Content-Length", "0")
-	req.Header.Set("X-Goog-Upload-Command", "query")
 
 	res, err := u.c.Do(req.WithContext(ctx))
 	if err != nil {
@@ -151,21 +136,10 @@ func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (str
 		return "", err
 	}
 
-	r := &ReadProgressReporter{
-		r:        upload.r,
-		filename: upload.name,
-		size:     upload.size,
-		sent:     upload.sent,
-		logger:   u.log,
-	}
-	req, err := http.NewRequest("POST", url, r)
+	req, err := createResumeUploadRequest(url, upload, u.log)
 	if err != nil {
-		u.log.Printf("[ERR] Failed to prepare request: err=%s", err)
 		return "", err
 	}
-	req.Header.Set("Content-Length", fmt.Sprintf("%d", upload.size-upload.sent))
-	req.Header.Add("X-Goog-Upload-Command", "upload, finalize")
-	req.Header.Set("X-Goog-Upload-Offset", fmt.Sprintf("%d", upload.sent))
 
 	res, err := u.c.Do(req.WithContext(ctx))
 	if err != nil {
@@ -185,15 +159,10 @@ func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (str
 
 func (u *Uploader) createUploadSession(ctx context.Context, upload *Upload) (string, error) {
 	u.log.Printf("[DEBUG] Initiating upload session: file=%s", upload.name)
-	req, err := http.NewRequest("POST", u.url, nil)
+	req, err := createInitialResumableUploadRequest(u.url, upload)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Content-Length", "0")
-	req.Header.Set("X-Goog-Upload-Command", "start")
-	req.Header.Add("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
-	req.Header.Set("X-Goog-Upload-Raw-Size", fmt.Sprintf("%d", upload.size))
 
 	res, err := u.c.Do(req.WithContext(ctx))
 	if err != nil {
