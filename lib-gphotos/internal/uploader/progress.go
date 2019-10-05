@@ -1,4 +1,4 @@
-package gphotos
+package uploader
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-// ReadProgressReporter represents read progress.
+// ReadProgressReporter represents io.Reader with progress report.
 type ReadProgressReporter struct {
 	r      io.Reader   // where to read data from.
 	logger *log.Logger // where to log progress status.
@@ -14,33 +14,21 @@ type ReadProgressReporter struct {
 	filename string // name of the file being uploaded
 	size     int64  // size of the file
 	sent     int64  // bytes already sent
-	atEOF    bool   // file has reach EOF
-}
-
-func DefaultReadProgressReporter(r io.Reader, filename string, size, sent int64) ReadProgressReporter {
-	return ReadProgressReporter{
-		r:      r,
-		logger: defaultLogger(),
-
-		filename: filename,
-		size:     size,
-		sent:     sent,
-		atEOF:    false,
-	}
+	finished bool   // file has reach EOF
 }
 
 func (pr *ReadProgressReporter) Read(p []byte) (int, error) {
 	n, err := pr.r.Read(p)
 	pr.sent += int64(n)
 	if err == io.EOF {
-		pr.atEOF = true
+		pr.finished = true
 	}
 	pr.report()
 	return n, err
 }
 
 func (pr *ReadProgressReporter) report() {
-	if pr.atEOF {
+	if pr.finished {
 		pr.logger.Printf("Upload completed: file=%s", pr.filename)
 		return
 	}

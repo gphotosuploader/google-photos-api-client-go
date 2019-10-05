@@ -3,10 +3,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-### Unreleased
+### 1.1.0
+### Added
+- New `NewClientWithResumableUploads()` function to create a Google Photos client with uploads that can be resumed.
+- New `AddMediaItem()` method to upload contents and make it available in Google Photos.
+- New `uploader` internal package implementing uploads to Google Photos.
 ### Changed
 - Refactor how Google response is checked. It's following Google Photos best practices. (#10)
-- Refactor to simplify some methods and avoid DRY.
+- Updated README documentation and added examples.
+- Refactor how retries are handled by the code. See `retryableMediaItemBatchCreateDo()` method.
+### Deprecated
+- `NewClient()` function has been deprecated. Use `NewClientWithResumableUploads()` instead.
+- `UploadFile()` and `UploadFileResumable()` methods has been deprecated. Use `AddMediaItem()` instead.
+- `noserver-gphotos` package has been deprecated.
 
 ## 1.0.7
 ### Added

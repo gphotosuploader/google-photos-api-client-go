@@ -1,6 +1,8 @@
 package gphotos_test
 
 import (
+	"io/ioutil"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -8,8 +10,60 @@ import (
 	"golang.org/x/oauth2"
 
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
+type mockUploadSessionStore struct {}
+
+func (m *mockUploadSessionStore) Get(f string) []byte {
+	return []byte(f)
+}
+
+func (m *mockUploadSessionStore) Set(f string, u []byte) {}
+
+func (m *mockUploadSessionStore) Delete(f string) {}
+
+func TestNewClientWithResumableUploads(t *testing.T) {
+	c := http.DefaultClient
+	store := &mockUploadSessionStore{}
+
+	t.Run("EmptyHTTPClient", func(t *testing.T) {
+		_, err := gphotos.NewClientWithResumableUploads(nil, store)
+		if err == nil {
+			t.Errorf("NewClientWithResumableUploads error was expected here")
+		}
+	})
+
+	t.Run("WithNilUploadSessionStore", func(t *testing.T) {
+		_, err := gphotos.NewClientWithResumableUploads(c, nil)
+		if err != uploader.ErrNilStore {
+			t.Errorf("NewClientWithResumableUploads - error was expected here: got=%s, want=%s", err, uploader.ErrNilStore)
+		}
+	})
+
+	t.Run("WithoutOptions", func(t *testing.T) {
+		got, err := gphotos.NewClientWithResumableUploads(c, store)
+		if err != nil {
+			t.Errorf("NewClientWithResumableUploads - error was not expected here: err=%s", err)
+		}
+		if got.Service == nil {
+			t.Errorf("NewClientWithResumableUploads - Photos service was not created")
+		}
+	})
+
+	t.Run("WithOptionLog", func(t *testing.T) {
+		l := log.New(ioutil.Discard, "", 0)
+		got, err := gphotos.NewClientWithResumableUploads(c, store, gphotos.OptionLog(l))
+		if err != nil {
+			t.Errorf("NewClientWithResumableUploads - error was not expected here: err=%s", err)
+		}
+		if got.Service == nil {
+			t.Errorf("NewClientWithResumableUploads - Photos service was not created")
+		}
+	})
+}
+
+// DEPRECATED
 func TestNewClient(t *testing.T) {
 	want := http.DefaultClient
 
@@ -29,10 +83,6 @@ func TestNewClient(t *testing.T) {
 		if got.Service == nil {
 			t.Errorf("Photos service was not created")
 		}
-
-		if got.Client != want {
-			t.Errorf("HTTP Client is different")
-		}
 	})
 
 	t.Run("WithToken", func(t *testing.T) {
@@ -46,16 +96,13 @@ func TestNewClient(t *testing.T) {
 			t.Errorf("Photos service was not created")
 		}
 
-		if got.Client != want {
-			t.Errorf("HTTP Client is different from expected")
-		}
-
 		if *(got.Token()) != tk {
 			t.Errorf("Token is different from expected")
 		}
 	})
 }
 
+// DEPRECATED
 func TestClient_Token(t *testing.T) {
 	c := http.DefaultClient
 
@@ -83,6 +130,7 @@ func TestClient_Token(t *testing.T) {
 	})
 }
 
+// DEPRECATED
 func testOauthToken() oauth2.Token {
 	return oauth2.Token{
 		AccessToken:  "access-token",

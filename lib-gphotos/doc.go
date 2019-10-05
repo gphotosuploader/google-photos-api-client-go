@@ -14,9 +14,8 @@ access different parts of the Google Photos API. For example:
     // get or create a Photos Album with the specified name.
 	album, err := GetOrCreateAlbumByName("my-new-album")
 	// upload an specified file to an existent Photos Album.
-    _, err := client.UploadFile(path, albumID)
-    // upload an specified file to an existent Photos Album with resumable uploads.
-    _, err := client.UploadFileResumable(path, &url, albumID)
+    _, err := client.AddMediaItem(ctx, path, albumID)
+
 
 NOTE: Using the https://godoc.org/context package, one can easily
 pass cancellation signals and deadlines to various services of the client for
