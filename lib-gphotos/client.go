@@ -20,7 +20,7 @@ type Client struct {
 	uploader *uploader.Uploader
 
 	log *log.Logger
-	mu  sync.RWMutex
+	mu  *sync.RWMutex
 
 	token *oauth2.Token // DEPRECATED: `token` will disappear in the next MAJOR version.
 }
