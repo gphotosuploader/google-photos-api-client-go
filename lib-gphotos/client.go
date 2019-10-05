@@ -3,6 +3,7 @@ package gphotos
 import (
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"golang.org/x/oauth2"
@@ -19,6 +20,7 @@ type Client struct {
 	uploader *uploader.Uploader
 
 	log *log.Logger
+	mu  sync.RWMutex
 
 	token *oauth2.Token // DEPRECATED: `token` will disappear in the next MAJOR version.
 }

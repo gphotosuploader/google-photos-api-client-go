@@ -63,7 +63,9 @@ func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found boo
 // If the album doesn't exists it will try to create it.
 func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, error) {
 	ctx := context.TODO()                    // TODO: ctx should be received (breaking change)
+	c.mu.RLock()                             // Prevent multiple Album search when we want to create an Album
 	album, found, err := c.AlbumByName(name) // TODO: ctx should be passed (breaking change)
+	c.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +74,8 @@ func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, erro
 		return album, nil
 	}
 
+	c.mu.Lock() // Prevents multiple Album creation at the same time
+	defer c.mu.Unlock()
 	return c.Albums.Create(&photoslibrary.CreateAlbumRequest{
 		Album: &photoslibrary.Album{Title: name},
 	}).Context(ctx).Do()
