@@ -12,11 +12,10 @@ import (
 
 // Upload represents an object to be uploaded.
 type Upload struct {
-	r        io.ReadSeeker
-	name     string
-	size     int64
-	sent     int64
-	finished bool
+	r    io.ReadSeeker
+	name string
+	size int64
+	sent int64
 }
 
 func NewUpload(r io.ReadSeeker, name string, size int64) *Upload {
