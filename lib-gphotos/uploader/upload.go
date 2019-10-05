@@ -6,8 +6,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
+
+	"golang.org/x/xerrors"
 )
 
 // Upload represents an object to be uploaded.
@@ -24,6 +27,24 @@ func NewUpload(r io.ReadSeeker, name string, size int64) *Upload {
 		name: name,
 		size: size,
 	}
+}
+
+func (u *Uploader) UploadFromFile(ctx context.Context, filename string) (string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", xerrors.Errorf("failed opening file: err=%w", err)
+	}
+	defer file.Close()
+
+	fileStat, err := file.Stat()
+	if err != nil {
+		return "", xerrors.Errorf("failed getting file size: file=%s, err=%w", filename, err)
+	}
+	size := fileStat.Size()
+
+	upload := NewUpload(file, filename, size)
+	return u.Upload(ctx, upload)
+
 }
 
 // Upload returns the Google Photos upload token for an Upload object.

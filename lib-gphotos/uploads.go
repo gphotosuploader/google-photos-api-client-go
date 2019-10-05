@@ -2,32 +2,16 @@ package gphotos
 
 import (
 	"context"
-	"os"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"golang.org/x/xerrors"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/uploader"
 )
 
 // AddMediaItem returns MediaItem created after uploading `filename` and adding it to `albumID`.
 func (c *Client) AddMediaItem(ctx context.Context, filename, albumID string) (*photoslibrary.MediaItem, error) {
 	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s", filename)
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, xerrors.Errorf("failed opening file: err=%w", err)
-	}
-	defer file.Close()
-
-	fileStat, err := file.Stat()
-	if err != nil {
-		return nil, xerrors.Errorf("failed getting file size: file=%s, err=%w", filename, err)
-	}
-	size := fileStat.Size()
-
-	upload := uploader.NewUpload(file, filename, size)
-	uploadToken, err := c.uploader.Upload(ctx, upload)
+	uploadToken, err := c.uploader.UploadFromFile(ctx, filename)
 	if err != nil {
 		return nil, xerrors.Errorf("failed getting uploadToken for %s: err=%w", filename, err)
 	}
@@ -73,6 +57,7 @@ func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken
 	return result.MediaItem, nil
 }
 
+// codebeat:disable
 // UploadFile actually uploads the media and activates it on google photos
 // DEPRECATED: Use c.AddMediaItem(...) instead
 func (c *Client) UploadFile(filename string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
@@ -98,3 +83,4 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 	}
 	return c.UploadFile(filePath)
 }
+// codebeat:enable

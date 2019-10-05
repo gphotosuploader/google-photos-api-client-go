@@ -62,6 +62,7 @@ func OptionLog(l *log.Logger) func(*Client) {
 	}
 }
 
+// codebeat:disable
 // NewClient constructs a new PhotosClient from an oauth httpClient.
 //
 // `httpClient` is an HTTP Client with authentication credentials.
@@ -105,3 +106,5 @@ func (c *Client) Token() *oauth2.Token {
 	}
 	return &(*c.token)
 }
+
+// codebeat:enable
