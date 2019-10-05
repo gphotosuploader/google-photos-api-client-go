@@ -14,7 +14,6 @@ require (
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
-	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522

@@ -7,7 +7,7 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"golang.org/x/oauth2"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
 // Client is a client for uploading a media.

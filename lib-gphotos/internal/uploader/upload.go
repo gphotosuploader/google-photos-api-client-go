@@ -11,22 +11,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Upload represents an object to be uploaded.
-type Upload struct {
-	r    io.ReadSeeker
-	name string
-	size int64
-	sent int64
-}
-
-func NewUpload(r io.ReadSeeker, name string, size int64) *Upload {
-	return &Upload{
-		r:    r,
-		name: name,
-		size: size,
-	}
-}
-
+// UploadFromFile returns the Google Photos upload token for the file.
 func (u *Uploader) UploadFromFile(ctx context.Context, filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -51,6 +36,27 @@ func (u *Uploader) Upload(ctx context.Context, upload *Upload) (string, error) {
 		return u.uploadWithResumeCapability(ctx, upload)
 	}
 	return u.uploadWithoutResumeCapability(ctx, upload)
+}
+
+// Upload represents an object to be uploaded.
+type Upload struct {
+	r    io.ReadSeeker
+	name string
+	size int64
+	sent int64
+}
+
+func NewUpload(r io.ReadSeeker, name string, size int64) *Upload {
+	return &Upload{
+		r:    r,
+		name: name,
+		size: size,
+	}
+}
+
+// fingerprint returns a value to be used to identify upload session.
+func (u *Upload) fingerprint() string {
+	return fmt.Sprintf("%s|%d", u.name, u.size)
 }
 
 // uploadWithResumeCapability returns the Google Photos upload token using resume uploads to upload data.
@@ -88,11 +94,6 @@ func (u *Uploader) uploadWithoutResumeCapability(ctx context.Context, upload *Up
 	}
 	token := string(b)
 	return token, nil
-}
-
-// fingerprint returns a value to be used to identify upload session.
-func (u *Upload) fingerprint() string {
-	return fmt.Sprintf("%s|%d", u.name, u.size)
 }
 
 // offsetFromPreviousSession returns the bytes already uploaded in previous upload sessions.

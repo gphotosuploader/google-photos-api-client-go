@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
 type mockUploadSessionStore struct {}
