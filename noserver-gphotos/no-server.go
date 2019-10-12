@@ -32,7 +32,7 @@ func NewClient(options ...ClientConstructorOption) (client *Client, merr error) 
 			merr = multierror.Append(merr, err)
 			continue
 		}
-		return &Client{*gphotosClient}, nil
+		return &Client{gphotosClient}, nil
 	}
 	// if all constructor options failed, returned errors returned by each option
 	return nil, stacktrace.Propagate(merr, "all options failed with errors:")
