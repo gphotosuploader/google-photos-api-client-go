@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-### 1.1.0
+## 1.1.1
+### Fixed
+- Fix race condition on `GetOrCreateAlbumByName()`. Google Photos API allow you to create several albums with the same name. (#26)
+
+## 1.1.0
 ### Added
 - New `NewClientWithResumableUploads()` function to create a Google Photos client with uploads that can be resumed.
 - New `AddMediaItem()` method to upload contents and make it available in Google Photos.
