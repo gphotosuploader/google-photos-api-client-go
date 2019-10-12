@@ -4,7 +4,7 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphot
 
 // DEPRECATED
 type Client struct {
-	gphotos.Client
+	*gphotos.Client
 }
 
 type APIAppCredentials gphotos.APIAppCredentials
