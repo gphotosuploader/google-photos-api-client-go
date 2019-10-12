@@ -62,7 +62,12 @@ func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found boo
 // GetOrCreateAlbumByName returns an Album with the specified album name.
 // If the album doesn't exists it will try to create it.
 func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, error) {
-	ctx := context.TODO()                    // TODO: ctx should be received (breaking change)
+	ctx := context.TODO() // TODO: ctx should be received (breaking change)
+
+	// Prevent multiple Album creation, given that Google API doesn't enforce Album uniqueness
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	album, found, err := c.AlbumByName(name) // TODO: ctx should be passed (breaking change)
 	if err != nil {
 		return nil, err
