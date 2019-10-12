@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.1.2
+### Fixed
+- Fix fatal error introduced in the last version. (#28)
+
 ## 1.1.1
 ### Fixed
 - Fix race condition on `GetOrCreateAlbumByName()`. Google Photos API allow you to create several albums with the same name. (#26)
