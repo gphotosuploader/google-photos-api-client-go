@@ -2,9 +2,10 @@ package gphotos
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-	"golang.org/x/xerrors"
 )
 
 // AddMediaItem returns MediaItem created after uploading `filename` and adding it to `albumID`.
@@ -13,7 +14,7 @@ func (c *Client) AddMediaItem(ctx context.Context, filename, albumID string) (*p
 
 	uploadToken, err := c.uploader.UploadFromFile(ctx, filename)
 	if err != nil {
-		return nil, xerrors.Errorf("failed getting uploadToken for %s: err=%w", filename, err)
+		return nil, fmt.Errorf("failed getting uploadToken for %s: err=%s", filename, err)
 	}
 
 	c.log.Printf("[DEBUG] File has been uploaded: file=%s", filename)
@@ -21,7 +22,7 @@ func (c *Client) AddMediaItem(ctx context.Context, filename, albumID string) (*p
 	mediaItem, err := c.createMediaItemFromUploadToken(ctx, uploadToken, albumID, filename)
 	if err != nil {
 		c.log.Printf("[ERR] Failed to create media item: file=%s, err=%s", filename, err)
-		return nil, xerrors.Errorf("Error while trying to create this media item, err=%s", err)
+		return nil, fmt.Errorf("error while trying to create this media item, err=%s", err)
 	}
 
 	c.log.Printf("File uploaded and media item created successfully: file=%s", filename)
@@ -45,19 +46,20 @@ func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken
 	}
 
 	if res == nil || len(res.NewMediaItemResults) != 1 {
-		return nil, xerrors.New("len(batchResults) should be 1")
+		return nil, errors.New("len(batchResults) should be 1")
 	}
 
 	result := res.NewMediaItemResults[0]
 	// `result.Status.Code` has the GRPC code returned by Google Photos API. Values can be obtained at
 	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
 	if result.Status.Code != 0 {
-		return nil, xerrors.New(result.Status.Message)
+		return nil, errors.New(result.Status.Message)
 	}
 	return result.MediaItem, nil
 }
 
 // codebeat:disable
+
 // UploadFile actually uploads the media and activates it on google photos
 // DEPRECATED: Use c.AddMediaItem(...) instead
 func (c *Client) UploadFile(filename string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
@@ -65,7 +67,7 @@ func (c *Client) UploadFile(filename string, pAlbumID ...string) (*photoslibrary
 
 	// validate parameters
 	if len(pAlbumID) > 1 {
-		return nil, xerrors.New("parameters can't include more than one albumID'")
+		return nil, errors.New("parameters can't include more than one albumID'")
 	}
 	var albumID string
 	if len(pAlbumID) == 1 {
@@ -83,4 +85,5 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 	}
 	return c.UploadFile(filePath)
 }
+
 // codebeat:enable

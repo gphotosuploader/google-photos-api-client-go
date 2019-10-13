@@ -2,12 +2,12 @@ package gphotos
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-	"golang.org/x/xerrors"
 	"google.golang.org/api/googleapi"
 )
 
@@ -48,8 +48,8 @@ func (c *Client) retryableMediaItemBatchCreateDo(ctx context.Context, request *p
 				continue
 			}
 		}
-		return nil, xerrors.Errorf("unexpected error response: file=%s, err=%w", filename, err)
+		return nil, fmt.Errorf("unexpected error response: file=%s, err=%s", filename, err)
 
 	}
-	return res, xerrors.Errorf("too many retries: file=%s, err=%w", filename, err)
+	return res, fmt.Errorf("too many retries: file=%s, err=%s", filename, err)
 }

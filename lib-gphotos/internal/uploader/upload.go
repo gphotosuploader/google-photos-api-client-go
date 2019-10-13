@@ -7,21 +7,19 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-
-	"golang.org/x/xerrors"
 )
 
 // UploadFromFile returns the Google Photos upload token for the file.
 func (u *Uploader) UploadFromFile(ctx context.Context, filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return "", xerrors.Errorf("failed opening file: err=%w", err)
+		return "", fmt.Errorf("failed opening file: err=%s", err)
 	}
 	defer file.Close()
 
 	fileStat, err := file.Stat()
 	if err != nil {
-		return "", xerrors.Errorf("failed getting file size: file=%s, err=%w", filename, err)
+		return "", fmt.Errorf("failed getting file size: file=%s, err=%s", filename, err)
 	}
 	size := fileStat.Size()
 
