@@ -1,7 +1,7 @@
 package uploader
 
-import "golang.org/x/xerrors"
+import "errors"
 
 var (
-	ErrNilStore = xerrors.New("store can't be nil if Resume is enable")
+	ErrNilStore = errors.New("store can't be nil if Resume is enable")
 )

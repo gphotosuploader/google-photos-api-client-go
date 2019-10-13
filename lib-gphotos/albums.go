@@ -2,9 +2,9 @@ package gphotos
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 
 var (
 	// ErrAlbumNotFound represents a failure to find the album.
-	ErrAlbumNotFound = xerrors.New("specified album was not found")
+	ErrAlbumNotFound = errors.New("specified album was not found")
 )
 
 // albumByNameWithPageToken checks for the specified album recursively. Google Photos returns
