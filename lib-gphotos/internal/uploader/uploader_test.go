@@ -53,7 +53,7 @@ func TestNewUploader(t *testing.T) {
 	})
 }
 
-type mockUploadSessionStore struct {}
+type mockUploadSessionStore struct{}
 
 func (m *mockUploadSessionStore) Get(f string) []byte {
 	return []byte(f)

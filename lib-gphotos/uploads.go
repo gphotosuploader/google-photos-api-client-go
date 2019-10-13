@@ -83,4 +83,5 @@ func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumI
 	}
 	return c.UploadFile(filePath)
 }
+
 // codebeat:enable

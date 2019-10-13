@@ -13,7 +13,7 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
-type mockUploadSessionStore struct {}
+type mockUploadSessionStore struct{}
 
 func (m *mockUploadSessionStore) Get(f string) []byte {
 	return []byte(f)
