@@ -1,8 +1,6 @@
 package gphotos_test
 
 import (
-	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -10,6 +8,7 @@ import (
 	"golang.org/x/oauth2"
 
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
 	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
@@ -52,8 +51,8 @@ func TestNewClientWithResumableUploads(t *testing.T) {
 	})
 
 	t.Run("WithOptionLog", func(t *testing.T) {
-		l := log.New(ioutil.Discard, "", 0)
-		got, err := gphotos.NewClientWithResumableUploads(c, store, gphotos.OptionLog(l))
+		l := log.NewDiscardLogger()
+		got, err := gphotos.NewClientWithResumableUploads(c, store, gphotos.WithLogger(l))
 		if err != nil {
 			t.Errorf("NewClientWithResumableUploads - error was not expected here: err=%s", err)
 		}
