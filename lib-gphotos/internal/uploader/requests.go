@@ -2,19 +2,22 @@ package uploader
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"path"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/progress"
 )
 
 // createRawUploadRequest returns a raw (non-resumable) upload request for Google Photos.
-func createRawUploadRequest(url string, upload *Upload, l *log.Logger) (*http.Request, error) {
-	r := &ReadProgressReporter{
-		r:        upload.r,
-		filename: upload.name,
-		size:     upload.size,
-		sent:     upload.sent,
-		logger:   l,
+func createRawUploadRequest(url string, upload *Upload, l log.Logger) (*http.Request, error) {
+	r := &progress.Reporter{
+		reader:       upload.r,
+		writer:       os.Stdout,
+		description:  upload.name,
+		maxBytes:     upload.size,
+		currentBytes: upload.sent,
 	}
 	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
@@ -60,13 +63,13 @@ func createQueryOffsetRequest(url string) (*http.Request, error) {
 
 // createResumeUploadRequest returns a resumable upload request to continue an started upload for Google Photos.
 // url is the unique URL that must be used to complete the upload through all of the remaining requests.
-func createResumeUploadRequest(url string, upload *Upload, l *log.Logger) (*http.Request, error) {
-	r := &ReadProgressReporter{
-		r:        upload.r,
-		filename: upload.name,
-		size:     upload.size,
-		sent:     upload.sent,
-		logger:   l,
+func createResumeUploadRequest(url string, upload *Upload, l log.Logger) (*http.Request, error) {
+	r := &progress.Reporter{
+		reader:       upload.r,
+		writer:       os.Stdout,
+		description:  upload.name,
+		maxBytes:     upload.size,
+		currentBytes: upload.sent,
 	}
 	req, err := http.NewRequest("POST", url, r)
 	if err != nil {

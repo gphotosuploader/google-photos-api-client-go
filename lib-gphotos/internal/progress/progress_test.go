@@ -1,12 +1,12 @@
-package uploader
+package progress_test
 
 import (
 	"bytes"
-	"io/ioutil"
-	"log"
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
 )
 
 func TestReadProgressReporter_completedPercentString(t *testing.T) {
@@ -24,14 +24,14 @@ func TestReadProgressReporter_completedPercentString(t *testing.T) {
 		{sent: math.MaxInt64 / 2, size: math.MaxInt64, want: "50%"},
 	}
 
-	l := log.New(ioutil.Discard, "", 0)
+	l := &log.DiscardLogger{}
 	for tn, tt := range testData {
-		r := ReadProgressReporter{
-			r:        nil,
-			logger:   l,
-			filename: "testTest",
-			size:     tt.size,
-			sent:     tt.sent,
+		r := Reporter{
+			reader:       nil,
+			logger:       l,
+			description:  "testTest",
+			maxBytes:     tt.size,
+			currentBytes: tt.sent,
 		}
 		got := r.completedPercentString()
 		if got != tt.want {
@@ -57,19 +57,19 @@ func TestReadProgressReporter_report(t *testing.T) {
 
 	for tn, tt := range testData {
 		var buff = bytes.Buffer{}
-		logger := log.New(&buff, "", 0)
+		logger :=
 
-		r := ReadProgressReporter{
-			r:      nil,
+		r := Reporter{
+			reader: nil,
 			logger: logger,
 
-			filename: "testTest",
-			size:     100,
-			sent:     10,
-			finished: tt.finished,
+			description:  "testTest",
+			maxBytes:     100,
+			currentBytes: 10,
+			finished:     tt.finished,
 		}
 
-		r.report()
+		r.render()
 		got := strings.TrimSuffix(buff.String(), "\n")
 		if got != tt.want {
 			t.Errorf("test number %d failed: got=%s, want=%s", tn+1, got, tt.want)
@@ -80,14 +80,14 @@ func TestReadProgressReporter_report(t *testing.T) {
 
 func TestReadProgressReporter_Read(t *testing.T) {
 	want := "abcde"
-	r := ReadProgressReporter{
-		r:      strings.NewReader(want),
+	r := Reporter{
+		reader: strings.NewReader(want),
 		logger: log.New(&bytes.Buffer{}, "", 0),
 
-		filename: "testTest",
-		size:     int64(len(want)),
-		sent:     0,
-		finished: false,
+		description:  "testTest",
+		maxBytes:     int64(len(want)),
+		currentBytes: 0,
+		finished:     false,
 	}
 
 	buf := make([]byte, len(want))

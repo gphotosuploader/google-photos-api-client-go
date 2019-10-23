@@ -1,13 +1,13 @@
 package gphotos
 
 import (
-	"log"
 	"net/http"
 	"sync"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"golang.org/x/oauth2"
 
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
 	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
 )
 
@@ -19,7 +19,7 @@ type Client struct {
 	// Uploader to upload new files to Google Photos
 	uploader *uploader.Uploader
 
-	log *log.Logger
+	log log.Logger
 	mu  sync.Mutex
 
 	token *oauth2.Token // DEPRECATED: `token` will disappear in the next MAJOR version.
@@ -36,7 +36,7 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 		return nil, err
 	}
 
-	upldr, err := uploader.NewUploader(httpClient, uploader.OptionResumableUploads(store))
+	upldr, err := uploader.NewUploader(httpClient, uploader.WithResumableUploads(store))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 	c := &Client{
 		Service:  photosService,
 		uploader: upldr,
-		log:      defaultLogger(),
+		log:      log.DefaultLogger(),
 	}
 
 	for _, opt := range options {
@@ -57,14 +57,15 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 // Option defines an option for a Client
 type Option func(*Client)
 
-// OptionLog set logging for client.
-func OptionLog(l *log.Logger) func(*Client) {
+// WithLogger set a new Logger to log messages.
+func WithLogger(l log.Logger) func(*Client) {
 	return func(c *Client) {
 		c.log = l
 	}
 }
 
 // codebeat:disable
+
 // NewClient constructs a new PhotosClient from an oauth httpClient.
 //
 // `httpClient` is an HTTP Client with authentication credentials.
@@ -91,7 +92,7 @@ func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, e
 	c := &Client{
 		Service:  photosService,
 		uploader: upldr,
-		log:      defaultLogger(),
+		log:      log.DefaultLogger(),
 	}
 
 	c.token = token

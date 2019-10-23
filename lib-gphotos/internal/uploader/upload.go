@@ -19,7 +19,7 @@ func (u *Uploader) UploadFromFile(ctx context.Context, filename string) (string,
 
 	fileStat, err := file.Stat()
 	if err != nil {
-		return "", fmt.Errorf("failed getting file size: file=%s, err=%s", filename, err)
+		return "", fmt.Errorf("failed getting file maxBytes: file=%s, err=%s", filename, err)
 	}
 	size := fileStat.Size()
 
@@ -59,21 +59,21 @@ func (u *Upload) fingerprint() string {
 
 // uploadWithResumeCapability returns the Google Photos upload token using resume uploads to upload data.
 func (u *Uploader) uploadWithResumeCapability(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Printf("[DEBUG] Initiating file upload: type=resumable, file=%s", upload.name)
+	u.log.Debugf("Initiating file upload: type=resumable, file=%s", upload.name)
 	upload.sent = u.offsetFromPreviousSession(ctx, upload)
 
 	if upload.sent == 0 {
-		u.log.Printf("[DEBUG] Initiating new upload session: file=%s", upload.name)
+		u.log.Debugf("Initiating new upload session: file=%s", upload.name)
 		return u.createUploadSession(ctx, upload)
 	}
 
-	u.log.Printf("[DEBUG] Resuming previous upload session: file=%s", upload.name)
+	u.log.Debugf("Resuming previous upload session: file=%s", upload.name)
 	return u.resumeUploadSession(ctx, upload)
 }
 
 // upload returns the Google Photos upload token using non-resumable upload.
 func (u *Uploader) uploadWithoutResumeCapability(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Printf("[DEBUG] Initiating file upload: type=non-resumable, file=%s", upload.name)
+	u.log.Debugf("Initiating file upload: type=non-resumable, file=%s", upload.name)
 
 	req, err := createRawUploadRequest(u.url, upload, u.log)
 	if err != nil {
@@ -142,14 +142,14 @@ func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (str
 
 	res, err := u.c.Do(req.WithContext(ctx))
 	if err != nil {
-		u.log.Printf("[ERR] Failed to process request: err=%s", err)
+		u.log.Errorf("Failed to process request: err=%s", err)
 		return "", err
 	}
 	defer res.Body.Close()
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		u.log.Printf("[ERR] Failed to read response %s", err)
+		u.log.Errorf("Failed to read response %s", err)
 		return "", err
 	}
 	token := string(b)
@@ -157,7 +157,7 @@ func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (str
 }
 
 func (u *Uploader) createUploadSession(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Printf("[DEBUG] Initiating upload session: file=%s", upload.name)
+	u.log.Debugf("Initiating upload session: file=%s", upload.name)
 	req, err := createInitialResumableUploadRequest(u.url, upload)
 	if err != nil {
 		return "", err

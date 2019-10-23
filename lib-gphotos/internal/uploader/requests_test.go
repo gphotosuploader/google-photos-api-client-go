@@ -33,7 +33,7 @@ func Test_createInitialResumableUploadRequest(t *testing.T) {
 				t.Errorf("error was not expected: err=%s", err)
 			}
 			if gotSize != tt.size {
-				t.Errorf("size: got=%d, want=%d", gotSize, tt.size)
+				t.Errorf("maxBytes: got=%d, want=%d", gotSize, tt.size)
 			}
 			gotURL := req.URL.String()
 			if gotURL != tt.url {
@@ -125,7 +125,7 @@ func Test_createResumeUploadRequest(t *testing.T) {
 				t.Errorf("error was not expected: err=%s", err)
 			}
 			if gotOffset != tt.offset {
-				t.Errorf("size: got=%d, want=%d", gotOffset, tt.offset)
+				t.Errorf("maxBytes: got=%d, want=%d", gotOffset, tt.offset)
 			}
 			gotURL := req.URL.String()
 			if gotURL != tt.url {

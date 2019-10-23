@@ -19,7 +19,7 @@ func TestNewUploader(t *testing.T) {
 
 	t.Run("WithOptionLog", func(t *testing.T) {
 		l := log.New(ioutil.Discard, "", 0)
-		_, err := NewUploader(c, OptionLog(l))
+		_, err := NewUploader(c, WithLogger(l))
 		if err != nil {
 			t.Errorf("NewUploader error was not expected here: err=%s", err)
 		}
@@ -27,7 +27,7 @@ func TestNewUploader(t *testing.T) {
 
 	t.Run("WithOptionEndpoint", func(t *testing.T) {
 		want := "https://localhost/test/TestMe"
-		_, err := NewUploader(c, OptionEndpoint(want))
+		_, err := NewUploader(c, WithEndpoURL(want))
 		if err != nil {
 			t.Errorf("NewUploader error was not expected here: err=%s", err)
 		}
@@ -35,7 +35,7 @@ func TestNewUploader(t *testing.T) {
 
 	t.Run("WithOptionResumableUploads", func(t *testing.T) {
 		store := &mockUploadSessionStore{}
-		got, err := NewUploader(c, OptionResumableUploads(store))
+		got, err := NewUploader(c, WithResumableUploads(store))
 		if err != nil {
 			t.Errorf("NewUploader error was not expected here: err=%s", err)
 		}
@@ -46,7 +46,7 @@ func TestNewUploader(t *testing.T) {
 	})
 
 	t.Run("WithOptionResumableUploadsNilStore", func(t *testing.T) {
-		_, err := NewUploader(c, OptionResumableUploads(nil))
+		_, err := NewUploader(c, WithResumableUploads(nil))
 		if err == nil {
 			t.Errorf("NewUploader error was expected here")
 		}
