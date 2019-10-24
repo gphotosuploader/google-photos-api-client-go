@@ -70,8 +70,8 @@ func WithLogger(l log.Logger) Option {
 	}
 }
 
-// WithEndpoURL sets the URL of the endpoint to upload to.
-func WithEndpoURL(url string) Option {
+// WithEndpointURL sets the URL of the endpoint to upload to.
+func WithEndpointURL(url string) Option {
 	return func(c *Uploader) {
 		c.url = url
 	}
