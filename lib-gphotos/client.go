@@ -44,7 +44,7 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 	c := &Client{
 		Service:  photosService,
 		uploader: upldr,
-		log:      log.DefaultLogger(),
+		log:      log.NewDiscardLogger(),
 	}
 
 	for _, opt := range options {
@@ -54,15 +54,15 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 	return c, nil
 }
 
-// Option defines an option for a Client
-type Option func(*Client)
-
 // WithLogger set a new Logger to log messages.
 func WithLogger(l log.Logger) func(*Client) {
 	return func(c *Client) {
 		c.log = l
 	}
 }
+
+// Option defines an option for a Client
+type Option func(*Client)
 
 // codebeat:disable
 
@@ -92,7 +92,7 @@ func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, e
 	c := &Client{
 		Service:  photosService,
 		uploader: upldr,
-		log:      log.DefaultLogger(),
+		log:      log.NewDiscardLogger(),
 	}
 
 	c.token = token

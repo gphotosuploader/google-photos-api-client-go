@@ -75,12 +75,12 @@ func (u *Uploader) uploadWithResumeCapability(ctx context.Context, upload *Uploa
 func (u *Uploader) uploadWithoutResumeCapability(ctx context.Context, upload *Upload) (string, error) {
 	u.log.Debugf("Initiating file upload: type=non-resumable, file=%s", upload.name)
 
-	req, err := createRawUploadRequest(u.url, upload, u.log)
+	req, err := createRawUploadRequest(u.url, upload)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := u.c.Do(req.WithContext(ctx))
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +105,7 @@ func (u *Uploader) offsetFromPreviousSession(ctx context.Context, upload *Upload
 		return 0
 	}
 
-	res, err := u.c.Do(req.WithContext(ctx))
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return 0
 	}
@@ -135,12 +135,12 @@ func (u *Uploader) resumeUploadSession(ctx context.Context, upload *Upload) (str
 		return "", err
 	}
 
-	req, err := createResumeUploadRequest(url, upload, u.log)
+	req, err := createResumeUploadRequest(url, upload)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := u.c.Do(req.WithContext(ctx))
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		u.log.Errorf("Failed to process request: err=%s", err)
 		return "", err
@@ -163,7 +163,7 @@ func (u *Uploader) createUploadSession(ctx context.Context, upload *Upload) (str
 		return "", err
 	}
 
-	res, err := u.c.Do(req.WithContext(ctx))
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}

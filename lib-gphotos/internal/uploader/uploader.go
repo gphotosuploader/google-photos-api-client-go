@@ -15,7 +15,7 @@ const (
 // Original photos library does not provide `/v1/uploads` API.
 type Uploader struct {
 	// HTTP Client
-	c *http.Client
+	client *http.Client
 	// URL of the endpoint to upload to
 	url string
 	// If Resume is true the UploadSessionStore is required.
@@ -33,12 +33,13 @@ type Uploader struct {
 // Use WithResumableUploads(...), WithLogger(...) and WithEndpoURL(...) to
 // customize configuration.
 func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
+	l := log.DiscardLogger{}
 	u := &Uploader{
-		c:      client,
+		client: client,
 		url:    uploadEndpoint,
 		resume: false,
 		store:  nil,
-		log:    log.DefaultLogger(),
+		log:    &l,
 	}
 
 	for _, opt := range options {

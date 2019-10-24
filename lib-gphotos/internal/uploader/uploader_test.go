@@ -1,10 +1,10 @@
 package uploader
 
 import (
-	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
 )
 
 func TestNewUploader(t *testing.T) {
@@ -18,7 +18,7 @@ func TestNewUploader(t *testing.T) {
 	})
 
 	t.Run("WithOptionLog", func(t *testing.T) {
-		l := log.New(ioutil.Discard, "", 0)
+		l := log.NewDiscardLogger()
 		_, err := NewUploader(c, WithLogger(l))
 		if err != nil {
 			t.Errorf("NewUploader error was not expected here: err=%s", err)

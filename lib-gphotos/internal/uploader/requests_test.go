@@ -2,8 +2,6 @@ package uploader
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"strconv"
 	"testing"
 )
@@ -55,11 +53,10 @@ func Test_createRawUploadRequest(t *testing.T) {
 		{url: "https://localhost/test/TestMe", name: "testTest"},
 	}
 
-	l := log.New(ioutil.Discard, "", 0)
 	for i, tt := range tests {
 		upload := &Upload{name: tt.name}
 		t.Run(fmt.Sprintf("Test #%d", i), func(t *testing.T) {
-			req, err := createRawUploadRequest(tt.url, upload, l)
+			req, err := createRawUploadRequest(tt.url, upload)
 			if err != nil {
 				t.Errorf("error was not expected: err=%s", err)
 			}
@@ -112,11 +109,10 @@ func Test_createResumeUploadRequest(t *testing.T) {
 		{url: "https://abc/def", size: 1024, offset: 512},
 	}
 
-	l := log.New(ioutil.Discard, "", 0)
 	for i, tt := range tests {
 		upload := &Upload{size: tt.size, sent: tt.offset}
 		t.Run(fmt.Sprintf("Test #%d", i), func(t *testing.T) {
-			req, err := createResumeUploadRequest(tt.url, upload, l)
+			req, err := createResumeUploadRequest(tt.url, upload)
 			if err != nil {
 				t.Errorf("error was not expected: err=%s", err)
 			}
