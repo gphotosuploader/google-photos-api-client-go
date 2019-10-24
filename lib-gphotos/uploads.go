@@ -10,22 +10,22 @@ import (
 
 // AddMediaItem returns MediaItem created after uploading `filename` and adding it to `albumID`.
 func (c *Client) AddMediaItem(ctx context.Context, filename, albumID string) (*photoslibrary.MediaItem, error) {
-	c.log.Printf("[DEBUG] Initiating upload and media item creation: file=%s", filename)
+	c.log.Debugf("Initiating upload and media item creation: file=%s", filename)
 
 	uploadToken, err := c.uploader.UploadFromFile(ctx, filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting uploadToken for %s: err=%s", filename, err)
 	}
 
-	c.log.Printf("[DEBUG] File has been uploaded: file=%s", filename)
+	c.log.Debugf("File has been uploaded: file=%s", filename)
 
 	mediaItem, err := c.createMediaItemFromUploadToken(ctx, uploadToken, albumID, filename)
 	if err != nil {
-		c.log.Printf("[ERR] Failed to create media item: file=%s, err=%s", filename, err)
+		c.log.Errorf("Failed to create media item: file=%s, err=%s", filename, err)
 		return nil, fmt.Errorf("error while trying to create this media item, err=%s", err)
 	}
 
-	c.log.Printf("File uploaded and media item created successfully: file=%s", filename)
+	c.log.Debugf("File uploaded and media item created successfully: file=%s", filename)
 	return mediaItem, nil
 }
 

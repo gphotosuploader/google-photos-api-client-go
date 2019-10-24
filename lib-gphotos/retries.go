@@ -17,7 +17,7 @@ func (c *Client) retryableMediaItemBatchCreateDo(ctx context.Context, request *p
 
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
-		c.log.Printf("[DEBUG] Sending media item creation: file=%s, retry=%d", filename, i)
+		c.log.Debugf("Sending media item creation: file=%s, retry=%d", filename, i)
 
 		res, err = c.MediaItems.BatchCreate(request).Context(ctx).Do()
 		if err == nil {
@@ -35,14 +35,14 @@ func (c *Client) retryableMediaItemBatchCreateDo(ctx context.Context, request *p
 					after = 60
 				}
 
-				c.log.Printf("Media creation. Rate limit reached, sleeping for %d seconds: file=%s", after, filename)
+				c.log.Infof("Media creation. Rate limit reached, sleeping for %d seconds: file=%s", after, filename)
 
 				time.Sleep(time.Duration(after) * time.Second)
 				continue
 			case e.Code >= http.StatusInternalServerError && e.Code <= http.StatusNetworkAuthenticationRequired:
 				// Retryable 500 error.
 				// TODO: It should be exponential backoff
-				c.log.Printf("[ERR] Media creation. Received error, sleeping for 10 seconds before retrying: file=%s", filename)
+				c.log.Errorf("Media creation. Received error, sleeping for 10 seconds before retrying: file=%s", filename)
 
 				time.Sleep(10 * time.Second)
 				continue
