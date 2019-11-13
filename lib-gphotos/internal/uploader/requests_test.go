@@ -8,23 +8,32 @@ import (
 
 func Test_createInitialResumableUploadRequest(t *testing.T) {
 	type test struct {
-		url  string
-		size int64
+		url      string
+		name     string
+		size     int64
+		wantName string
 	}
 
 	tests := []test{
-		{url: "", size: 1},
-		{url: "", size: 1024},
-		{url: "https://localhost/test/TestMe", size: 0},
-		{url: "https://localhost/test/TestMe", size: 1024},
+		{url: "", name: "/foo/bar/file.jpg", size: 1, wantName: "file.jpg"},
+		{url: "", name: "/foo/bar/xyz.jpg", size: 1024, wantName: "xyz.jpg"},
+		{url: "https://localhost/test/TestMe", name: "/foo/xyz.jpg", size: 0, wantName: "xyz.jpg"},
+		{url: "https://localhost/test/TestMe", name: "file.jpg", size: 1024, wantName: "file.jpg"},
 	}
 
 	for i, tt := range tests {
-		upload := &Upload{size: tt.size}
+		upload := &Upload{
+			name: tt.name,
+			size: tt.size,
+		}
 		t.Run(fmt.Sprintf("Test #%d", i), func(t *testing.T) {
 			req, err := createInitialResumableUploadRequest(tt.url, upload)
 			if err != nil {
 				t.Errorf("error was not expected: err=%s", err)
+			}
+			gotName := req.Header.Get("X-Goog-Upload-File-Name")
+			if gotName != tt.wantName {
+				t.Errorf("name: got=%s, want=%s", gotName, tt.wantName)
 			}
 			gotSize, err := strconv.ParseInt(req.Header.Get("X-Goog-Upload-Raw-Size"), 10, 64)
 			if err != nil {
@@ -43,14 +52,15 @@ func Test_createInitialResumableUploadRequest(t *testing.T) {
 
 func Test_createRawUploadRequest(t *testing.T) {
 	type test struct {
-		url  string
-		name string
+		url      string
+		name     string
+		wantName string
 	}
 
 	tests := []test{
-		{url: "", name: "testTest"},
-		{url: "https://localhost/test/TestMe", name: "testTest"},
-		{url: "https://localhost/test/TestMe", name: "testTest"},
+		{url: "", name: "/foo/xyz.jpg", wantName: "xyz.jpg"},
+		{url: "https://localhost/test/TestMe", name: "/foo/bar/file.jpg", wantName: "file.jpg"},
+		{url: "https://localhost/test/TestMe", name: "/foo/xyz.jpg", wantName: "xyz.jpg"},
 	}
 
 	for i, tt := range tests {
@@ -61,8 +71,8 @@ func Test_createRawUploadRequest(t *testing.T) {
 				t.Errorf("error was not expected: err=%s", err)
 			}
 			gotName := req.Header.Get("X-Goog-Upload-File-Name")
-			if gotName != tt.name {
-				t.Errorf("name: got=%s, want=%s", gotName, tt.name)
+			if gotName != tt.wantName {
+				t.Errorf("name: got=%s, want=%s", gotName, tt.wantName)
 			}
 			gotURL := req.URL.String()
 			if gotURL != tt.url {
