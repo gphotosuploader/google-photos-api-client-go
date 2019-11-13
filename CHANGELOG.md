@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.1.3
 ### Added
 - [CONTRIBUTING](CONTRIBUTING.md) guide line has been added.
 ### Changed
@@ -11,8 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Module use an interface Logger to log activity. This allow to implement different logging systems. See [internal/log/logger.go](lib-gphotos/internal/log/logger.go).
 ### Deprecated
 - Once Go 1.13 has been published, previous Go 1.11 support is deprecated. This project will maintain compatibility with the last two major versions published.
+### Fix
+- Fix uploaded photos without a correct file name. ([#32][i32])
 ### Removed
 - Remove progress information when uploading, if you want to have progress bars when upload a file, you should inject a reader to the Uploader().
+
+[i32]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/32
 
 ## 1.1.2
 ### Changed

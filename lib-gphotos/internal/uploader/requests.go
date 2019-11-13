@@ -14,7 +14,7 @@ func createRawUploadRequest(url string, upload *Upload) (*http.Request, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Add("X-Goog-Upload-File-Name", path.Base(upload.name))
+	req.Header.Set("X-Goog-Upload-File-Name", path.Base(upload.name))
 	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
 	return req, nil
@@ -30,7 +30,8 @@ func createInitialResumableUploadRequest(url string, upload *Upload) (*http.Requ
 	}
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "start")
-	req.Header.Add("X-Goog-Upload-Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", path.Base(upload.name))
 	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
 	req.Header.Set("X-Goog-Upload-Raw-Size", fmt.Sprintf("%d", upload.size))
 
