@@ -21,8 +21,10 @@ github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMyw
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
-github.com/gphotosuploader/googlemirror v0.3.2 h1:xaYVJYEDj2rYMYGi5sTGMy6gkD5PVKfz4c3ZW8gQs+M=
-github.com/gphotosuploader/googlemirror v0.3.2/go.mod h1:725+/afSOVU01M2Lfi3NIw8L3Oupjit6u/s1MLjK160=
+github.com/gphotosuploader/googlemirror v0.3.3 h1:nlc/ufcrYFDFlSq7sjqBtlfpSDfa3nAvAPDcMS0xu1c=
+github.com/gphotosuploader/googlemirror v0.3.3/go.mod h1:725+/afSOVU01M2Lfi3NIw8L3Oupjit6u/s1MLjK160=
+github.com/gphotosuploader/googlemirror v0.3.4 h1:reVoXl0cEO0U45Fu7H6DIzAzyCY0NDlH/GWtnq7FJWg=
+github.com/gphotosuploader/googlemirror v0.3.4/go.mod h1:725+/afSOVU01M2Lfi3NIw8L3Oupjit6u/s1MLjK160=
 github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/UYA=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v1.0.0 h1:iVjPR7a6H0tWELX5NxNe7bYopibicUzc7uPribsnS6o=
