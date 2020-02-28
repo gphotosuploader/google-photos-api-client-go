@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.7.0 // indirect
-	github.com/gphotosuploader/googlemirror v0.3.4
+	github.com/gphotosuploader/googlemirror v0.3.5
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
@@ -16,5 +16,5 @@ require (
 	github.com/stretchr/testify v1.3.0 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	google.golang.org/api v0.7.0
+	google.golang.org/api v0.19.0
 )
