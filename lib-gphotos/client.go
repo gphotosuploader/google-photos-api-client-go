@@ -17,7 +17,8 @@ type Client struct {
 	// Google Photos client
 	*photoslibrary.Service
 	// Uploader to upload new files to Google Photos
-	uploader *uploader.Uploader
+	uploader            *uploader.Uploader
+	createdAlbumsByName map[string]*photoslibrary.Album
 
 	log log.Logger
 	mu  sync.Mutex
@@ -42,9 +43,10 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 	}
 
 	c := &Client{
-		Service:  photosService,
-		uploader: upldr,
-		log:      log.NewDiscardLogger(),
+		Service:             photosService,
+		uploader:            upldr,
+		log:                 log.NewDiscardLogger(),
+		createdAlbumsByName: make(map[string]*photoslibrary.Album),
 	}
 
 	for _, opt := range options {
@@ -90,9 +92,10 @@ func NewClient(httpClient *http.Client, maybeToken ...*oauth2.Token) (*Client, e
 	}
 
 	c := &Client{
-		Service:  photosService,
-		uploader: upldr,
-		log:      log.NewDiscardLogger(),
+		Service:             photosService,
+		uploader:            upldr,
+		log:                 log.NewDiscardLogger(),
+		createdAlbumsByName: make(map[string]*photoslibrary.Album),
 	}
 
 	c.token = token

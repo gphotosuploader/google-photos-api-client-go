@@ -48,15 +48,22 @@ func (c *Client) albumByName(ctx context.Context, name, pageToken string) (album
 // NOTE: We are maintaining backwards compatibility, but `found` should be DEPRECATED and
 // returning an error (gphotos.ErrAlbumNotFound) instead of it. (TODO)
 func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found bool, err error) {
+	if album, ok := c.createdAlbumsByName[name]; ok {
+		return album, true, nil // Found in cache
+	}
+
 	ctx := context.TODO() // TODO: ctx should be received (breaking change)
-	a, err := c.albumByName(ctx, name, "")
+	album, err = c.albumByName(ctx, name, "")
 	if err != nil {
 		if err == ErrAlbumNotFound {
 			return nil, false, nil
 		}
 		return nil, false, err
 	}
-	return a, true, nil
+
+	c.createdAlbumsByName[name] = album // Cache it
+
+	return album, true, nil
 }
 
 // GetOrCreateAlbumByName returns an Album with the specified album name.
@@ -77,7 +84,14 @@ func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, erro
 		return album, nil
 	}
 
-	return c.Albums.Create(&photoslibrary.CreateAlbumRequest{
+	album, err = c.Albums.Create(&photoslibrary.CreateAlbumRequest{
 		Album: &photoslibrary.Album{Title: name},
 	}).Context(ctx).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	c.createdAlbumsByName[name] = album // Cache it
+
+	return album, nil
 }
