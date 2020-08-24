@@ -2,7 +2,8 @@
 
 # go source files, ignore vendor directory
 PKGS = $(shell go list ./... | grep -v /vendor)
-COVERAGE_FILE ?= coverage.txt
+COVERAGE_FILE = coverage.txt
+COVERAGE_HTML_FILE = coverage.html
 
 # Get first path on multiple GOPATH environments
 GOPATH := $(shell echo ${GOPATH} | cut -d: -f1)
@@ -14,8 +15,8 @@ test: ## Run all the tests
 
 .PHONY: cover
 cover: test ## Run all the tests and opens the coverage report
-	@echo "--> Openning coverage report..."
-	@go tool cover -html=$(COVERAGE_FILE)
+	@echo "--> Creating HTML coverage report at $(COVERAGE_HTML_FILE)..."
+	@go tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML_FILE)
 
 build: clean ## Build the app
 	@echo "--> Building..."
@@ -24,8 +25,9 @@ build: clean ## Build the app
 .PHONY: clean
 clean: ## Clean all built artifacts
 	@echo "--> Cleaning all built artifacts..."
-	@rm -f $(COVERAGE_FILE)
+	@rm -f $(COVERAGE_FILE) $(COVERAGE_HTML_FILE)
 	@go clean
+	@go mod tidy
 
 BIN_DIR := $(GOPATH)/bin
 
