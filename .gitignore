@@ -3,4 +3,4 @@
 .history
 
 # Tests files
-coverage.txt
+/coverage.txt

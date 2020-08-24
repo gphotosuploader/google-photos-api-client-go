@@ -30,11 +30,11 @@ clean: ## Clean all built artifacts
 BIN_DIR := $(GOPATH)/bin
 
 GOLANGCI := $(BIN_DIR)/golangci-lint
-GOLANGCI_VERSION := 1.20.0
+GOLANGCI_VERSION := 1.30.0
 
 $(GOLANGCI):
 	@echo "--> Installing golangci v$(GOLANGCI_VERSION)..."
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(BIN_DIR) v$(GOLANGCI_VERSION)
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(BIN_DIR) v$(GOLANGCI_VERSION)
 
 .PHONY: lint
 lint: $(GOLANGCI) ## Run linter
