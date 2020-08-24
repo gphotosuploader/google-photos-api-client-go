@@ -57,33 +57,3 @@ func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken
 	}
 	return result.MediaItem, nil
 }
-
-// codebeat:disable
-
-// UploadFile actually uploads the media and activates it on google photos
-// DEPRECATED: Use c.AddMediaItem(...) instead
-func (c *Client) UploadFile(filename string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
-	ctx := context.TODO()
-
-	// validate parameters
-	if len(pAlbumID) > 1 {
-		return nil, errors.New("parameters can't include more than one albumID'")
-	}
-	var albumID string
-	if len(pAlbumID) == 1 {
-		albumID = pAlbumID[0]
-	}
-
-	return c.AddMediaItem(ctx, filename, albumID)
-}
-
-// UploadFileResumable return a MediaItem created after uploding the specified file
-// DEPRECATED: Use c.UploadFile(...) instead.
-func (c *Client) UploadFileResumable(filePath string, uploadURL *string, pAlbumID ...string) (*photoslibrary.MediaItem, error) {
-	if len(pAlbumID) > 1 {
-		return c.UploadFile(filePath, pAlbumID[0])
-	}
-	return c.UploadFile(filePath)
-}
-
-// codebeat:enable

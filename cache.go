@@ -10,7 +10,7 @@ import (
 )
 
 // ErrCacheMiss is returned when a object is not found in cache.
-var ErrCacheMiss = errors.New("photos: cache miss")
+var ErrCacheMiss = errors.New("gphotos: cache miss")
 
 // Cache is used to store and retrieve previously obtained objects.
 type Cache interface {
