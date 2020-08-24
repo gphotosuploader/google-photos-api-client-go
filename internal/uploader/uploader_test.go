@@ -18,7 +18,7 @@ func TestNewUploader(t *testing.T) {
 	})
 
 	t.Run("WithOptionLog", func(t *testing.T) {
-		l := log.NewDiscardLogger()
+		l := &log.DiscardLogger{}
 		_, err := NewUploader(c, WithLogger(l))
 		if err != nil {
 			t.Errorf("NewUploader error was not expected here: err=%s", err)

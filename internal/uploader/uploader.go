@@ -33,13 +33,12 @@ type Uploader struct {
 // Use WithResumableUploads(...), WithLogger(...) and WithEndpoURL(...) to
 // customize configuration.
 func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
-	l := log.DiscardLogger{}
 	u := &Uploader{
 		client: client,
 		url:    uploadEndpoint,
 		resume: false,
 		store:  nil,
-		log:    &l,
+		log:    &log.DiscardLogger{},
 	}
 
 	for _, opt := range options {

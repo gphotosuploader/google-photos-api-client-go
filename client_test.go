@@ -48,7 +48,7 @@ func TestNewClientWithResumableUploads(t *testing.T) {
 	})
 
 	t.Run("WithOptionLog", func(t *testing.T) {
-		l := log.NewDiscardLogger()
+		l := &log.DiscardLogger{}
 		got, err := gphotos.NewClientWithResumableUploads(c, store, gphotos.WithLogger(l))
 		if err != nil {
 			t.Errorf("NewClientWithResumableUploads - error was not expected here: err=%s", err)

@@ -41,7 +41,7 @@ func NewClientWithResumableUploads(httpClient *http.Client, store uploader.Uploa
 	c := &Client{
 		Service:  photosService,
 		uploader: upldr,
-		log:      log.NewDiscardLogger(),
+		log:      &log.DiscardLogger{},
 	}
 
 	for _, opt := range options {
