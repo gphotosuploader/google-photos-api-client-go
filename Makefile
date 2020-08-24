@@ -17,7 +17,7 @@ cover: test ## Run all the tests and opens the coverage report
 	@echo "--> Openning coverage report..."
 	@go tool cover -html=$(COVERAGE_FILE)
 
-build: ## Build the app
+build: clean ## Build the app
 	@echo "--> Building..."
 	@go build ./...
 
@@ -25,6 +25,7 @@ build: ## Build the app
 clean: ## Clean all built artifacts
 	@echo "--> Cleaning all built artifacts..."
 	@rm -f $(COVERAGE_FILE)
+	@go clean
 
 BIN_DIR := $(GOPATH)/bin
 
