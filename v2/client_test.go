@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos/internal/uploader"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
 )
 
 type mockUploadSessionStore struct{}

@@ -3,7 +3,7 @@ package gphotos_test
 import (
 	"testing"
 
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 )
 
 func TestNewOAuthConfig(t *testing.T) {
