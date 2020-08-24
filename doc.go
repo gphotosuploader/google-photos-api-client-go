@@ -62,4 +62,5 @@ All media items uploaded to Google Photos using the API are stored in full
 resolution at original quality (https://support.google.com/photos/answer/6220791).
 They count toward the user’s storage.
 */
-package gphotos
+package gphotos // import "github.com/gphotosuploader/google-photos-api-client-go/v2"
+
