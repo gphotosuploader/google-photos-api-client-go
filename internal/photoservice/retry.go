@@ -1,4 +1,4 @@
-package gphotos
+package photoservice
 
 import (
 	"time"

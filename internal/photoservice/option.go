@@ -1,4 +1,4 @@
-package gphotos
+package photoservice
 
 import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"

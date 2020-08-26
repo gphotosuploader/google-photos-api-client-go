@@ -1,4 +1,4 @@
-package gphotos_test
+package photoservice_test
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 func TestWithLogger(t *testing.T) {
 	want := &log.DiscardLogger{}
 
-	got := gphotos.WithLogger(want)
+	got := photoservice.WithLogger(want)
 	if got.Value() != want {
 		t.Errorf("want: %v, got: %v", want, got)
 	}
