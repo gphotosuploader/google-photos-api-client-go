@@ -39,7 +39,7 @@ func IsRateLimitError(err error) bool {
 	if apiErr, ok := err.(*googleapi.Error); ok {
 		return IsRateLimitStatusCode(apiErr.Code)
 	}
-	return true
+	return false
 }
 
 // IsRateLimitStatusCode returns true if the status code is due to rate limit,

@@ -1,21 +1,17 @@
-package gphotos
+package cache
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/gadelkareem/cachita"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
-// ErrCacheMiss is returned when a object is not found in cache.
-var ErrCacheMiss = errors.New("gphotos: cache miss")
-
-// Cache is used to store and retrieve previously obtained objects.
-type Cache interface {
-	// GetAlbum returns Album data for the specified key.
-	// If there's no such key, GetAlbum returns ErrCacheMiss.
+// albumsCache is used to store and retrieve previously obtained Albums.
+type albumsCache interface {
+	// GetAlbum returns Album data from the cache corresponding to the specified key.
+	// It will return ErrCacheMiss if there is no cached Album with that key.
 	GetAlbum(ctx context.Context, key string) (*photoslibrary.Album, error)
 
 	// PutAlbum stores the Album data in the cache under the specified key.
@@ -28,19 +24,15 @@ type Cache interface {
 	InvalidateAlbum(ctx context.Context, key string) error
 }
 
-// CachitaCache implements Cache using `gadelkareem/cachita` package.
-type CachitaCache struct {
-	cache cachita.Cache
-}
-
-func NewCachitaCache() *CachitaCache {
-	return &CachitaCache{cache: cachita.Memory()}
+// encodeAlbumKey returns the cache key for an Album.
+func encodeAlbumKey(key string) string {
+	return "album:" + key
 }
 
 // Get reads an object data from the cache.
 func (m *CachitaCache) GetAlbum(ctx context.Context, key string) (*photoslibrary.Album, error) {
 	i := &photoslibrary.Album{}
-	err := m.cache.Get(prefixAlbumKey(key), i)
+	err := m.cache.Get(encodeAlbumKey(key), i)
 	if err == cachita.ErrNotFound {
 		return nil, ErrCacheMiss
 	}
@@ -50,14 +42,10 @@ func (m *CachitaCache) GetAlbum(ctx context.Context, key string) (*photoslibrary
 
 // Put store an object data to the cache.
 func (m *CachitaCache) PutAlbum(ctx context.Context, key string, album *photoslibrary.Album, ttl time.Duration) error {
-	return m.cache.Put(prefixAlbumKey(key), *album, ttl)
+	return m.cache.Put(encodeAlbumKey(key), *album, ttl)
 }
 
 // InvalidateAlbum removes the specified Album from the cache.
 func (m *CachitaCache) InvalidateAlbum(ctx context.Context, key string) error {
-	return m.cache.Invalidate(prefixAlbumKey(key))
-}
-
-func prefixAlbumKey(key string) string {
-	return "album:" + key
+	return m.cache.Invalidate(encodeAlbumKey(key))
 }

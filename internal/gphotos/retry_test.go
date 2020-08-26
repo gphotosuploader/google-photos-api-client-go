@@ -1,6 +1,7 @@
 package gphotos_test
 
 import (
+	"errors"
 	"testing"
 
 	"google.golang.org/api/googleapi"
@@ -29,6 +30,13 @@ func TestIsRetryableError(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("WithNonGoogleApiError", func(t *testing.T) {
+		err := errors.New("an error")
+		if !gphotos.IsRetryableError(err) {
+			t.Errorf("a non Google API error should be retryable.")
+		}
+	})
 }
 
 func TestIsRateLimitError(t *testing.T) {
@@ -45,6 +53,13 @@ func TestIsRateLimitError(t *testing.T) {
 
 		if gphotos.IsRateLimitError(err) {
 			t.Errorf("error 404 is not due to rate limit.")
+		}
+	})
+
+	t.Run("WithNonGoogleApiError", func(t *testing.T) {
+		err := errors.New("an error")
+		if gphotos.IsRateLimitError(err) {
+			t.Errorf("a non Google API error should not be treat as rate limit caused.")
 		}
 	})
 }

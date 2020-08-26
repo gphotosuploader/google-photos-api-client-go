@@ -1,4 +1,4 @@
-package gphotos_test
+package cache_test
 
 import (
 	"context"
@@ -8,16 +8,16 @@ import (
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
+	cache2 "github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 )
 
 func TestCachitaCache(t *testing.T) {
-	cache := gphotos.NewCachitaCache()
+	cache := cache2.NewCachitaCache()
 	ctx := context.Background()
 
 	// test cache miss
-	if _, err := cache.GetAlbum(ctx, "nonexistent"); err != gphotos.ErrCacheMiss {
-		t.Errorf("want: %v, got: %v", gphotos.ErrCacheMiss, err)
+	if _, err := cache.GetAlbum(ctx, "nonexistent"); err != cache2.ErrCacheMiss {
+		t.Errorf("want: %v, got: %v", cache2.ErrCacheMiss, err)
 	}
 
 	// test put/get
@@ -37,7 +37,7 @@ func TestCachitaCache(t *testing.T) {
 	if err := cache.InvalidateAlbum(ctx, "dummy"); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
-	if _, err := cache.GetAlbum(ctx, "dummy"); err != gphotos.ErrCacheMiss {
-		t.Errorf("want: %v, got: %v", gphotos.ErrCacheMiss, err)
+	if _, err := cache.GetAlbum(ctx, "dummy"); err != cache2.ErrCacheMiss {
+		t.Errorf("want: %v, got: %v", cache2.ErrCacheMiss, err)
 	}
 }
