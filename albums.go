@@ -3,81 +3,111 @@ package gphotos
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 )
 
 const (
-	defaultPageSize = 50
+	maxPageSize = 50
+
+	// Store media (albumGallery) for performance reasons.
+	// See https://developers.google.com/photos/library/guides/best-practices#caching
+	albumCacheTTL = 60 * time.Minute
 )
 
 var (
 	// ErrAlbumNotFound represents a failure to find the album.
-	ErrAlbumNotFound = errors.New("specified album was not found")
+	ErrAlbumNotFound = errors.New("album was not found")
 )
 
-// albumByNameWithPageToken checks for the specified album recursively. Google Photos returns
-// albums list in a paginated way, so we need to go through pages in order to check if the album
-// exists.
-//
-// An error (gphotos.ErrAlbumNotFound) is returned if the album doesn't exists.
-func (c *Client) albumByName(ctx context.Context, name, pageToken string) (album *photoslibrary.Album, err error) {
-	albumListCall := c.Albums.List().PageSize(defaultPageSize).PageToken(pageToken)
-	response, err := albumListCall.Context(ctx).Do()
-	if err != nil {
-		return nil, err
-	}
-	for _, album := range response.Albums {
-		if album.Title == name {
-			// Album was found, so return the object.
-			return album, nil
-		}
-	}
+func (c *Client) ListAlbums(ctx context.Context) ([]*photoslibrary.Album, error) {
+	var results []*photoslibrary.Album
+	err := c.ListAlbumsWithCallback(ctx, func(albums []*photoslibrary.Album, stop func()) {
+		results = append(results, albums...)
+	})
 
-	if response.NextPageToken != "" {
-		// There are more pages to check, go for next page.
-		return c.albumByName(ctx, name, response.NextPageToken)
-	}
-
-	// The album doesn't exists.
-	return nil, ErrAlbumNotFound
+	return results, err
 }
 
-// AlbumByName returns the album which match with the specified name.
-//
-// NOTE: We are maintaining backwards compatibility, but `found` should be DEPRECATED and
-// returning an error (gphotos.ErrAlbumNotFound) instead of it. (TODO)
-func (c *Client) AlbumByName(name string) (album *photoslibrary.Album, found bool, err error) {
-	ctx := context.TODO() // TODO: ctx should be received (breaking change)
-	a, err := c.albumByName(ctx, name, "")
-	if err != nil {
-		if err == ErrAlbumNotFound {
-			return nil, false, nil
+// ListAlbumsFunc is called for each response of 50 albumGallery.
+// If this calls stop, ListAlbums stops the loop.
+type ListAlbumsFunc func(albums []*photoslibrary.Album, stop func())
+
+func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbumsFunc) error {
+	var pageToken string
+	for {
+		res, err := c.service.ListAlbums(ctx, maxPageSize, pageToken)
+		if err != nil {
+			return fmt.Errorf("error listing albums. err: %s", err)
 		}
-		return nil, false, err
+
+		// cache albums.
+		for _, album := range res.Albums {
+			_ = c.cache.PutAlbum(ctx, album.Title, album, albumCacheTTL)
+		}
+
+		var stop bool
+		callback(res.Albums, func() { stop = true })
+		if stop {
+			return nil
+		}
+		if res.NextPageToken == "" {
+			return nil
+		}
+		pageToken = res.NextPageToken
 	}
-	return a, true, nil
 }
 
-// GetOrCreateAlbumByName returns an Album with the specified album name.
-// If the album doesn't exists it will try to create it.
-func (c *Client) GetOrCreateAlbumByName(name string) (*photoslibrary.Album, error) {
-	ctx := context.TODO() // TODO: ctx should be received (breaking change)
+// CreateAlbum creates an Album in Google Photos library and returns the created object.
+// If the Album was already on the library, it will return the Album.
+func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
+	album, err := c.FindAlbum(ctx, title)
+	if err != ErrAlbumNotFound {
+		// Album was found or there was an error with the cache.
+		return album, err
+	}
 
-	// Prevent multiple Album creation, given that Google API doesn't enforce Album uniqueness
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	album, found, err := c.AlbumByName(name) // TODO: ctx should be passed (breaking change)
+	album, err = c.service.CreateAlbum(ctx, &photoslibrary.CreateAlbumRequest{
+		Album: &photoslibrary.Album{Title: title},
+	})
 	if err != nil {
+		return nil, fmt.Errorf("could not create an album. err: %s", err)
+	}
+
+	// Cache the created album.
+	_ = c.cache.PutAlbum(ctx, title, album, albumCacheTTL)
+
+	return album, nil
+}
+
+// FindAlbum search the Album with the specified title in Google Photos library and returns it.
+// If the Album is not found, it will return ErrAlbumNotFound.
+func (c *Client) FindAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
+	matched, err := c.cache.GetAlbum(ctx, title)
+	if err != cache.ErrCacheMiss {
+		// Album was found or there was an error with the cache.
+		return matched, err
+	}
+
+	if err := c.ListAlbumsWithCallback(ctx, func(albums []*photoslibrary.Album, stop func()) {
+		for _, album := range albums {
+			if album.Title == title {
+				stop()
+				matched = album
+				return
+			}
+		}
+	}); err != nil {
 		return nil, err
 	}
 
-	if found {
-		return album, nil
+	if matched == nil {
+		return nil, ErrAlbumNotFound
 	}
 
-	return c.Albums.Create(&photoslibrary.CreateAlbumRequest{
-		Album: &photoslibrary.Album{Title: name},
-	}).Context(ctx).Do()
+	return matched, nil
 }
