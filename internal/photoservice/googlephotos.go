@@ -77,7 +77,7 @@ func (s *GooglePhotosService) CreateAlbum(ctx context.Context, request *photosli
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Warnf("error while creating an album: %s", err)
+			s.log.Debugf("error while creating an album: %s", err)
 		case IsRateLimitError(err):
 			s.log.Warnf("rate limit reached.")
 		default:
@@ -101,7 +101,7 @@ func (s *GooglePhotosService) CreateMediaItems(ctx context.Context, request *pho
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Warnf("error while creating media items: %s", err)
+			s.log.Debugf("error while creating media items: %s", err)
 		case IsRateLimitError(err):
 			s.log.Warnf("rate limit reached.")
 		default:

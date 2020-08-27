@@ -21,6 +21,7 @@ type option struct {
 func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
+// WithLogger changes GooglePhotosService.log value.
 func WithLogger(l log.Logger) Option {
 	return &option{
 		name:  optkeyLogger,

@@ -6,11 +6,6 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 )
 
-const (
-	// API endpoint URL for upload media
-	uploadEndpoint = "https://photoslibrary.googleapis.com/v1/uploads"
-)
-
 // Uploader is a client for uploading media to Google Photos.
 // Original photos library does not provide `/v1/uploads` API.
 type Uploader struct {
@@ -33,16 +28,27 @@ type Uploader struct {
 // Use WithResumableUploads(...), WithLogger(...) and WithEndpoURL(...) to
 // customize configuration.
 func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
-	u := &Uploader{
-		client: client,
-		url:    uploadEndpoint,
-		resume: false,
-		store:  nil,
-		log:    &log.DiscardLogger{},
+	logger := defaultLogger()
+	storer := defaultStorer()
+	endpoint := defaultEndpoint()
+
+	for _, o := range options {
+		switch o.Name() {
+		case optkeyLogger:
+			logger = o.Value().(log.Logger)
+		case optKeySessionStorer:
+			storer = o.Value().(UploadSessionStore)
+		case optKeyEndpoint:
+			endpoint = o.Value().(string)
+		}
 	}
 
-	for _, opt := range options {
-		opt(u)
+	u := &Uploader{
+		client: client,
+		url:    endpoint,
+		resume: false,
+		store:  storer,
+		log:    logger,
 	}
 
 	if err := u.Validate(); err != nil {
@@ -50,31 +56,8 @@ func NewUploader(client *http.Client, options ...Option) (*Uploader, error) {
 	}
 
 	return u, nil
-
 }
 
-// WithResumableUploads enables resumable uploads.
-// Resumable uploads needs an UploadSessionStore to keep upload session information.
-func WithResumableUploads(store UploadSessionStore) Option {
-	return func(c *Uploader) {
-		c.resume = true
-		c.store = store
-	}
-}
-
-// WithLogger sets the logger to log messages.
-func WithLogger(l log.Logger) Option {
-	return func(c *Uploader) {
-		c.log = l
-	}
-}
-
-// WithEndpointURL sets the URL of the endpoint to upload to.
-func WithEndpointURL(url string) Option {
-	return func(c *Uploader) {
-		c.url = url
-	}
-}
 
 // Validate validates the configuration of the Client.
 func (u *Uploader) Validate() error {
@@ -85,5 +68,3 @@ func (u *Uploader) Validate() error {
 	return nil
 }
 
-// Option defines an option for a Client
-type Option func(*Uploader)
