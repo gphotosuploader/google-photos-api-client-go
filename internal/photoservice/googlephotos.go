@@ -53,9 +53,10 @@ func (s *GooglePhotosService) ListAlbums(ctx context.Context, pageSize int64, pa
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Warnf("error while listing albums: %s", err)
+			s.log.Warnf("Error while listing albums: %s", err)
 		case IsRateLimitError(err):
-			s.log.Warnf("rate limit reached.")
+			// TODO: After reaching rate limit we should wait ~30 minutes.
+			s.log.Warnf("Rate limit reached.")
 		default:
 			return nil, err
 		}
@@ -77,9 +78,10 @@ func (s *GooglePhotosService) CreateAlbum(ctx context.Context, request *photosli
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Debugf("error while creating an album: %s", err)
+			s.log.Debugf("Error while creating an album: %s", err)
 		case IsRateLimitError(err):
-			s.log.Warnf("rate limit reached.")
+			// TODO: After reaching rate limit we should wait ~30 minutes.
+			s.log.Warnf("Rate limit reached.")
 		default:
 			return nil, err
 		}
@@ -101,9 +103,10 @@ func (s *GooglePhotosService) CreateMediaItems(ctx context.Context, request *pho
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Debugf("error while creating media items: %s", err)
+			s.log.Debugf("Error while creating media items: %s", err)
 		case IsRateLimitError(err):
-			s.log.Warnf("rate limit reached.")
+			// TODO: After reaching rate limit we should wait ~30 minutes.
+			s.log.Warnf("Rate limit reached.")
 		default:
 			return nil, err
 		}
