@@ -3,8 +3,8 @@ package photoservice_test
 import (
 	"testing"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/gphotos"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/photoservice"
 )
 
 func TestWithLogger(t *testing.T) {

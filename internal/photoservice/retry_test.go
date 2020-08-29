@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/api/googleapi"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/gphotos"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/photoservice"
 )
 
 func TestIsRetryableError(t *testing.T) {
@@ -41,7 +41,7 @@ func TestIsRetryableError(t *testing.T) {
 
 func TestIsRateLimitError(t *testing.T) {
 	t.Run("WithErrorDueToRateLimit", func(t *testing.T) {
-		err := error(&googleapi.Error{Code:429})
+		err := error(&googleapi.Error{Code: 429})
 
 		if !photoservice.IsRateLimitError(err) {
 			t.Errorf("error 429 is due to rate limit.")
@@ -49,7 +49,7 @@ func TestIsRateLimitError(t *testing.T) {
 	})
 
 	t.Run("WithErrorNotDueToRateLimit", func(t *testing.T) {
-		err := error(&googleapi.Error{Code:404})
+		err := error(&googleapi.Error{Code: 404})
 
 		if photoservice.IsRateLimitError(err) {
 			t.Errorf("error 404 is not due to rate limit.")

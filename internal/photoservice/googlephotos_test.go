@@ -15,7 +15,7 @@ func TestNewGooglePhotosService(t *testing.T) {
 	t.Run("WithoutOptions", func(t *testing.T) {
 		_, err := photoservice.NewGooglePhotosService(c)
 		if err != nil {
-			t.Errorf("no error expected at this point. err: %s", err)
+			t.Errorf("no error was expected at this point: err=%s", err)
 		}
 	})
 
@@ -23,7 +23,7 @@ func TestNewGooglePhotosService(t *testing.T) {
 		l := &log.DiscardLogger{}
 		_, err := photoservice.NewGooglePhotosService(c, photoservice.WithLogger(l))
 		if err != nil {
-			t.Errorf("no error expected at this point. err: %s", err)
+			t.Errorf("no error was expected at this point: err=%s", err)
 		}
 	})
 }
