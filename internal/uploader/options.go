@@ -5,9 +5,8 @@ import (
 )
 
 const (
-	optkeyLogger        = "logger"
-	optKeySessionStorer = "storer"
-	optKeyEndpoint      = "endpoint"
+	optkeyLogger   = "logger"
+	optkeyEndpoint = "endpoint"
 )
 
 type Option interface {
@@ -31,29 +30,16 @@ func WithLogger(l log.Logger) Option {
 	}
 }
 
-// WithSessionStorer enables resumable uploads.
-// Resumable uploads needs an UploadSessionStore to keep upload session information.
-func WithSessionStorer(s UploadSessionStore) Option {
-	return &option{
-		name:  optKeySessionStorer,
-		value: s,
-	}
-}
-
 // WithEndpoint changes the Client.endpoint value.
 func WithEndpoint(u string) Option {
 	return &option{
-		name:  optKeyEndpoint,
+		name:  optkeyEndpoint,
 		value: u,
 	}
 }
 
 func defaultLogger() log.Logger {
 	return &log.DiscardLogger{}
-}
-
-func defaultStorer() UploadSessionStore {
-	return nil
 }
 
 func defaultEndpoint() string {

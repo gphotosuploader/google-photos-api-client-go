@@ -10,7 +10,7 @@ var (
 	ErrNilStore = errors.New("store can't be nil if Resume is enable")
 )
 
-type uploadService interface {
+type Uploader interface {
 	// Upload uploads the media item. It returns an upload token.
 	Upload(context.Context, UploadItem) (UploadToken, error)
 }
@@ -29,9 +29,11 @@ type UploadItem interface {
 // UploadToken represents a pointer to the uploaded item.
 type UploadToken string
 
-// SessionStore represents an storage to keep resumable uploads.
-type SessionStore interface {
-	Get(fingerprint string) []byte
-	Set(fingerprint string, url []byte)
-	Delete(fingerprint string)
+// Upload represents an object to be uploaded.
+type Upload struct {
+	r    io.ReadSeeker
+	name string
+	size int64
+	sent int64
 }
+
