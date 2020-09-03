@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/gphotos"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/photoservice"
 )
