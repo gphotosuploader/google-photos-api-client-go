@@ -5,29 +5,27 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path"
+
+	"github.com/lestrrat-go/backoff"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 )
 
 // SimpleUploader implements uploads to Google Photos service.
 type BasicUploader struct {
-	// HTTP Client
-	client *http.Client
-	// URL of the endpoint to upload to
+	// client is an HTTP client used for uploading. It needs the proper authentication in place.
+	client httpClient
+	// url is the url the endpoint to upload to
 	url string
-
+	// log is a logger to send messages.
 	log log.Logger
 }
 
-// NewBasicUploader returns an Uploader using the specified client or error in case
-// of non valid configuration.
-// The client must have the proper permissions to upload files.
+// NewBasicUploader returns an Uploader or error in case of non valid configuration.
+// The supplied client must have the proper authentication to upload files.
 //
-// Use WithLogger(...) and WithEndpoint(...) to
-// customize configuration.
-func NewBasicUploader(client *http.Client, options ...Option) (*BasicUploader, error) {
+// Use WithLogger(...) and WithEndpoint(...) to customize configuration.
+func NewBasicUploader(client httpClient, options ...Option) (*BasicUploader, error) {
 	logger := defaultLogger()
 	endpoint := defaultEndpoint()
 
@@ -46,42 +44,33 @@ func NewBasicUploader(client *http.Client, options ...Option) (*BasicUploader, e
 		log:    logger,
 	}
 
+	// validate configuration options.
+	if u.url == "" {
+		return nil, fmt.Errorf("endpoint could not be empty")
+	}
+
 	return u, nil
 }
 
-// UploadFromFile returns the Google Photos upload token for the file.
-func (u *BasicUploader) UploadFromFile(ctx context.Context, filename string) (string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", fmt.Errorf("failed opening file: err=%s", err)
-	}
-	defer file.Close()
-
-	fileStat, err := file.Stat()
-	if err != nil {
-		return "", fmt.Errorf("failed getting file maxBytes: file=%s, err=%s", filename, err)
-	}
-	size := fileStat.Size()
-
-	upload := &Upload{
-		r:    file,
-		name: filename,
-		size: size,
-	}
-	return u.Upload(ctx, upload)
-
-}
-
 // Upload returns the Google Photos upload token for an Upload object.
-func (u *BasicUploader) Upload(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Debugf("Initiating file upload: type=non-resumable, file=%s", upload.name)
+func (u *BasicUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
+	u.log.Debugf("Initiating file upload: type=non-resumable, file=%s", item.Name())
 
-	req, err := upload.createRawUploadRequest(u.url)
+	r, _, err := item.Open()
 	if err != nil {
 		return "", err
 	}
 
-	res, err := u.client.Do(req.WithContext(ctx))
+	req, err := http.NewRequest("POST", u.url, r)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", item.Name())
+	req.Header.Set("X-Goog-Upload-Protocol", "raw")
+
+	res, err := u.retryableDo(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -92,20 +81,27 @@ func (u *BasicUploader) Upload(ctx context.Context, upload *Upload) (string, err
 		return "", err
 	}
 	token := string(b)
-	return token, nil
+	return UploadToken(token), nil
 }
 
-// createRawUploadRequest returns a raw (non-resumable) upload request for Google Photos.
-func (u *Upload) createRawUploadRequest(url string) (*http.Request, error) {
-	req, err := http.NewRequest("POST", url, u.r)
-	if err != nil {
-		return nil, err
+// retryableDo implements retries in a HTTP request call.
+func (u *BasicUploader) retryableDo(ctx context.Context, req *http.Request) (*http.Response, error) {
+	b, cancel := defaultRetryPolicy.Start(ctx)
+	defer cancel()
+	for backoff.Continue(b) {
+		res, err := u.client.Do(req)
+		switch {
+		case err == nil:
+			return res, nil
+		case IsRetryableError(err):
+			u.log.Debugf("Error while uploading, retry: %s", err)
+		case IsRateLimitError(err):
+			u.log.Errorf("Rate limit reached.")
+			return nil, fmt.Errorf("rate limit reached. wait ~30 seconds before trying again")
+		default:
+			return nil, err
+		}
 	}
 
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", path.Base(u.name))
-	req.Header.Set("X-Goog-Upload-Protocol", "raw")
-
-	return req, nil
-
+	return nil, fmt.Errorf("retry over")
 }

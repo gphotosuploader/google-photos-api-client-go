@@ -7,22 +7,21 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"strconv"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 )
 
 // ResumableUploader implements resumable uploads.
-// It will require a SessionStore to keep already started uploads.
+// It will require a SessionStore to keep already upload session.
 type ResumableUploader struct {
-	// HTTP Client
-	client *http.Client
-	// URL of the endpoint to upload to
+	// client is an HTTP client used for uploading. It needs the proper authentication in place.
+	client httpClient
+	// url is the url the endpoint to upload to
 	url string
-	// store keeps active upload sessions.
+	// store is an upload session store.
 	store SessionStore
-
+	// log is a logger to send messages.
 	log log.Logger
 }
 
@@ -33,13 +32,12 @@ type SessionStore interface {
 	Delete(fingerprint string)
 }
 
-// NewUploader returns an Uploader using the specified client or error in case
-// of non valid configuration.
-// The client must have the proper permissions to upload files.
+// NewResumableUploader returns an Uploader or error in case of non valid configuration.
+// The supplied client must have the proper authentication to upload files.
+// The supplied store will be used to keep upload sessions.
 //
-// Use WithLogger(...) and WithEndpoint(...) to
-// customize configuration.
-func NewResumableUploader(client *http.Client, store SessionStore, options ...Option) (*ResumableUploader, error) {
+// Use WithLogger(...) and WithEndpoint(...) to customize configuration.
+func NewResumableUploader(client httpClient, store SessionStore, options ...Option) (*ResumableUploader, error) {
 	logger := defaultLogger()
 	endpoint := defaultEndpoint()
 
@@ -59,6 +57,7 @@ func NewResumableUploader(client *http.Client, store SessionStore, options ...Op
 		log:    logger,
 	}
 
+	// validate configuration options.
 	if store == nil {
 		return nil, errors.New("store can't be nil")
 	}
@@ -67,29 +66,28 @@ func NewResumableUploader(client *http.Client, store SessionStore, options ...Op
 }
 
 // Upload returns the Google Photos upload token for an Upload object.
-func (u *ResumableUploader) Upload(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Debugf("Initiating file upload: type=resumable, file=%s", upload.name)
-	upload.sent = u.offsetFromPreviousSession(ctx, upload)
+func (u *ResumableUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
+	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.String())
+	offset := u.offsetFromPreviousSession(ctx, item)
 
-	if upload.sent == 0 {
-		u.log.Debugf("Initiating new upload session: file=%s", upload.name)
-		return u.createUploadSession(ctx, upload)
+	if offset == 0 {
+		u.log.Debugf("Initiating new upload session: file=%s", item.String())
+		return u.createUploadSession(ctx, item)
 	}
 
-	u.log.Debugf("Resuming previous upload session: file=%s", upload.name)
-	return u.resumeUploadSession(ctx, upload)
+	u.log.Debugf("Resuming previous upload session: file=%s", item.String())
+	return u.resumeUploadSession(ctx, item, offset)
 }
 
 // offsetFromPreviousSession returns the bytes already uploaded in previous upload sessions.
-func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, upload *Upload) int64 {
-	// Get any previous session for this Upload
-	url := string(u.store.Get(upload.fingerprint()))
-
+func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, item UploadItem) int64 {
 	// Query previous upload status and get offset if active.
-	req, err := upload.createQueryOffsetRequest(url)
+	req, err := http.NewRequest("POST", u.uploadSessionUrl(item), nil)
 	if err != nil {
 		return 0
 	}
+	req.Header.Set("Content-Length", "0")
+	req.Header.Set("X-Goog-Upload-Command", "query")
 
 	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -101,23 +99,35 @@ func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, uploa
 	if status != "active" {
 		// Other known statuses "final" and "cancelled" are both considered as already completed.
 		// Let's restart the upload from scratch.
-		u.store.Delete(upload.fingerprint())
+		u.store.Delete(fingerprint(item))
 		return 0
 	}
 
 	offset, err := strconv.ParseInt(res.Header.Get("X-Goog-Upload-Size-Received"), 10, 64)
-	if err == nil && offset > 0 && offset < upload.size {
+	if err == nil && offset > 0 && offset < item.Size() {
 		return offset
 	}
 	return 0
 }
 
-func (u *ResumableUploader) createUploadSession(ctx context.Context, upload *Upload) (string, error) {
-	u.log.Debugf("Initiating upload session: file=%s", upload.name)
-	req, err := upload.createInitialUploadRequest(u.url)
+func (u *ResumableUploader) createUploadSession(ctx context.Context, item UploadItem) (UploadToken, error) {
+	u.log.Debugf("Initiating upload session: file=%s", item.String())
+
+	_, size, err := item.Open()
 	if err != nil {
 		return "", err
 	}
+
+	req, err := http.NewRequest("POST", u.url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Length", "0")
+	req.Header.Set("X-Goog-Upload-Command", "start")
+	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", item.Name())
+	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
+	req.Header.Set("X-Goog-Upload-Raw-Size", fmt.Sprintf("%d", size))
 
 	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -126,26 +136,31 @@ func (u *ResumableUploader) createUploadSession(ctx context.Context, upload *Upl
 	defer res.Body.Close()
 
 	// Read upload url
-	url := res.Header.Get("X-Goog-Upload-URL")
-	u.store.Set(upload.fingerprint(), []byte(url))
+	if url := res.Header.Get("X-Goog-Upload-URL"); url != "" {
+		u.store.Set(fingerprint(item), []byte(url))
+	}
 
 	// Start upload session
-	return u.resumeUploadSession(ctx, upload)
+	return u.resumeUploadSession(ctx, item, 0)
 }
 
-func (u *ResumableUploader) resumeUploadSession(ctx context.Context, upload *Upload) (string, error) {
-	// Get any previous session for this Upload
-	url := string(u.store.Get(upload.fingerprint()))
-
-	_, err := upload.r.Seek(upload.sent, io.SeekStart)
+func (u *ResumableUploader) resumeUploadSession(ctx context.Context, item UploadItem, offset int64) (UploadToken, error) {
+	r, size, err := item.Open()
 	if err != nil {
+		return "", nil
+	}
+
+	if _, err := r.Seek(offset, io.SeekStart); err != nil {
 		return "", err
 	}
 
-	req, err := upload.createResumeUploadRequest(url)
+	req, err := http.NewRequest("POST", u.uploadSessionUrl(item), r)
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", size-offset))
+	req.Header.Add("X-Goog-Upload-Command", "upload, finalize")
+	req.Header.Set("X-Goog-Upload-Offset", fmt.Sprintf("%d", offset))
 
 	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -160,55 +175,13 @@ func (u *ResumableUploader) resumeUploadSession(ctx context.Context, upload *Upl
 		return "", err
 	}
 	token := string(b)
-	return token, nil
+	return UploadToken(token), nil
 }
 
-// createInitialUploadRequest returns a starting resumable upload request for Google Photos.
-// url is the Google Photos upload endpoint.
-func (u *Upload) createInitialUploadRequest(url string) (*http.Request, error) {
-	req, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Length", "0")
-	req.Header.Set("X-Goog-Upload-Command", "start")
-	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", path.Base(u.name))
-	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
-	req.Header.Set("X-Goog-Upload-Raw-Size", fmt.Sprintf("%d", u.size))
-
-	return req, nil
+func (u *ResumableUploader) uploadSessionUrl(item UploadItem) string {
+	return string(u.store.Get(fingerprint(item)))
 }
 
-// createQueryOffsetRequest returns a query offset request for Google Photos.
-// url is the unique URL that must be used to complete the upload through all of the remaining requests.
-func (u *Upload) createQueryOffsetRequest(url string) (*http.Request, error) {
-	req, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Length", "0")
-	req.Header.Set("X-Goog-Upload-Command", "query")
-
-	return req, nil
-}
-
-// createResumeUploadRequest returns a resumable upload request to continue an started upload for Google Photos.
-// url is the unique URL that must be used to complete the upload through all of the remaining requests.
-func (u *Upload) createResumeUploadRequest(url string) (*http.Request, error) {
-	req, err := http.NewRequest("POST", url, u.r)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Length", fmt.Sprintf("%d", u.size-u.sent))
-	req.Header.Add("X-Goog-Upload-Command", "upload, finalize")
-	req.Header.Set("X-Goog-Upload-Offset", fmt.Sprintf("%d", u.sent))
-
-	return req, nil
-}
-
-// fingerprint returns a value to be used to identify upload session.
-func (u *Upload) fingerprint() string {
-	return fmt.Sprintf("%s|%d", u.name, u.size)
+func fingerprint(item UploadItem) string {
+	return fmt.Sprintf("%s|%d", item.Name(), item.Size())
 }
