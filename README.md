@@ -17,17 +17,44 @@ This package provides a client for using the [Google Photos API](https://godoc.o
 Construct a new Google Photos client, then use the various services on the client to access different parts of the Google Photos API. For example:
 
 ```go
-	import "github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos"
+import (
+	"errors"
+	"net/http"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 
-    // httpClient is an authenticated http.Client. See Authentication below.
-	client := gphotos.NewClient(httpClient)
-    // get or create a Photos Album with the specified name.
-	album, err := GetOrCreateAlbumByName("my-new-album")
-	// upload an specified file to an existent Photos Album.
-    _, err := client.AddMediaItem(ctx, path, albumID)
+)
+
+func main() error {
+	httpClient := http.DefaultClient
+	ctx := context.Background()
+
+	// httpClient is an authenticated http.Client. See Authentication below.
+	client, err := NewClient(httpClient)
+	if err != nil {
+		return err
+	}
+
+	// get or create a Photos Album with the specified name.
+	title := "my-album"
+	album, err := client.FindAlbum(ctx, title)
+	if err != nil {
+		if errors.Is(err, ErrAlbumNotFound) {
+			album, err = client.CreateAlbum(ctx, title)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	// upload an specified file to the previous album.
+	item := FileUploadItem("/my-folder/my-picture.jpg")
+	_, err = client.AddMediaToAlbum(ctx, item, album.Id)
+
+	return err
+}
 ```
-
-> NOTE: Using the [context package](https://godoc.org/context), one can easily pass cancellation signals and deadlines to various services of the client for handling a request. In case there is no context available, then `context.Background()` can be used as a starting point.
 
 ## Authentication
 The gphotos library **does not directly handle authentication**. Instead, when creating a new client, pass an `http.Client` that can handle authentication for you. The easiest and recommended way to do this is using the `golang.org/x/oauth2` library, but you can always use any other library that provides an `http.Client`.
@@ -49,8 +76,6 @@ Access to the API requires OAuth client credentials from a Google developers pro
 		}
 		tc := oc.Client(ctx, "... your user Oauth Token ...")
 		client := gphotos.NewClient(tc)
-		// look for a Google Photos Album by name
-		album, _, err := client.AlbumByName(ctx, "my-album")
 	}
 ```
 
