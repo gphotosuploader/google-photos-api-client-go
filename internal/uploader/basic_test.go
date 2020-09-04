@@ -57,7 +57,7 @@ func TestBasicUploader_Upload(t *testing.T) {
 	t.Run("ReturnsTokenOnSuccessfulUpload", func(t *testing.T) {
 		want := "token"
 		c := &mockedHttpClient{
-			res: responseAs(http.StatusOK, "", want),
+			res:  responseAs(http.StatusOK, "", want),
 			code: http.StatusOK,
 		}
 
@@ -78,7 +78,7 @@ func TestBasicUploader_Upload(t *testing.T) {
 
 	t.Run("ReturnsErrorOnFailedUpload", func(t *testing.T) {
 		c := &mockedHttpClient{
-			res: responseAs(http.StatusTooManyRequests, "", "token"),
+			res:  responseAs(http.StatusTooManyRequests, "", "token"),
 			code: http.StatusTooManyRequests,
 		}
 

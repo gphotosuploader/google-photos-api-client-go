@@ -2,61 +2,87 @@ package gphotos
 
 import (
 	"net/http"
-	"sync"
 
-	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/photoservice"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
 )
 
-// Client is a client for uploading a media.
-// photoslibrary does not provide `/v1/uploads` API so we implement here.
+// Client is a client for uploading a media. photoslibrary does not provide `/v1/uploads` API so we implement here.
 type Client struct {
 	// Google Photos client
-	*photoslibrary.Service
+	service photoservice.Service
 	// Uploader to upload new files to Google Photos
-	uploader *uploader.Uploader
-
+	uploader uploader.Uploader
+	// cache to put albums cache
+	cache cache.Cache
+	// logger to send messages.
 	log log.Logger
-	mu  sync.Mutex
 }
 
-// NewClientWithResumableUploads constructs a new gphotos.Client from the provided HTTP client and
-// the given options.
+// NewClient constructs a new gphotos.Client from the provided HTTP client and the given options.
+// The client is an HTTP client used for calling Google Photos. It needs the proper authentication in place.
 //
-// `httpClient` is an client with authentication credentials.
-// `store` is an UploadSessionStore to keep upload sessions to resume uploads.
-func NewClientWithResumableUploads(httpClient *http.Client, store uploader.UploadSessionStore, options ...Option) (*Client, error) {
-	photosService, err := photoslibrary.New(httpClient)
-	if err != nil {
-		return nil, err
+// Use WithLogger(), WithCacher(), WithUploader() to customize it.
+func NewClient(httpClient *http.Client, options ...Option) (*Client, error) {
+	var service photoservice.Service
+	var storer uploader.SessionStorer
+	var upldr uploader.Uploader
+	var err error
+	logger := defaultLogger()
+	cacher := defaultCacher()
+
+	for _, o := range options {
+		switch o.Name() {
+		case optkeyPhotoService:
+			service = o.Value().(photoservice.Service)
+		case optkeyLogger:
+			logger = o.Value().(log.Logger)
+		case optkeyCacher:
+			cacher = o.Value().(cache.Cache)
+		case optkeySessionStorer:
+			storer = o.Value().(uploader.SessionStorer)
+		case optkeyUploader:
+			upldr = o.Value().(uploader.Uploader)
+		}
 	}
 
-	upldr, err := uploader.NewUploader(httpClient, uploader.WithResumableUploads(store))
-	if err != nil {
-		return nil, err
+	// Use GooglePhotosService by default.
+	if service == nil {
+		service, err = photoservice.NewGooglePhotosService(httpClient, WithLogger(logger))
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	c := &Client{
-		Service:  photosService,
+	// Use BasicUploader by default, as far as a SessionStorer has not been set.
+	if upldr == nil {
+		if storer == nil {
+			upldr, err = uploader.NewBasicUploader(httpClient, WithLogger(logger))
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			upldr, err = uploader.NewResumableUploader(httpClient, storer, WithLogger(logger))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return &Client{
+		service:  service,
 		uploader: upldr,
-		log:      &log.DiscardLogger{},
-	}
-
-	for _, opt := range options {
-		opt(c)
-	}
-
-	return c, nil
+		cache:    cacher,
+		log:      logger,
+	}, nil
 }
 
-// WithLogger set a new Logger to log messages.
-func WithLogger(l log.Logger) func(*Client) {
-	return func(c *Client) {
-		c.log = l
-	}
+func defaultLogger() log.Logger {
+	return &log.DiscardLogger{}
 }
 
-// Option defines an option for a Client
-type Option func(*Client)
+func defaultCacher() cache.Cache {
+	return cache.NewCachitaCache()
+}

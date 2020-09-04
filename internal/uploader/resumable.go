@@ -13,20 +13,20 @@ import (
 )
 
 // ResumableUploader implements resumable uploads.
-// It will require a SessionStore to keep already upload session.
+// It will require a SessionStorer to keep already upload session.
 type ResumableUploader struct {
 	// client is an HTTP client used for uploading. It needs the proper authentication in place.
 	client httpClient
 	// url is the url the endpoint to upload to
 	url string
 	// store is an upload session store.
-	store SessionStore
+	store SessionStorer
 	// log is a logger to send messages.
 	log log.Logger
 }
 
-// SessionStore represents an storage to keep resumable uploads.
-type SessionStore interface {
+// SessionStorer represents an storage to keep resumable uploads.
+type SessionStorer interface {
 	Get(fingerprint string) []byte
 	Set(fingerprint string, url []byte)
 	Delete(fingerprint string)
@@ -37,7 +37,7 @@ type SessionStore interface {
 // The supplied store will be used to keep upload sessions.
 //
 // Use WithLogger(...) and WithEndpoint(...) to customize configuration.
-func NewResumableUploader(client httpClient, store SessionStore, options ...Option) (*ResumableUploader, error) {
+func NewResumableUploader(client httpClient, store SessionStorer, options ...Option) (*ResumableUploader, error) {
 	logger := defaultLogger()
 	endpoint := defaultEndpoint()
 
