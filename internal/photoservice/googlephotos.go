@@ -2,6 +2,7 @@ package photoservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -53,16 +54,17 @@ func (s *GooglePhotosService) ListAlbums(ctx context.Context, pageSize int64, pa
 		case err == nil:
 			return res, nil
 		case IsRetryableError(err):
-			s.log.Warnf("Error while listing albums: %s", err)
+			s.log.Debugf("Error while listing albums: %s", err)
 		case IsRateLimitError(err):
-			// TODO: After reaching rate limit we should wait ~30 minutes.
 			s.log.Warnf("Rate limit reached.")
+			return nil, errors.New("rate limit reached. wait ~30 seconds before trying again")
 		default:
-			return nil, err
+			s.log.Errorf("Error while listing albums: %s", err)
+			return nil, fmt.Errorf("error listing albums: err=%v", err)
 		}
 	}
 
-	return nil, fmt.Errorf("retry over")
+	return nil, errors.New("error listing albums: retry over")
 }
 
 // CreateAlbum makes a `Albums.Create` call to Google Photos API and returns the response.
@@ -80,14 +82,15 @@ func (s *GooglePhotosService) CreateAlbum(ctx context.Context, request *photosli
 		case IsRetryableError(err):
 			s.log.Debugf("Error while creating an album: %s", err)
 		case IsRateLimitError(err):
-			// TODO: After reaching rate limit we should wait ~30 minutes.
 			s.log.Warnf("Rate limit reached.")
+			return nil, errors.New("rate limit reached. wait ~30 seconds before trying again")
 		default:
-			return nil, err
+			s.log.Errorf("Error while creating album: %s", err)
+			return nil, fmt.Errorf("error creating albums: err=%v", err)
 		}
 	}
 
-	return nil, fmt.Errorf("retry over")
+	return nil, errors.New("error creating album: retry over")
 }
 
 // CreateMediaItems makes a `MediaItems.BatchCreate` call to Google Photos API and returns the response.
@@ -106,11 +109,12 @@ func (s *GooglePhotosService) CreateMediaItems(ctx context.Context, request *pho
 			s.log.Debugf("Error while creating media items: %s", err)
 		case IsRateLimitError(err):
 			s.log.Warnf("Rate limit reached.")
-			return nil, fmt.Errorf("rate limit reached. wait ~30 seconds before trying again")
+			return nil, errors.New("rate limit reached. wait ~30 seconds before trying again")
 		default:
-			return nil, err
+			s.log.Errorf("Error while creating media items: %s", err)
+			return nil, fmt.Errorf("error creating media items: err=%v", err)
 		}
 	}
 
-	return nil, fmt.Errorf("retry over")
+	return nil, errors.New("error creating album: retry over")
 }

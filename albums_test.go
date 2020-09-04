@@ -91,7 +91,7 @@ func TestClient_FindAlbum(t *testing.T) {
 	t.Run("WithNonExistentAlbum", func(t *testing.T) {
 		truncateAlbumGallery()
 		_, err := c.FindAlbum(ctx, "nonexistent")
-		if err != ErrAlbumNotFound {
+		if !errors.Is(err, ErrAlbumNotFound) {
 			t.Errorf("error was not expected. want: %v, got: %v", ErrAlbumNotFound, err)
 		}
 	})

@@ -63,7 +63,7 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, albumID s
 
 	token, err := c.uploader.Upload(ctx, item)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting upload token for %s: err=%s", item.String(), err)
+		return nil, fmt.Errorf("failed getting upload token for %s: err=%w", item.String(), err)
 	}
 
 	c.log.Debugf("File has been uploaded: file=%s", item.String())
@@ -79,10 +79,14 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, albumID s
 	})
 	if err != nil {
 		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.String(), err)
-		return nil, fmt.Errorf("error while trying to create this media item, err=%s", err)
+		return nil, fmt.Errorf("error while trying to create this media item, err=%w", err)
 	}
 
-	return firstMediaItemResult(res.NewMediaItemResults)
+	media, err := firstMediaItemResult(res.NewMediaItemResults)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve the created media item: err=%s", err)
+	}
+	return media, nil
 }
 
 func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibrary.MediaItem, error) {
@@ -101,5 +105,5 @@ func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibra
 		return r.MediaItem, nil
 	}
 
-	return nil, fmt.Errorf("found error on MediaItem: err=%v", r.Status.Message)
+	return nil, fmt.Errorf("found error on MediaItem: err=%s", r.Status.Message)
 }

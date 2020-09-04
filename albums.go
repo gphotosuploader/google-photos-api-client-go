@@ -42,7 +42,7 @@ func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbums
 	for {
 		res, err := c.service.ListAlbums(ctx, maxPageSize, pageToken)
 		if err != nil {
-			return fmt.Errorf("error listing albums. err: %s", err)
+			return fmt.Errorf("error listing albums: err=%w", err)
 		}
 
 		// cache albums.
@@ -66,7 +66,7 @@ func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbums
 // If the Album was already on the library, it will return the Album.
 func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
 	album, err := c.FindAlbum(ctx, title)
-	if err != ErrAlbumNotFound {
+	if !errors.Is(err, ErrAlbumNotFound) {
 		// Album was found or there was an error with the cache.
 		return album, err
 	}
@@ -75,7 +75,7 @@ func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.
 		Album: &photoslibrary.Album{Title: title},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not create an album. err: %s", err)
+		return nil, fmt.Errorf("could not create an album. err: %w", err)
 	}
 
 	// Cache the created album.
@@ -88,7 +88,7 @@ func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.
 // If the Album is not found, it will return ErrAlbumNotFound.
 func (c *Client) FindAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
 	matched, err := c.cache.GetAlbum(ctx, title)
-	if err != cache.ErrCacheMiss {
+	if !errors.Is(err, cache.ErrCacheMiss) {
 		// Album was found or there was an error with the cache.
 		return matched, err
 	}
