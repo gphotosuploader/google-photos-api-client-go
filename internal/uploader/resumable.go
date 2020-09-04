@@ -59,7 +59,7 @@ func NewResumableUploader(client httpClient, store SessionStorer, options ...Opt
 
 	// validate configuration options.
 	if store == nil {
-		return nil, errors.New("store can't be nil")
+		return nil, errors.New("session store can't be nil")
 	}
 
 	return u, nil

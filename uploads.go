@@ -4,56 +4,102 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
 )
 
-// AddMediaItem returns MediaItem created after uploading `filename` and adding it to `albumID`.
-func (c *Client) AddMediaItem(ctx context.Context, filename, albumID string) (*photoslibrary.MediaItem, error) {
-	c.log.Debugf("Initiating upload and media item creation: file=%s", filename)
-
-	uploadToken, err := c.uploader.UploadFromFile(ctx, filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed getting uploadToken for %s: err=%s", filename, err)
-	}
-
-	c.log.Debugf("File has been uploaded: file=%s", filename)
-
-	mediaItem, err := c.createMediaItemFromUploadToken(ctx, uploadToken, albumID, filename)
-	if err != nil {
-		c.log.Errorf("Failed to create media item: file=%s, err=%s", filename, err)
-		return nil, fmt.Errorf("error while trying to create this media item, err=%s", err)
-	}
-
-	c.log.Debugf("File uploaded and media item created successfully: file=%s", filename)
-	return mediaItem, nil
+// UploadItem represents an uploadable item.
+type UploadItem interface {
+	uploader.UploadItem
 }
 
-func (c *Client) createMediaItemFromUploadToken(ctx context.Context, uploadToken, albumID, filename string) (*photoslibrary.MediaItem, error) {
-	req := photoslibrary.BatchCreateMediaItemsRequest{
+// FileUploadItem represents a local file.
+type FileUploadItem string
+
+// Open returns a stream.
+// Caller should close it finally.
+func (m FileUploadItem) Open() (io.ReadSeeker, int64, error) {
+	f, err := os.Stat(m.String())
+	if err != nil {
+		return nil, 0, err
+	}
+	r, err := os.Open(m.String())
+	if err != nil {
+		return nil, 0, err
+	}
+	return r, f.Size(), nil
+}
+
+// Name returns the filename.
+func (m FileUploadItem) Name() string {
+	return path.Base(m.String())
+}
+
+func (m FileUploadItem) String() string {
+	return string(m)
+}
+
+func (m FileUploadItem) Size() int64 {
+	f, err := os.Stat(m.String())
+	if err != nil {
+		return 0
+	}
+	return f.Size()
+}
+
+// AddMediaToAlbum returns MediaItem created after uploading the item to Google Photos library.
+func (c *Client) AddMediaToLibrary(ctx context.Context, item UploadItem) (*photoslibrary.MediaItem, error) {
+	return c.AddMediaToAlbum(ctx, item, "")
+}
+
+// AddMediaToAlbum returns MediaItem created after uploading the item and adding it to an`albumID`.
+func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, albumID string) (*photoslibrary.MediaItem, error) {
+	c.log.Debugf("Initiating upload and media item creation: file=%s", item.String())
+
+	token, err := c.uploader.Upload(ctx, item)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting upload token for %s: err=%s", item.String(), err)
+	}
+
+	c.log.Debugf("File has been uploaded: file=%s", item.String())
+
+	res, err := c.service.CreateMediaItems(ctx, &photoslibrary.BatchCreateMediaItemsRequest{
 		AlbumId: albumID,
 		NewMediaItems: []*photoslibrary.NewMediaItem{
 			{
-				Description:     filename,
-				SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: uploadToken},
+				Description:     item.Name(),
+				SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: string(token)},
 			},
 		},
-	}
-
-	res, err := c.retryableMediaItemBatchCreateDo(ctx, &req, filename)
+	})
 	if err != nil {
-		return nil, err
+		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.String(), err)
+		return nil, fmt.Errorf("error while trying to create this media item, err=%s", err)
 	}
 
-	if res == nil || len(res.NewMediaItemResults) != 1 {
-		return nil, errors.New("len(batchResults) should be 1")
+	return firstMediaItemResult(res.NewMediaItemResults)
+}
+
+func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibrary.MediaItem, error) {
+	if len(res) == 0 {
+		return nil, nil
 	}
 
-	result := res.NewMediaItemResults[0]
-	// `result.Status.Code` has the GRPC code returned by Google Photos API. Values can be obtained at
+	r := res[0]
+	if r.Status == nil {
+		return nil, errors.New("found unknown error on MediaItem")
+	}
+
+	// Google Photos API uses a GRPC code. Values can be obtained at
 	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
-	if result.Status.Code != 0 {
-		return nil, errors.New(result.Status.Message)
+	if r.Status.Code == 0 {
+		return r.MediaItem, nil
 	}
-	return result.MediaItem, nil
+
+	return nil, fmt.Errorf("found error on MediaItem: err=%v", r.Status.Message)
 }

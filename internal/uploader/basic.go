@@ -2,7 +2,7 @@ package uploader
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -46,7 +46,7 @@ func NewBasicUploader(client httpClient, options ...Option) (*BasicUploader, err
 
 	// validate configuration options.
 	if u.url == "" {
-		return nil, fmt.Errorf("endpoint could not be empty")
+		return nil, errors.New("endpoint could not be empty")
 	}
 
 	return u, nil
@@ -97,11 +97,11 @@ func (u *BasicUploader) retryableDo(ctx context.Context, req *http.Request) (*ht
 			u.log.Debugf("Error while uploading, retry: %s", err)
 		case IsRateLimitError(err):
 			u.log.Errorf("Rate limit reached.")
-			return nil, fmt.Errorf("rate limit reached. wait ~30 seconds before trying again")
+			return nil, errors.New("rate limit reached. wait ~30 seconds before trying again")
 		default:
 			return nil, err
 		}
 	}
 
-	return nil, fmt.Errorf("retry over")
+	return nil, errors.New("retry over")
 }

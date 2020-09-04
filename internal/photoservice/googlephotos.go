@@ -105,8 +105,8 @@ func (s *GooglePhotosService) CreateMediaItems(ctx context.Context, request *pho
 		case IsRetryableError(err):
 			s.log.Debugf("Error while creating media items: %s", err)
 		case IsRateLimitError(err):
-			// TODO: After reaching rate limit we should wait ~30 minutes.
 			s.log.Warnf("Rate limit reached.")
+			return nil, fmt.Errorf("rate limit reached. wait ~30 seconds before trying again")
 		default:
 			return nil, err
 		}

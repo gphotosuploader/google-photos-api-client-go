@@ -9,18 +9,36 @@ Usage:
 Construct a new Google Photos client, then use the various services on the client to
 access different parts of the Google Photos API. For example:
 
-    // httpClient is an authenticated http.Client. See Authentication below.
-	client := gphotos.NewClient(httpClient)
-    // get or create a Photos Album with the specified name.
-	album, err := GetOrCreateAlbumByName("my-new-album")
-	// upload an specified file to an existent Photos Album.
-    _, err := client.AddMediaItem(ctx, path, albumID)
+    func main() error {
+	    httpClient := http.DefaultClient
+	    ctx := context.Background()
 
+	    // httpClient is an authenticated http.Client. See Authentication below.
+	    client, err := NewClient(httpClient)
+	    if err != nil {
+		    return err
+	    }
 
-NOTE: Using the https://godoc.org/context package, one can easily
-pass cancellation signals and deadlines to various services of the client for
-handling a request. In case there is no context available, then context.Background()
-can be used as a starting point.
+	    // get or create a Photos Album with the specified name.
+	    title := "my-album"
+	    album, err := client.FindAlbum(ctx, title)
+	    if err != nil {
+		    if errors.Is(err, ErrAlbumNotFound) {
+			   album, err = client.CreateAlbum(ctx, title)
+			   if err != nil {
+				   return err
+			   }
+		    } else {
+			   return err
+		    }
+	    }
+
+	    // upload an specified file to the previous album.
+	    item := FileUploadItem("/my-folder/my-picture.jpg")
+	    _, err = client.AddMediaToAlbum(ctx, item, album.Id)
+
+	    return err
+    }
 
 Authentication
 The gphotos library does not directly handle authentication. Instead, when
@@ -42,8 +60,6 @@ https://developers.google.com/photos/library/guides/get-started.
 		}
 		tc := oc.Client(ctx, "... your user Oauth Token ...")
 		client := gphotos.NewClient(tc)
-		// look for a Google Photos Album by name
-		album, _, err := client.AlbumByName(ctx, "my-album")
 	}
 
 Note that when using an authenticated Client, all calls made by the client will
@@ -63,4 +79,3 @@ resolution at original quality (https://support.google.com/photos/answer/6220791
 They count toward the user’s storage.
 */
 package gphotos // import "github.com/gphotosuploader/google-photos-api-client-go/v2"
-
