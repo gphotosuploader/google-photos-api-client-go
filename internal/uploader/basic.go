@@ -56,19 +56,10 @@ func NewBasicUploader(client httpClient, options ...Option) (*BasicUploader, err
 func (u *BasicUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
 	u.log.Debugf("Initiating file upload: type=non-resumable, file=%s", item.Name())
 
-	r, _, err := item.Open()
+	req, err := u.prepareUploadRequest(item)
 	if err != nil {
 		return "", err
 	}
-
-	req, err := http.NewRequest("POST", u.url, r)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", item.Name())
-	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
 	res, err := u.retryableDo(ctx, req)
 	if err != nil {
@@ -80,8 +71,26 @@ func (u *BasicUploader) Upload(ctx context.Context, item UploadItem) (UploadToke
 	if err != nil {
 		return "", err
 	}
-	token := string(b)
-	return UploadToken(token), nil
+	return UploadToken(string(b)), nil
+}
+
+// prepareUploadRequest returns an HTTP request to upload item.
+func (u *BasicUploader) prepareUploadRequest(item UploadItem) (*http.Request, error) {
+	r, _, err := item.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", u.url, r)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", item.Name())
+	req.Header.Set("X-Goog-Upload-Protocol", "raw")
+
+	return req, nil
 }
 
 // retryableDo implements retries in a HTTP request call.
