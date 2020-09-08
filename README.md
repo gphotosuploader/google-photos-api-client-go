@@ -1,6 +1,5 @@
 # Google Photos API client for Go
 [![Go Documentation](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/gphotosuploader/google-photos-api-client-go/lib-gphotos)
-[![Build Status](https://cloud.drone.io/api/badges/gphotosuploader/google-photos-api-client-go/status.svg)](https://cloud.drone.io/gphotosuploader/google-photos-api-client-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gphotosuploader/google-photos-api-client-go)](https://goreportcard.com/report/github.com/gphotosuploader/google-photos-api-client-go)
 [![codebeat badge](https://codebeat.co/badges/c0ab08dd-11b3-406e-bbcc-b9d4a90aedf6)](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-master)
 [![codecov](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go/branch/master/graph/badge.svg)](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go)

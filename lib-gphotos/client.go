@@ -107,7 +107,7 @@ func (c *Client) Token() *oauth2.Token {
 	if c.token == nil {
 		return nil
 	}
-	return &(*c.token)
+	return c.token
 }
 
 // codebeat:enable
