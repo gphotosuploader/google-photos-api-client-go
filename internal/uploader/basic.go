@@ -67,6 +67,11 @@ func (u *BasicUploader) Upload(ctx context.Context, item UploadItem) (UploadToke
 	}
 	defer res.Body.Close()
 
+	return u.uploadToken(res)
+}
+
+// uploadToken returns the upload token inside HTTP response.
+func (u *BasicUploader) uploadToken(res *http.Response) (UploadToken, error) {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return "", err
