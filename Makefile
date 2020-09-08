@@ -29,7 +29,7 @@ clean: ## Clean all built artifacts
 BIN_DIR := $(GOPATH)/bin
 
 GOLANGCI := $(BIN_DIR)/golangci-lint
-GOLANGCI_VERSION := 1.20.0
+GOLANGCI_VERSION := 1.29.0
 
 $(GOLANGCI):
 	@echo "--> Installing golangci v$(GOLANGCI_VERSION)..."
