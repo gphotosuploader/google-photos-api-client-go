@@ -10,7 +10,6 @@ import (
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
 )
 
@@ -73,10 +72,4 @@ func (mc *mockedCache) PutAlbum(ctx context.Context, key string, album *photosli
 }
 func (mc *mockedCache) InvalidateAlbum(ctx context.Context, key string) error {
 	return nil
-}
-
-type mockedUploader struct{}
-
-func (u *mockedUploader) Upload(context.Context, uploader.UploadItem) (uploader.UploadToken, error) {
-	return "", nil
 }

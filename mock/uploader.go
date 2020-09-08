@@ -71,12 +71,10 @@ func (s *SessionStorer) Get(f string) []byte {
 func (s *SessionStorer) Set(f string, u []byte) {
 	s.SetInvoked = true
 	s.SetFn(f, u)
-	return
 }
 
 // Delete invokes the mock implementation and marks the function as invoked.
 func (s *SessionStorer) Delete(f string) {
 	s.DeleteInvoked = true
 	s.DeleteFn(f)
-	return
 }
