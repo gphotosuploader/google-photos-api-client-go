@@ -10,82 +10,14 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
 )
-
-type mockedCache struct{}
-
-func (mc *mockedCache) GetAlbum(ctx context.Context, key string) (*photoslibrary.Album, error) {
-	if key == "cached" {
-		return &photoslibrary.Album{Title: "cached"}, nil
-	}
-	return nil, cache.ErrCacheMiss
-}
-
-func (mc *mockedCache) PutAlbum(ctx context.Context, key string, album *photoslibrary.Album, ttl time.Duration) error {
-	return nil
-}
-func (mc *mockedCache) InvalidateAlbum(ctx context.Context, key string) error {
-	return nil
-}
-
-// albumGallery represents the Album repository to mock Google Photos calls.
-var albumGallery []*photoslibrary.Album
-
-type mockedService struct{}
-
-func (c *mockedService) ListAlbums(ctx context.Context, pageSize int64, pageToken string) (*photoslibrary.ListAlbumsResponse, error) {
-	if pageToken == "give-me-more" {
-		// second page of albums.
-		return &photoslibrary.ListAlbumsResponse{
-			Albums: albumGallery[pageSize:],
-		}, nil
-	}
-
-	if pageSize < int64(len(albumGallery)) {
-		// first page of albums.
-		return &photoslibrary.ListAlbumsResponse{
-			Albums: albumGallery[:pageSize],
-			NextPageToken: "give-me-more",
-		}, nil
-	}
-
-	// there is only one page of albums.
-	return &photoslibrary.ListAlbumsResponse{
-		Albums: albumGallery,
-	}, nil
-}
-
-func (c *mockedService) CreateAlbum(ctx context.Context, request *photoslibrary.CreateAlbumRequest) (*photoslibrary.Album, error) {
-	if request.Album.Title == "should-fail" {
-		return nil, errors.New("album creation failure")
-	}
-	return request.Album, nil
-}
-
-func (c *mockedService) CreateMediaItems(ctx context.Context, request *photoslibrary.BatchCreateMediaItemsRequest) (*photoslibrary.BatchCreateMediaItemsResponse, error) {
-	return &photoslibrary.BatchCreateMediaItemsResponse{}, nil
-}
-
-// initializeAlbumGallery will add the specified number of albums to the Album gallery.
-// All the albums follow the template `album-<number>` where `<number>` is an incremental integer.
-func initializeAlbumGallery(n int) {
-	truncateAlbumGallery()
-	for i := 1; i <= n; i++ {
-		a := photoslibrary.Album{Title: fmt.Sprintf("album-%d", i)}
-		albumGallery = append(albumGallery, &a)
-	}
-}
-
-// truncateAlbumGallery will empty the Album gallery.
-func truncateAlbumGallery() {
-	albumGallery = nil
-}
 
 func TestClient_FindAlbum(t *testing.T) {
 	ctx := context.Background()
 	c := &Client{
-		service: &mockedService{},
-		cache:   &mockedCache{},
+		service: &mockedService,
+		cache:   &mockedCache,
 	}
 
 	t.Run("WithNonExistentAlbum", func(t *testing.T) {
@@ -125,8 +57,8 @@ func TestClient_FindAlbum(t *testing.T) {
 func TestClient_ListAlbums(t *testing.T) {
 	ctx := context.Background()
 	c := &Client{
-		service: &mockedService{},
-		cache:   &mockedCache{},
+		service: &mockedService,
+		cache:   &mockedCache,
 	}
 
 	t.Run("WithEmptyAlbumGallery", func(t *testing.T) {
@@ -169,8 +101,8 @@ func TestClient_ListAlbums(t *testing.T) {
 func TestClient_CreateAlbum(t *testing.T) {
 	ctx := context.Background()
 	c := &Client{
-		service: &mockedService{},
-		cache:   &mockedCache{},
+		service: &mockedService,
+		cache:   &mockedCache,
 	}
 
 	t.Run("ReturnsExistingAlbum", func(t *testing.T) {
@@ -206,4 +138,70 @@ func TestClient_CreateAlbum(t *testing.T) {
 		}
 	})
 
+}
+
+// albumGallery represents the Album repository to mock Google Photos calls.
+var albumGallery []*photoslibrary.Album
+
+// initializeAlbumGallery will add the specified number of albums to the Album gallery.
+// All the albums follow the template `album-<number>` where `<number>` is an incremental integer.
+func initializeAlbumGallery(n int) {
+	truncateAlbumGallery()
+	for i := 1; i <= n; i++ {
+		a := photoslibrary.Album{Title: fmt.Sprintf("album-%d", i)}
+		albumGallery = append(albumGallery, &a)
+	}
+}
+
+// truncateAlbumGallery will empty the Album gallery.
+func truncateAlbumGallery() {
+	albumGallery = nil
+}
+
+var mockedService = mock.PhotoService{
+	ListAlbumsFn: func(ctx context.Context, pageSize int64, pageToken string) (response *photoslibrary.ListAlbumsResponse, err error) {
+		if pageToken == "give-me-more" {
+			// second page of albums.
+			return &photoslibrary.ListAlbumsResponse{
+				Albums: albumGallery[pageSize:],
+			}, nil
+		}
+
+		if pageSize < int64(len(albumGallery)) {
+			// first page of albums.
+			return &photoslibrary.ListAlbumsResponse{
+				Albums:        albumGallery[:pageSize],
+				NextPageToken: "give-me-more",
+			}, nil
+		}
+
+		// there is only one page of albums.
+		return &photoslibrary.ListAlbumsResponse{
+			Albums: albumGallery,
+		}, nil
+	},
+	CreateAlbumFn: func(ctx context.Context, request *photoslibrary.CreateAlbumRequest) (album *photoslibrary.Album, err error) {
+		if request.Album.Title == "should-fail" {
+			return nil, errors.New("album creation failure")
+		}
+		return request.Album, nil
+	},
+	CreateMediaItemsFn: func(ctx context.Context, request *photoslibrary.BatchCreateMediaItemsRequest) (response *photoslibrary.BatchCreateMediaItemsResponse, err error) {
+		return &photoslibrary.BatchCreateMediaItemsResponse{}, nil
+	},
+}
+
+var mockedCache = mock.Cache{
+	GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
+		if title == "cached" {
+			return &photoslibrary.Album{Title: "cached"}, nil
+		}
+		return nil, cache.ErrCacheMiss
+	},
+	PutAlbumFn: func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+		return nil
+	},
+	InvalidateAlbumFn: func(ctx context.Context, title string) error {
+		return nil
+	},
 }

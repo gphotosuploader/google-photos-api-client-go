@@ -50,7 +50,7 @@ func TestWithSessionStorer(t *testing.T) {
 }
 
 func TestWithCacher(t *testing.T) {
-	want := &mockedCache{}
+	want := &mockedCache
 
 	got := gphotos.WithCacher(want)
 	if got.Value() != want {
@@ -58,18 +58,17 @@ func TestWithCacher(t *testing.T) {
 	}
 }
 
-type mockedCache struct{}
-
-func (mc *mockedCache) GetAlbum(ctx context.Context, key string) (*photoslibrary.Album, error) {
-	if key == "cached" {
-		return &photoslibrary.Album{Title: "cached"}, nil
-	}
-	return nil, cache.ErrCacheMiss
-}
-
-func (mc *mockedCache) PutAlbum(ctx context.Context, key string, album *photoslibrary.Album, ttl time.Duration) error {
-	return nil
-}
-func (mc *mockedCache) InvalidateAlbum(ctx context.Context, key string) error {
-	return nil
+var mockedCache = mock.Cache{
+	GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
+		if title == "cached" {
+			return &photoslibrary.Album{Title: "cached"}, nil
+		}
+		return nil, cache.ErrCacheMiss
+	},
+	PutAlbumFn: func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+		return nil
+	},
+	InvalidateAlbumFn: func(ctx context.Context, title string) error {
+		return nil
+	},
 }

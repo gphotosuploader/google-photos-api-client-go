@@ -22,10 +22,10 @@ func TestCachitaCache(t *testing.T) {
 
 	// test put/get
 	b1 := &photoslibrary.Album{Title: "album1"}
-	if err := c.PutAlbum(ctx, "dummy", b1, 60*time.Minute); err != nil {
+	if err := c.PutAlbum(ctx, b1, 60*time.Minute); err != nil {
 		t.Fatalf("put: %v", err)
 	}
-	b2, err := c.GetAlbum(ctx, "dummy")
+	b2, err := c.GetAlbum(ctx, b1.Title)
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}

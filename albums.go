@@ -47,7 +47,7 @@ func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbums
 
 		// cache albums.
 		for _, album := range res.Albums {
-			_ = c.cache.PutAlbum(ctx, album.Title, album, albumCacheTTL)
+			_ = c.cache.PutAlbum(ctx, album, albumCacheTTL)
 		}
 
 		var stop bool
@@ -79,7 +79,7 @@ func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.
 	}
 
 	// Cache the created album.
-	_ = c.cache.PutAlbum(ctx, title, album, albumCacheTTL)
+	_ = c.cache.PutAlbum(ctx, album, albumCacheTTL)
 
 	return album, nil
 }

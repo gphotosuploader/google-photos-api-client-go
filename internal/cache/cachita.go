@@ -18,9 +18,9 @@ func NewCachitaCache() *CachitaCache {
 }
 
 // Get reads an object data from the cache.
-func (c *CachitaCache) GetAlbum(ctx context.Context, key string) (*photoslibrary.Album, error) {
+func (c *CachitaCache) GetAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
 	i := &photoslibrary.Album{}
-	err := c.cache.Get(c.encodeAlbumKey(key), i)
+	err := c.cache.Get(c.albumKey(title), i)
 	if err == cachita.ErrNotFound {
 		return nil, ErrCacheMiss
 	}
@@ -29,16 +29,16 @@ func (c *CachitaCache) GetAlbum(ctx context.Context, key string) (*photoslibrary
 }
 
 // Put store an object data to the cache.
-func (c *CachitaCache) PutAlbum(ctx context.Context, key string, album *photoslibrary.Album, ttl time.Duration) error {
-	return c.cache.Put(c.encodeAlbumKey(key), *album, ttl)
+func (c *CachitaCache) PutAlbum(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+	return c.cache.Put(c.albumKey(album.Title), *album, ttl)
 }
 
 // InvalidateAlbum removes the specified Album from the cache.
-func (c *CachitaCache) InvalidateAlbum(ctx context.Context, key string) error {
-	return c.cache.Invalidate(c.encodeAlbumKey(key))
+func (c *CachitaCache) InvalidateAlbum(ctx context.Context, title string) error {
+	return c.cache.Invalidate(c.albumKey(title))
 }
 
-// encodeAlbumKey returns the cache key for an Album.
-func (c *CachitaCache) encodeAlbumKey(key string) string {
-	return "album:" + key
+// albumKey returns the cache key for an Album title.
+func (c *CachitaCache) albumKey(title string) string {
+	return "album:" + title
 }
