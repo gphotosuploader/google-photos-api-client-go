@@ -64,7 +64,10 @@ func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbums
 
 // CreateAlbum creates an Album in Google Photos library and returns the created object.
 // If the Album was already on the library, it will return the Album.
+// It's ensuring that Albums are unique (for this app) on Google Photos.
 func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
 	album, err := c.FindAlbum(ctx, title)
 	if !errors.Is(err, ErrAlbumNotFound) {
 		// Album was found or there was an error with the cache.

@@ -2,6 +2,7 @@ package gphotos
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
@@ -17,6 +18,8 @@ type Client struct {
 	uploader uploader.Uploader
 	// cache to put albums cache
 	cache cache.Cache
+	// mutex to ensure album creation is unique
+	m sync.Mutex
 	// logger to send messages.
 	log log.Logger
 }
