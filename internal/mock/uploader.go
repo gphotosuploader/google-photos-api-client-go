@@ -21,12 +21,12 @@ func (u *Uploader) Upload(ctx context.Context, item uploader.UploadItem) (upload
 }
 
 // FileUploadItem represents a mocked file upload item.
-type FileUploadItem struct {
+type MockedUploadItem struct {
 	Path string
 	size int64
 }
 
-func (m FileUploadItem) Open() (io.ReadSeeker, int64, error) {
+func (m MockedUploadItem) Open() (io.ReadSeeker, int64, error) {
 	var b bytes.Buffer
 	var err error
 
@@ -38,15 +38,15 @@ func (m FileUploadItem) Open() (io.ReadSeeker, int64, error) {
 	return r, m.size, nil
 }
 
-func (m FileUploadItem) Name() string {
+func (m MockedUploadItem) Name() string {
 	return m.String()
 }
 
-func (m FileUploadItem) String() string {
+func (m MockedUploadItem) String() string {
 	return m.Path
 }
 
-func (m FileUploadItem) Size() int64 {
+func (m MockedUploadItem) Size() int64 {
 	return m.size
 }
 
