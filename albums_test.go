@@ -1,30 +1,32 @@
-package gphotos
+package gphotos_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 )
 
 func TestClient_FindAlbum(t *testing.T) {
 	ctx := context.Background()
-	c := &Client{
-		service: &mockedService,
-		cache:   &mockedCache,
+	c, err := gphotos.NewClient(http.DefaultClient, gphotos.WithPhotoService(mockedService), gphotos.WithCacher(mockedCache))
+	if err != nil {
+		t.Fatalf("error was not expected at this point: err=%v", err)
 	}
 
 	t.Run("WithNonExistentAlbum", func(t *testing.T) {
 		truncateAlbumGallery()
 		_, err := c.FindAlbum(ctx, "nonexistent")
-		if !errors.Is(err, ErrAlbumNotFound) {
-			t.Errorf("error was not expected. want: %v, got: %v", ErrAlbumNotFound, err)
+		if !errors.Is(err, gphotos.ErrAlbumNotFound) {
+			t.Errorf("error was not expected. want: %v, got: %v", gphotos.ErrAlbumNotFound, err)
 		}
 	})
 
@@ -56,9 +58,9 @@ func TestClient_FindAlbum(t *testing.T) {
 
 func TestClient_ListAlbums(t *testing.T) {
 	ctx := context.Background()
-	c := &Client{
-		service: &mockedService,
-		cache:   &mockedCache,
+	c, err := gphotos.NewClient(http.DefaultClient, gphotos.WithPhotoService(mockedService), gphotos.WithCacher(mockedCache))
+	if err != nil {
+		t.Fatalf("error was not expected at this point: err=%v", err)
 	}
 
 	t.Run("WithEmptyAlbumGallery", func(t *testing.T) {
@@ -100,9 +102,9 @@ func TestClient_ListAlbums(t *testing.T) {
 
 func TestClient_CreateAlbum(t *testing.T) {
 	ctx := context.Background()
-	c := &Client{
-		service: &mockedService,
-		cache:   &mockedCache,
+	c, err := gphotos.NewClient(http.DefaultClient, gphotos.WithPhotoService(mockedService), gphotos.WithCacher(mockedCache))
+	if err != nil {
+		t.Fatalf("error was not expected at this point: err=%v", err)
 	}
 
 	t.Run("ReturnsExistingAlbum", func(t *testing.T) {
@@ -158,7 +160,7 @@ func truncateAlbumGallery() {
 	albumGallery = nil
 }
 
-var mockedService = mock.PhotoService{
+var mockedService = &mock.PhotoService{
 	ListAlbumsFn: func(ctx context.Context, pageSize int64, pageToken string) (response *photoslibrary.ListAlbumsResponse, err error) {
 		if pageToken == "give-me-more" {
 			// second page of albums.
@@ -191,7 +193,7 @@ var mockedService = mock.PhotoService{
 	},
 }
 
-var mockedCache = mock.Cache{
+var mockedCache = &mock.Cache{
 	GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
 		if title == "cached" {
 			return &photoslibrary.Album{Title: "cached"}, nil

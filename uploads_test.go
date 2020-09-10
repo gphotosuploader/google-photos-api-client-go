@@ -10,8 +10,8 @@ import (
 	"google.golang.org/api/googleapi"
 
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
 )
 
 func TestClient_AddMediaToLibrary(t *testing.T) {
@@ -53,7 +53,7 @@ func TestClient_AddMediaToLibrary(t *testing.T) {
 
 	t.Run("ReturnsMediaOnSuccess", func(t *testing.T) {
 		want := "dummy"
-		item := mock.FileUploadItem{Path: want}
+		item := mock.MockedUploadItem{Path: want}
 		media, err := c.AddMediaToLibrary(context.Background(), item)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
@@ -64,7 +64,7 @@ func TestClient_AddMediaToLibrary(t *testing.T) {
 	})
 
 	t.Run("RaiseErrorWhenCreateMediaFails", func(t *testing.T) {
-		item := mock.FileUploadItem{Path: "should-fail-on-media-creation"}
+		item := mock.MockedUploadItem{Path: "should-fail-on-media-creation"}
 		media, err := c.AddMediaToLibrary(context.Background(), item)
 		if err == nil {
 			t.Errorf("should fail: %v", media)
@@ -72,7 +72,7 @@ func TestClient_AddMediaToLibrary(t *testing.T) {
 	})
 
 	t.Run("RaiseErrorWhenUploadFails", func(t *testing.T) {
-		item := mock.FileUploadItem{Path: "should-fail-on-upload"}
+		item := mock.MockedUploadItem{Path: "should-fail-on-upload"}
 		media, err := c.AddMediaToLibrary(context.Background(), item)
 		if err == nil {
 			t.Errorf("should fail, due to upload: %v", media)

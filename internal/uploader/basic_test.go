@@ -10,8 +10,8 @@ import (
 	"google.golang.org/api/googleapi"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
 )
 
 func TestNewBasicUploader(t *testing.T) {
@@ -49,7 +49,7 @@ func TestNewBasicUploader(t *testing.T) {
 }
 
 func TestBasicUploader_Upload(t *testing.T) {
-	i := mock.FileUploadItem{}
+	i := mock.MockedUploadItem{}
 
 	t.Run("ReturnsTokenOnSuccessfulUpload", func(t *testing.T) {
 		want := "token"
@@ -57,7 +57,7 @@ func TestBasicUploader_Upload(t *testing.T) {
 			DoFn: func(req *http.Request) (response *http.Response, err error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body: ioutil.NopCloser(strings.NewReader(want)),
+					Body:       ioutil.NopCloser(strings.NewReader(want)),
 				}, nil
 			},
 		}
@@ -80,7 +80,7 @@ func TestBasicUploader_Upload(t *testing.T) {
 	t.Run("ReturnsErrorOnFailedUpload", func(t *testing.T) {
 		c := &mock.HttpClient{
 			DoFn: func(req *http.Request) (response *http.Response, err error) {
-				return nil, &googleapi.Error{Code:http.StatusTooManyRequests}
+				return nil, &googleapi.Error{Code: http.StatusTooManyRequests}
 			},
 		}
 

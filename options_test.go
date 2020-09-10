@@ -10,7 +10,7 @@ import (
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 )
 
 func TestWithPhotoService(t *testing.T) {
@@ -50,25 +50,23 @@ func TestWithSessionStorer(t *testing.T) {
 }
 
 func TestWithCacher(t *testing.T) {
-	want := &mockedCache
+	want := &mock.Cache{
+		GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
+			if title == "cached" {
+				return &photoslibrary.Album{Title: "cached"}, nil
+			}
+			return nil, cache.ErrCacheMiss
+		},
+		PutAlbumFn: func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+			return nil
+		},
+		InvalidateAlbumFn: func(ctx context.Context, title string) error {
+			return nil
+		},
+	}
 
 	got := gphotos.WithCacher(want)
 	if got.Value() != want {
 		t.Errorf("want: %v, got: %v", want, got)
 	}
-}
-
-var mockedCache = mock.Cache{
-	GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
-		if title == "cached" {
-			return &photoslibrary.Album{Title: "cached"}, nil
-		}
-		return nil, cache.ErrCacheMiss
-	},
-	PutAlbumFn: func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
-		return nil
-	},
-	InvalidateAlbumFn: func(ctx context.Context, title string) error {
-		return nil
-	},
 }

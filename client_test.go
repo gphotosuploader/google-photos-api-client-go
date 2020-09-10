@@ -6,7 +6,7 @@ import (
 
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mock"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 )
 
 func TestNewClient(t *testing.T) {
