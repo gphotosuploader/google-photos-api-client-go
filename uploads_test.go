@@ -67,7 +67,7 @@ func TestClient_AddMediaToLibrary(t *testing.T) {
 		item := mock.MockedUploadItem{Path: "should-fail-on-media-creation"}
 		media, err := c.AddMediaToLibrary(context.Background(), item)
 		if err == nil {
-			t.Errorf("should fail: %v", media)
+			t.Errorf("error was expected at this point. media: %v", media)
 		}
 	})
 
@@ -75,7 +75,7 @@ func TestClient_AddMediaToLibrary(t *testing.T) {
 		item := mock.MockedUploadItem{Path: "should-fail-on-upload"}
 		media, err := c.AddMediaToLibrary(context.Background(), item)
 		if err == nil {
-			t.Errorf("should fail, due to upload: %v", media)
+			t.Errorf("error was expected at this point. media: %v", media)
 		}
 	})
 
