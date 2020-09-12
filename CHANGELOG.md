@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.0.0
+> This is a major version update, it means that is **NOT BACKWARDS COMPATIBLE**. New import path is in place.
+### Added
+- Cache is used to improve performance and reduce the number of calls to Google Photos API. See [cache.Cache](internal/cache/cache.go) interface.
+- Retries has been implemented for almost all calls. ([#8][i8])
+- Improved testing of the whole module.
+- Added `ListAlbums` and `ListAlbumsWithCallback`, to get album list from library.
+- Added `AddMediaToLibrary` to upload media without assigning it to an album.
+### Changed
+- Import path includes **v2**: `github.com/gphotosuploader/google-photos-api-client-go/v2`.
+- Client call has changes to `NewClient` where you can customize with `Options`. See [README](README.md) for more information.
+### Fixed
+- Check for permission errors. ([#25][i25])
+- `GetUploadToken` should not be exposed. ([#9][i9])
+- Albums duplication, using mutex and cache. ([#36][i36])
+### Removed
+- Removed `AlbumByName` by `FindAlbum`.
+- Removed `GetOrCreateAlbumByName` by `CreateAlbum`.
+- Removed `AddMediaItem` by `AddMediaToAlbum`.
+- Removed `NewOAuthConfig`.
+- Removed the methods that were deprecated on v1.1.0. ([#11][i11])
+
+[i36]: https://github.com/gphotosuploader/google-photos-api-client-go/pull/36
+[i25]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/25
+[i11]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/11
+[i9]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/9
+[i8]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/8
+
 ## 1.1.5
 ### Changed
 - Update required `googlemirror` package version to v0.3.5.

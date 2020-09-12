@@ -1,39 +1,57 @@
+# Used for temporary files such as coverage files.
+TMP_DIR ?= .tmp
+
+COVERAGE_FILE := $(TMP_DIR)/coverage.txt
+COVERAGE_HTML_FILE := $(TMP_DIR)/coverage.html
+
+# golangci-lint version to use on this project.
+GOLANGCI_VERSION ?= 1.30.0
+GOLANGCI := $(TMP_DIR)/golangci-lint
+
+UNAME_OS := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
+ifeq ($(UNAME_ARCH),x86_64)
+ifeq ($(UNAME_OS),Darwin)
+OPEN_CMD := open
+endif
+ifeq ($(UNAME_OS),Linux)
+OPEN_CMD := xdg-open
+endif
+endif
+
 .DEFAULT_GOAL := help
-
-# go source files, ignore vendor directory
-PKGS = $(shell go list ./... | grep -v /vendor)
-COVERAGE_FILE ?= coverage.txt
-
-# Get first path on multiple GOPATH environments
-GOPATH := $(shell echo ${GOPATH} | cut -d: -f1)
-
 .PHONY: test
 test: ## Run all the tests
 	@echo "--> Running tests..."
-	@go test -covermode=atomic -coverprofile=$(COVERAGE_FILE) -race -failfast -timeout=30s $(PKGS)
+	@mkdir -p $(dir $(COVERAGE_FILE))
+	@go test -covermode=atomic -coverprofile=$(COVERAGE_FILE) -race -failfast -timeout=30s ./...
 
 .PHONY: cover
 cover: test ## Run all the tests and opens the coverage report
-	@echo "--> Openning coverage report..."
-	@go tool cover -html=$(COVERAGE_FILE)
+	@echo "--> Creating HTML coverage report at $(COVERAGE_HTML_FILE)..."
+	@mkdir -p $(dir $(COVERAGE_FILE)) $(dir $(COVERAGE_HTML_FILE))
+	@go tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML_FILE)
+ifndef COVEROPEN
+	@echo "--> Open HTML coverage report: $(OPEN_CMD) $(COVERAGE_HTML_FILE)"
+else
+	$(OPEN_CMD) $(COVERAGE_HTML_FILE)
+endif
 
-build: ## Build the app
+build: clean ## Build the app
 	@echo "--> Building..."
 	@go build ./...
 
 .PHONY: clean
 clean: ## Clean all built artifacts
 	@echo "--> Cleaning all built artifacts..."
-	@rm -f $(COVERAGE_FILE)
-
-BIN_DIR := $(GOPATH)/bin
-
-GOLANGCI := $(BIN_DIR)/golangci-lint
-GOLANGCI_VERSION := 1.29.0
+	@rm -f $(GOLANGCI) $(COVERAGE_FILE) $(COVERAGE_HTML_FILE)
+	@go clean
+	@go mod tidy -v
 
 $(GOLANGCI):
 	@echo "--> Installing golangci v$(GOLANGCI_VERSION)..."
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(BIN_DIR) v$(GOLANGCI_VERSION)
+	@mkdir -p $(dir $(GOLANGCI))
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI)) v$(GOLANGCI_VERSION)
 
 .PHONY: lint
 lint: $(GOLANGCI) ## Run linter
@@ -41,7 +59,7 @@ lint: $(GOLANGCI) ## Run linter
 	@$(GOLANGCI) run
 
 .PHONY: ci
-ci: test lint ## Run all the tests and code checks
+ci: lint test cover ## Run all the tests and code checks
 
 .PHONY: help
 help: ## Show this help

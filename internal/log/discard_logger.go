@@ -3,10 +3,6 @@ package log
 // DiscardLogger just discards every log statement
 type DiscardLogger struct{}
 
-func NewDiscardLogger() *DiscardLogger {
-	return &DiscardLogger{}
-}
-
 // Debug implements logger interface
 func (d *DiscardLogger) Debug(args ...interface{}) {}
 

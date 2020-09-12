@@ -1,7 +1,6 @@
-# IDE configuration
+# IDE configuration.
 /.idea/
 .history
 
-# Tests files
-/coverage.txt
-example/
+# Used for temporary files such as coverage files.
+/.tmp/
