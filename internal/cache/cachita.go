@@ -10,32 +10,32 @@ import (
 
 // CachitaCache implements Cache with `gadelkareem/cachita` package.
 type CachitaCache struct {
-	cache cachita.Cache
+	store cachita.Cache
 }
 
 func NewCachitaCache() *CachitaCache {
-	return &CachitaCache{cache: cachita.Memory()}
+	return &CachitaCache{store: cachita.Memory()}
 }
 
 // Get reads an object data from the cache.
-func (c *CachitaCache) GetAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
-	i := &photoslibrary.Album{}
-	err := c.cache.Get(c.albumKey(title), i)
+func (c *CachitaCache) GetAlbum(ctx context.Context, title string) (photoslibrary.Album, error) {
+	item := photoslibrary.Album{}
+	err := c.store.Get(c.albumKey(title), &item)
 	if err == cachita.ErrNotFound {
-		return nil, ErrCacheMiss
+		return NullAlbum, ErrCacheMiss
 	}
 
-	return i, err
+	return item, err
 }
 
 // Put store an object data to the cache.
-func (c *CachitaCache) PutAlbum(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
-	return c.cache.Put(c.albumKey(album.Title), *album, ttl)
+func (c *CachitaCache) PutAlbum(ctx context.Context, album photoslibrary.Album, ttl time.Duration) error {
+	return c.store.Put(c.albumKey(album.Title), album, ttl)
 }
 
 // InvalidateAlbum removes the specified Album from the cache.
 func (c *CachitaCache) InvalidateAlbum(ctx context.Context, title string) error {
-	return c.cache.Invalidate(c.albumKey(title))
+	return c.store.Invalidate(c.albumKey(title))
 }
 
 // albumKey returns the cache key for an Album title.

@@ -51,13 +51,13 @@ func TestWithSessionStorer(t *testing.T) {
 
 func TestWithCacher(t *testing.T) {
 	want := &mock.Cache{
-		GetAlbumFn: func(ctx context.Context, title string) (album *photoslibrary.Album, err error) {
+		GetAlbumFn: func(ctx context.Context, title string) (album photoslibrary.Album, err error) {
 			if title == "cached" {
-				return &photoslibrary.Album{Title: "cached"}, nil
+				return photoslibrary.Album{Title: "cached"}, nil
 			}
-			return nil, cache.ErrCacheMiss
+			return photoslibrary.Album{}, cache.ErrCacheMiss
 		},
-		PutAlbumFn: func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+		PutAlbumFn: func(ctx context.Context, album photoslibrary.Album, ttl time.Duration) error {
 			return nil
 		},
 		InvalidateAlbumFn: func(ctx context.Context, title string) error {

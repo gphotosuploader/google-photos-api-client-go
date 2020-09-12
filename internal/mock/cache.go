@@ -8,10 +8,10 @@ import (
 )
 
 type Cache struct {
-	GetAlbumFn      func(ctx context.Context, title string) (*photoslibrary.Album, error)
+	GetAlbumFn      func(ctx context.Context, title string) (photoslibrary.Album, error)
 	GetAlbumInvoked bool
 
-	PutAlbumFn      func(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error
+	PutAlbumFn      func(ctx context.Context, album photoslibrary.Album, ttl time.Duration) error
 	PutAlbumInvoked bool
 
 	InvalidateAlbumFn      func(ctx context.Context, title string) error
@@ -19,13 +19,13 @@ type Cache struct {
 }
 
 // GetAlbum invokes the mock implementation and marks the function as invoked.
-func (c *Cache) GetAlbum(ctx context.Context, title string) (*photoslibrary.Album, error) {
+func (c *Cache) GetAlbum(ctx context.Context, title string) (photoslibrary.Album, error) {
 	c.GetAlbumInvoked = true
 	return c.GetAlbumFn(ctx, title)
 }
 
 // PutAlbum invokes the mock implementation and marks the function as invoked.
-func (c *Cache) PutAlbum(ctx context.Context, album *photoslibrary.Album, ttl time.Duration) error {
+func (c *Cache) PutAlbum(ctx context.Context, album photoslibrary.Album, ttl time.Duration) error {
 	c.PutAlbumInvoked = true
 	return c.PutAlbumFn(ctx, album, ttl)
 }

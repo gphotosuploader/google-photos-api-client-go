@@ -20,7 +20,8 @@ const (
 )
 
 var (
-	// ErrAlbumNotFound represents a failure to find the album.
+	NullAlbum = photoslibrary.Album{}
+
 	ErrAlbumNotFound = errors.New("album was not found")
 )
 
@@ -47,7 +48,7 @@ func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbums
 
 		// cache albums.
 		for _, album := range res.Albums {
-			_ = c.cache.PutAlbum(ctx, album, albumCacheTTL)
+			_ = c.cache.PutAlbum(ctx, *album, albumCacheTTL)
 		}
 
 		var stop bool
@@ -78,11 +79,11 @@ func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.
 		Album: &photoslibrary.Album{Title: title},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not create an album. err: %w", err)
+		return &NullAlbum, fmt.Errorf("could not create an album. err: %w", err)
 	}
 
 	// Cache the created album.
-	_ = c.cache.PutAlbum(ctx, album, albumCacheTTL)
+	_ = c.cache.PutAlbum(ctx, *album, albumCacheTTL)
 
 	return album, nil
 }
@@ -93,24 +94,24 @@ func (c *Client) FindAlbum(ctx context.Context, title string) (*photoslibrary.Al
 	matched, err := c.cache.GetAlbum(ctx, title)
 	if !errors.Is(err, cache.ErrCacheMiss) {
 		// Album was found or there was an error with the cache.
-		return matched, err
+		return &matched, err
 	}
 
 	if err := c.ListAlbumsWithCallback(ctx, func(albums []*photoslibrary.Album, stop func()) {
 		for _, album := range albums {
 			if album.Title == title {
 				stop()
-				matched = album
+				matched = *album
 				return
 			}
 		}
 	}); err != nil {
-		return nil, err
+		return &NullAlbum, err
 	}
 
-	if matched == nil {
-		return nil, ErrAlbumNotFound
+	if len(matched.Title) == 0 {
+		return &NullAlbum, ErrAlbumNotFound
 	}
 
-	return matched, nil
+	return &matched, nil
 }
