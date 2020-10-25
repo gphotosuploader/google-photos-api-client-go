@@ -59,7 +59,7 @@ func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibra
 	}
 
 	// Google Photos API uses a GRPC code. Values can be obtained at
-	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
+	// https://pkg.go.dev/google.golang.org/genproto/googleapis/rpc/code
 	if res[0].Status.Code == 0 {
 		return res[0].MediaItem, nil
 	}
