@@ -168,7 +168,7 @@ func (u *ResumableUploader) resumeUploadSession(ctx context.Context, item Upload
 	if err != nil {
 		return "", err
 	}
-	
+
 	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		u.log.Errorf("Failed to process request: err=%s", err)
