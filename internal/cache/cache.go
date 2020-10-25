@@ -9,8 +9,6 @@ import (
 )
 
 var (
-	NullAlbum = photoslibrary.Album{}
-
 	ErrCacheMiss = errors.New("item could not be found in the cache")
 )
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+// HttpClient mocks an HTTP client.
 type HttpClient struct {
 	DoFn      func(req *http.Request) (*http.Response, error)
 	DoInvoked bool

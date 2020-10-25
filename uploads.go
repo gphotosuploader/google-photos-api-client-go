@@ -15,7 +15,7 @@ type UploadItem interface {
 	uploader.UploadItem
 }
 
-// AddMediaToAlbum returns MediaItem created after uploading the item to Google Photos library.
+// AddMediaToLibrary returns MediaItem created after uploading the item to Google Photos library.
 func (c *Client) AddMediaToLibrary(ctx context.Context, item UploadItem) (*photoslibrary.MediaItem, error) {
 	return c.AddMediaToAlbum(ctx, item, nil)
 }

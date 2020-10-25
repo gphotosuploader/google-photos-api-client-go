@@ -9,6 +9,7 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
 )
 
+// Uploader mocks an uploading service.
 type Uploader struct {
 	UploadFn      func(context.Context, uploader.UploadItem) (uploader.UploadToken, error)
 	UploadInvoked bool
@@ -20,12 +21,13 @@ func (u *Uploader) Upload(ctx context.Context, item uploader.UploadItem) (upload
 	return u.UploadFn(ctx, item)
 }
 
-// FileUploadItem represents a mocked file upload item.
+// MockedUploadItem represents a mocked file upload item.
 type MockedUploadItem struct {
 	Path string
 	size int64
 }
 
+// Open returns a io.ReadSeeker with a fixed string: "some test content inside a mocked file".
 func (m MockedUploadItem) Open() (io.ReadSeeker, int64, error) {
 	var b bytes.Buffer
 	var err error
@@ -38,18 +40,22 @@ func (m MockedUploadItem) Open() (io.ReadSeeker, int64, error) {
 	return r, m.size, nil
 }
 
+// Name returns the name (path) of the item.
 func (m MockedUploadItem) Name() string {
 	return m.String()
 }
 
+// String returns the path of the item.
 func (m MockedUploadItem) String() string {
 	return m.Path
 }
 
+// Size returns the length of "some test content inside a mocked file".
 func (m MockedUploadItem) Size() int64 {
 	return m.size
 }
 
+// SessionStorer mocks a service to store resumable upload data.
 type SessionStorer struct {
 	GetFn      func(f string) []byte
 	GetInvoked bool

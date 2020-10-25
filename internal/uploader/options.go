@@ -9,6 +9,7 @@ const (
 	optkeyEndpoint = "endpoint"
 )
 
+// Option represents a configurable parameter of the Uploader.
 type Option interface {
 	Name() string
 	Value() interface{}

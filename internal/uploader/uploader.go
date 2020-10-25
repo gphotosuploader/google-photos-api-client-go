@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// Uploader represents a service able to upload media.
 type Uploader interface {
 	// Upload uploads the media item. It returns an upload token.
 	Upload(context.Context, UploadItem) (UploadToken, error)

@@ -13,6 +13,7 @@ type CachitaCache struct {
 	store cachita.Cache
 }
 
+// NewCachitaCache returns a Cache service implemented using `gadelkareem/cachita`.
 func NewCachitaCache() *CachitaCache {
 	return &CachitaCache{store: cachita.Memory()}
 }
@@ -22,7 +23,7 @@ func (c *CachitaCache) GetAlbum(ctx context.Context, title string) (photoslibrar
 	item := photoslibrary.Album{}
 	err := c.store.Get(c.albumKey(title), &item)
 	if err == cachita.ErrNotFound {
-		return NullAlbum, ErrCacheMiss
+		return photoslibrary.Album{}, ErrCacheMiss
 	}
 
 	return item, err

@@ -7,6 +7,7 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
+// Cache mocks a Cache service.
 type Cache struct {
 	GetAlbumFn      func(ctx context.Context, title string) (photoslibrary.Album, error)
 	GetAlbumInvoked bool

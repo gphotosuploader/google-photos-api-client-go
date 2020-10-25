@@ -32,6 +32,7 @@ func (m FileUploadItem) String() string {
 	return string(m)
 }
 
+// Size returns size of the file.
 func (m FileUploadItem) Size() int64 {
 	f, err := os.Stat(m.String())
 	if err != nil {

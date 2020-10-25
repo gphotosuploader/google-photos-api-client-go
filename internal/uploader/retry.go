@@ -31,7 +31,7 @@ func IsRetryableStatusCode(code int) bool {
 	return code >= 500 && code <= 599
 }
 
-// IsRetryableError returns true if the error is due to rate limit,
+// IsRateLimitError returns true if the error is due to rate limit,
 // such as status code is 429.
 // Otherwise returns false.
 // See https://developers.google.com/photos/library/guides/best-practices#retrying-failed-requests

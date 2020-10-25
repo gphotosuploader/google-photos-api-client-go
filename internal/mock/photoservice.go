@@ -6,6 +6,7 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
+// PhotoService mocks a Google Photos Service.
 type PhotoService struct {
 	ListAlbumsFn      func(ctx context.Context, pageSize int64, pageToken string) (*photoslibrary.ListAlbumsResponse, error)
 	ListAlbumsInvoked bool
@@ -29,6 +30,7 @@ func (s *PhotoService) CreateAlbum(ctx context.Context, request *photoslibrary.C
 	return s.CreateAlbumFn(ctx, request)
 }
 
+// CreateMediaItems invokes the mock implementation and marks the function as invoked.
 func (s *PhotoService) CreateMediaItems(ctx context.Context, request *photoslibrary.BatchCreateMediaItemsRequest) (*photoslibrary.BatchCreateMediaItemsResponse, error) {
 	s.CreateMediaItemsInvoked = true
 	return s.CreateMediaItemsFn(ctx, request)
