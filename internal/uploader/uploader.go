@@ -19,8 +19,6 @@ type UploadItem interface {
 	Open() (io.ReadSeeker, int64, error)
 	// Name returns the filename.
 	Name() string
-	// String returns the full name, e.g. path or URL.
-	String() string
 	// Size returns the size (in bytes).
 	Size() int64
 }

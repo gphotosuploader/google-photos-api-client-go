@@ -25,7 +25,11 @@ func (m FileUploadItem) Open() (io.ReadSeeker, int64, error) {
 
 // Name returns the filename.
 func (m FileUploadItem) Name() string {
-	return path.Base(m.String())
+	f, err := os.Stat(m.String())
+	if err != nil {
+		return ""
+	}
+	return path.Base(f.Name())
 }
 
 func (m FileUploadItem) String() string {

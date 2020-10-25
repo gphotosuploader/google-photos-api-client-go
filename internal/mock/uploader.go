@@ -42,11 +42,6 @@ func (m MockedUploadItem) Open() (io.ReadSeeker, int64, error) {
 
 // Name returns the name (path) of the item.
 func (m MockedUploadItem) Name() string {
-	return m.String()
-}
-
-// String returns the path of the item.
-func (m MockedUploadItem) String() string {
 	return m.Path
 }
 

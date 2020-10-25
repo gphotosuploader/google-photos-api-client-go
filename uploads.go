@@ -22,7 +22,7 @@ func (c *Client) AddMediaToLibrary(ctx context.Context, item UploadItem) (*photo
 
 // AddMediaToAlbum returns MediaItem created after uploading the item and adding it to an`albumID`.
 func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *photoslibrary.Album) (*photoslibrary.MediaItem, error) {
-	c.log.Debugf("Initiating upload and media item creation: file=%s", item.String())
+	c.log.Debugf("Initiating upload and media item creation: file=%s", item.Name())
 
 	var albumID string
 	if album != nil {
@@ -31,10 +31,10 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *ph
 
 	token, err := c.uploader.Upload(ctx, item)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting upload token for %s: err=%w", item.String(), err)
+		return nil, fmt.Errorf("failed getting upload token for %s: err=%w", item.Name(), err)
 	}
 
-	c.log.Debugf("File has been uploaded: file=%s", item.String())
+	c.log.Debugf("File has been uploaded: file=%s", item.Name())
 
 	res, err := c.service.CreateMediaItems(ctx, &photoslibrary.BatchCreateMediaItemsRequest{
 		AlbumId: albumID,
@@ -46,7 +46,7 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *ph
 		},
 	})
 	if err != nil {
-		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.String(), err)
+		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.Name(), err)
 		return nil, fmt.Errorf("error while trying to create this media item, err=%w", err)
 	}
 

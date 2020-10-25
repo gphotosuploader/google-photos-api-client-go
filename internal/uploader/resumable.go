@@ -67,15 +67,15 @@ func NewResumableUploader(client httpClient, store SessionStorer, options ...Opt
 
 // Upload returns the Google Photos upload token for an Upload object.
 func (u *ResumableUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
-	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.String())
+	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.Name())
 	offset := u.offsetFromPreviousSession(ctx, item)
 
 	if offset == 0 {
-		u.log.Debugf("Initiating new upload session: file=%s", item.String())
+		u.log.Debugf("Initiating new upload session: file=%s", item.Name())
 		return u.createUploadSession(ctx, item)
 	}
 
-	u.log.Debugf("Resuming previous upload session: file=%s", item.String())
+	u.log.Debugf("Resuming previous upload session: file=%s", item.Name())
 	return u.resumeUploadSession(ctx, item, offset)
 }
 
@@ -116,7 +116,7 @@ func (u *ResumableUploader) offsetFromResponse(res *http.Response, item UploadIt
 }
 
 func (u *ResumableUploader) createUploadSession(ctx context.Context, item UploadItem) (UploadToken, error) {
-	u.log.Debugf("Initiating upload session: file=%s", item.String())
+	u.log.Debugf("Initiating upload session: file=%s", item.Name())
 
 	req, err := u.prepareUploadRequest(item)
 	if err != nil {
