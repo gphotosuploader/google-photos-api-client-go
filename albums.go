@@ -20,11 +20,10 @@ const (
 )
 
 var (
-	NullAlbum = photoslibrary.Album{}
-
 	ErrAlbumNotFound = errors.New("album was not found")
 )
 
+// ListAlbums returns all the albums in Google Photos service.
 func (c *Client) ListAlbums(ctx context.Context) ([]*photoslibrary.Album, error) {
 	var results []*photoslibrary.Album
 	err := c.ListAlbumsWithCallback(ctx, func(albums []*photoslibrary.Album, stop func()) {
@@ -38,6 +37,7 @@ func (c *Client) ListAlbums(ctx context.Context) ([]*photoslibrary.Album, error)
 // If this calls stop, ListAlbums stops the loop.
 type ListAlbumsFunc func(albums []*photoslibrary.Album, stop func())
 
+// ListAlbumsWithCallback iterate on each Google Photos album executing the provided callback.
 func (c *Client) ListAlbumsWithCallback(ctx context.Context, callback ListAlbumsFunc) error {
 	var pageToken string
 	for {
@@ -79,7 +79,7 @@ func (c *Client) CreateAlbum(ctx context.Context, title string) (*photoslibrary.
 		Album: &photoslibrary.Album{Title: title},
 	})
 	if err != nil {
-		return &NullAlbum, fmt.Errorf("could not create an album. err: %w", err)
+		return &photoslibrary.Album{}, fmt.Errorf("could not create an album. err: %w", err)
 	}
 
 	// Cache the created album.
@@ -106,11 +106,11 @@ func (c *Client) FindAlbum(ctx context.Context, title string) (*photoslibrary.Al
 			}
 		}
 	}); err != nil {
-		return &NullAlbum, err
+		return &photoslibrary.Album{}, err
 	}
 
 	if len(matched.Title) == 0 {
-		return &NullAlbum, ErrAlbumNotFound
+		return &photoslibrary.Album{}, ErrAlbumNotFound
 	}
 
 	return &matched, nil

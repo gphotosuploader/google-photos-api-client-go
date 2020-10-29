@@ -49,48 +49,49 @@ func TestNewBasicUploader(t *testing.T) {
 }
 
 func TestBasicUploader_Upload(t *testing.T) {
+	testCases := []struct {
+		name        string
+		statusCode  int
+		errExpected bool
+		want        string
+	}{
+		{name: "ReturnsTokenOnSuccessfulUpload", statusCode: http.StatusOK, errExpected: false, want: "token"},
+		{name: "ReturnsErrorOnRateLimitedUpload", statusCode: http.StatusTooManyRequests, errExpected: true, want: ""},
+	}
+
 	i := mock.MockedUploadItem{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &mock.HttpClient{
+				DoFn: func(req *http.Request) (*http.Response, error) {
+					if tc.statusCode != http.StatusOK {
+						return nil, &googleapi.Error{Code: tc.statusCode}
+					}
 
-	t.Run("ReturnsTokenOnSuccessfulUpload", func(t *testing.T) {
-		want := "token"
-		c := &mock.HttpClient{
-			DoFn: func(req *http.Request) (response *http.Response, err error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(want)),
-				}, nil
-			},
-		}
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       ioutil.NopCloser(strings.NewReader(tc.want)),
+					}, nil
+				},
+			}
 
-		u, err := uploader.NewBasicUploader(c)
-		if err != nil {
-			t.Fatalf("error was not expected at this point. err: %s", err)
-		}
+			u, err := uploader.NewBasicUploader(c)
+			if err != nil {
+				t.Fatalf("error was not expected at this point. err: %s", err)
+			}
 
-		got, err := u.Upload(context.Background(), i)
-		if err != nil {
-			t.Fatalf("error was not expected at this point. err: %s", err)
-		}
+			got, err := u.Upload(context.Background(), i)
+			if tc.errExpected && err == nil {
+				t.Fatalf("error was expected, but it's not produced.")
+			}
 
-		if got != uploader.UploadToken(want) {
-			t.Errorf("want: %v, got: %v", want, got)
-		}
-	})
+			if !tc.errExpected && err != nil {
+				t.Fatalf("error was not expected, err: %s", err)
+			}
 
-	t.Run("ReturnsErrorOnFailedUpload", func(t *testing.T) {
-		c := &mock.HttpClient{
-			DoFn: func(req *http.Request) (response *http.Response, err error) {
-				return nil, &googleapi.Error{Code: http.StatusTooManyRequests}
-			},
-		}
-
-		u, err := uploader.NewBasicUploader(c)
-		if err != nil {
-			t.Fatalf("error was not expected at this point. err: %s", err)
-		}
-
-		if _, err := u.Upload(context.Background(), i); err == nil {
-			t.Errorf("error was expected.")
-		}
-	})
+			if uploader.UploadToken(tc.want) != got {
+				t.Errorf("want: %v, got: %v", tc.want, got)
+			}
+		})
+	}
 }

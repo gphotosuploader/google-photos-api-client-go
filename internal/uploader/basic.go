@@ -11,7 +11,7 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 )
 
-// SimpleUploader implements uploads to Google Photos service.
+// BasicUploader implements uploads to Google Photos service.
 type BasicUploader struct {
 	// client is an HTTP client used for uploading. It needs the proper authentication in place.
 	client httpClient

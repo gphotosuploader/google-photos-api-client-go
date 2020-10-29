@@ -15,6 +15,7 @@ const (
 	optkeyUploader      = "uploader"
 )
 
+// Option represents a configurable parameter for Google Photos API client.
 type Option interface {
 	Name() string
 	Value() interface{}
@@ -28,6 +29,7 @@ type option struct {
 func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
+// WithPhotoService configures a Google Photos service.
 func WithPhotoService(s photoservice.Service) Option {
 	return &option{
 		name:  optkeyPhotoService,
@@ -35,6 +37,7 @@ func WithPhotoService(s photoservice.Service) Option {
 	}
 }
 
+// WithUploader configures an Uploader.
 func WithUploader(u uploader.Uploader) Option {
 	return &option{
 		name:  optkeyUploader,
@@ -42,6 +45,7 @@ func WithUploader(u uploader.Uploader) Option {
 	}
 }
 
+// WithLogger configures a Logger.
 func WithLogger(l log.Logger) Option {
 	return &option{
 		name:  optkeyLogger,
@@ -49,6 +53,7 @@ func WithLogger(l log.Logger) Option {
 	}
 }
 
+// WithSessionStorer configures a service to keep resumable uploads.
 func WithSessionStorer(s uploader.SessionStorer) Option {
 	return &option{
 		name:  optkeySessionStorer,
@@ -56,6 +61,7 @@ func WithSessionStorer(s uploader.SessionStorer) Option {
 	}
 }
 
+// WithCacher configures a Cache.
 func WithCacher(c cache.Cache) Option {
 	return &option{
 		name:  optkeyCacher,

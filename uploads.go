@@ -15,14 +15,14 @@ type UploadItem interface {
 	uploader.UploadItem
 }
 
-// AddMediaToAlbum returns MediaItem created after uploading the item to Google Photos library.
+// AddMediaToLibrary returns MediaItem created after uploading the item to Google Photos library.
 func (c *Client) AddMediaToLibrary(ctx context.Context, item UploadItem) (*photoslibrary.MediaItem, error) {
 	return c.AddMediaToAlbum(ctx, item, nil)
 }
 
 // AddMediaToAlbum returns MediaItem created after uploading the item and adding it to an`albumID`.
 func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *photoslibrary.Album) (*photoslibrary.MediaItem, error) {
-	c.log.Debugf("Initiating upload and media item creation: file=%s", item.String())
+	c.log.Debugf("Initiating upload and media item creation: file=%s", item.Name())
 
 	var albumID string
 	if album != nil {
@@ -31,10 +31,10 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *ph
 
 	token, err := c.uploader.Upload(ctx, item)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting upload token for %s: err=%w", item.String(), err)
+		return nil, fmt.Errorf("failed getting upload token for %s: err=%w", item.Name(), err)
 	}
 
-	c.log.Debugf("File has been uploaded: file=%s", item.String())
+	c.log.Debugf("File has been uploaded: file=%s", item.Name())
 
 	res, err := c.service.CreateMediaItems(ctx, &photoslibrary.BatchCreateMediaItemsRequest{
 		AlbumId: albumID,
@@ -46,7 +46,7 @@ func (c *Client) AddMediaToAlbum(ctx context.Context, item UploadItem, album *ph
 		},
 	})
 	if err != nil {
-		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.String(), err)
+		c.log.Errorf("Failed to create media item: file=%s, err=%s", item.Name(), err)
 		return nil, fmt.Errorf("error while trying to create this media item, err=%w", err)
 	}
 
@@ -59,7 +59,7 @@ func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibra
 	}
 
 	// Google Photos API uses a GRPC code. Values can be obtained at
-	// https://godoc.org/google.golang.org/genproto/googleapis/rpc/code
+	// https://pkg.go.dev/google.golang.org/genproto/googleapis/rpc/code
 	if res[0].Status.Code == 0 {
 		return res[0].MediaItem, nil
 	}
