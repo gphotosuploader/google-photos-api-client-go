@@ -8,7 +8,7 @@ import (
 
 	"github.com/duffpl/google-photos-api-client/albums"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums/internal/cache"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 )
 
 func TestCachitaCache(t *testing.T) {
