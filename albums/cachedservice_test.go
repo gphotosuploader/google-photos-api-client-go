@@ -13,81 +13,73 @@ import (
 )
 
 func TestCachedAlbumsService_Create(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		isErrExpected bool
+	}{
+		{"Should return error if API fails", "api-should-fail", true},
+		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return the created album on success", "foo", false},
+	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
-
-	t.Run("Should return error if API fails", func(t *testing.T) {
-		_, err := s.Create("api-should-fail", context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return error if cache fails", func(t *testing.T) {
-		_, err := s.Create("cache-should-fail", context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return the created album on success", func(t *testing.T) {
-		_, err := s.Create("foo", context.Background())
-		if err != nil {
-			t.Errorf("error was not expected, err: %s", err)
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := s.Create(tc.input, context.Background())
+			assertExpectedError(tc.isErrExpected, err, t)
+			if err == nil && tc.input != got.Title {
+				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			}
+		})
+	}
 }
 
 func TestCachedAlbumsService_Get(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		isErrExpected bool
+	}{
+		{"Should return error if API fails", "api-should-fail", true},
+		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return the created album on success", "foo", false},
+	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
-
-	t.Run("Should return error if API fails", func(t *testing.T) {
-		_, err := s.Get("api-should-fail", context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return error if cache fails", func(t *testing.T) {
-		_, err := s.Get("cache-should-fail", context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return the album on success", func(t *testing.T) {
-		_, err := s.Get("foo", context.Background())
-		if err != nil {
-			t.Errorf("error was not expected, err: %s", err)
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := s.Get(tc.input, context.Background())
+			assertExpectedError(tc.isErrExpected, err, t)
+			if err == nil && tc.input != got.ID {
+				t.Errorf("want: %s, got: %s", tc.input, got.ID)
+			}
+		})
+	}
 }
 
 func TestCachedAlbumsService_GetByTitle(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		isErrExpected bool
+		errExpected   error
+	}{
+		{"Should return error if cache fails", "cache-should-fail", true, nil},
+		{"Should return the album on success", "foo", false, nil},
+		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", true, ErrAlbumNotFound},
+	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
-
-	t.Run("Should return error if cache fails", func(t *testing.T) {
-		_, err := s.GetByTitle("cache-should-fail", context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return the album on success", func(t *testing.T) {
-		album, err := s.GetByTitle("foo", context.Background())
-		if err != nil {
-			t.Fatalf("error not expected at this point, err: %s", err)
-		}
-		if "foo" != album.Title {
-			t.Errorf("wamt: %s, got: %s", "foo", album.Title)
-		}
-	})
-
-	t.Run("Should return ErrAlbumNotFound if the album does not exist", func(t *testing.T) {
-		_, err := s.GetByTitle("non-existent", context.Background())
-		if err != ErrAlbumNotFound {
-			t.Errorf("error was not expected, err: %s", err)
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := s.GetByTitle(tc.input, context.Background())
+			assertExpectedError(tc.isErrExpected, err, t)
+			if tc.errExpected != nil && tc.errExpected != err {
+				t.Errorf("err want: %s, err got: %s", tc.errExpected, err)
+			}
+			if err == nil && tc.input != got.Title {
+				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			}
+		})
+	}
 }
 
 func TestCachedAlbumsService_ListAll(t *testing.T) {
@@ -105,46 +97,27 @@ func TestCachedAlbumsService_ListAll(t *testing.T) {
 }
 
 func TestCachedAlbumsService_Patch(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		isErrExpected bool
+	}{
+		{"Should return error if API fails", "api-should-fail", true},
+		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return the modified album on success", "foo", false},
+	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
-
-	t.Run("Should return error if API fails", func(t *testing.T) {
-		album := albums.Album{Title:"api-should-fail"}
-		updateMask := []albums.Field{albums.AlbumFieldTitle}
-		_, err := s.Patch(album, updateMask, context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should  if API fails", func(t *testing.T) {
-		album := albums.Album{Title:"api-should-fail"}
-		updateMask := []albums.Field{albums.AlbumFieldTitle}
-		_, err := s.Patch(album, updateMask, context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return error if cache fails", func(t *testing.T) {
-		album := albums.Album{Title:"cache-should-fail"}
-		updateMask := []albums.Field{albums.AlbumFieldTitle}
-		_, err := s.Patch(album, updateMask, context.Background())
-		if err == nil {
-			t.Errorf("error was expected, but not produced")
-		}
-	})
-
-	t.Run("Should return an album on success", func(t *testing.T) {
-		album := albums.Album{Title:"foo"}
-		updateMask := []albums.Field{albums.AlbumFieldTitle}
-		got, err := s.Patch(album, updateMask, context.Background())
-		if err != nil {
-			t.Fatalf("error was expected at this point")
-		}
-		if album.Title != got.Title {
-			t.Errorf("want: %s, got: %s", album.Title, got.Title)
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			album := albums.Album{Title: tc.input}
+			updateMask := []albums.Field{albums.AlbumFieldTitle}
+			got, err := s.Patch(album, updateMask, context.Background())
+			assertExpectedError(tc.isErrExpected, err, t)
+			if err == nil && tc.input != got.Title {
+				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			}
+		})
+	}
 }
 
 var mockedAlbumsAPIClient = mock.AlbumService{
@@ -213,4 +186,13 @@ var mockedCache = &mock.Cache{
 	InvalidateAllAlbumsFn: func(ctx context.Context) error {
 		return nil
 	},
+}
+
+func assertExpectedError(errExpected bool, err error, t *testing.T) {
+	if errExpected && err == nil {
+		t.Fatalf("error was expected, but not produced")
+	}
+	if !errExpected && err != nil {
+		t.Fatalf("error was not expected, err: %s", err)
+	}
 }

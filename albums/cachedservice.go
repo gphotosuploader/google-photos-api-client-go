@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	NullAlbum = albums.Album{}
 	ErrAlbumNotFound = errors.New("album not found")
 )
 
@@ -28,7 +29,7 @@ type CachedAlbumsService struct {
 func (s CachedAlbumsService) Create(title string, ctx context.Context) (*albums.Album, error) {
 	albumPtr, err := s.AlbumsService.Create(title, ctx)
 	if err != nil {
-		return nil, err
+		return &NullAlbum, err
 	}
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
@@ -37,7 +38,7 @@ func (s CachedAlbumsService) Create(title string, ctx context.Context) (*albums.
 func (s CachedAlbumsService) Get(id string, ctx context.Context) (*albums.Album, error) {
 	albumPtr, err := s.AlbumsService.Get(id, ctx)
 	if err != nil {
-		return nil, err
+		return &NullAlbum, err
 	}
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
@@ -54,16 +55,16 @@ func (s CachedAlbumsService) GetByTitle(title string, ctx context.Context) (*alb
 		select {
 		case item, ok := <-albumsC:
 			if !ok {
-				return &albums.Album{}, ErrAlbumNotFound // there aren't more albums, album not found
+				return &NullAlbum, ErrAlbumNotFound // there aren't more albums, album not found
 			}
 			if item.Title == title {
 				return &item, s.cache.PutAlbum(ctx, item) // found, cache it and return it
 			}
 			if err := s.cache.PutAlbum(ctx, item); err != nil {
-				return &albums.Album{}, err // error when caching, returns
+				return &NullAlbum, err // error when caching, returns
 			}
 		case err := <-errorsC:
-			return nil, err
+			return &NullAlbum, err
 		}
 	}
 }
@@ -87,7 +88,7 @@ func (s CachedAlbumsService) ListAll(options *albums.AlbumsListOptions, ctx cont
 				return result, err
 			}
 		case err := <-errorsC:
-			return nil, err
+			return result, err
 		}
 	}
 }
@@ -100,7 +101,7 @@ func (s CachedAlbumsService) Patch(album albums.Album, updateMask []albums.Field
 	}
 	albumPtr, err := s.AlbumsService.Patch(album, updateMask, ctx)
 	if err != nil {
-		return nil, err
+		return &NullAlbum, err
 	}
 	err = s.cache.PutAlbum(ctx, *albumPtr)
 	return albumPtr, err
