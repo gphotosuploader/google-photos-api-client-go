@@ -12,14 +12,87 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 )
 
+var (
+	mockedAlbumsRepository = make([]albums.Album, 0)
+
+	mockedAlbumsAPIClient = mock.AlbumService{
+		CreateFn: func(title string, ctx context.Context) (*albums.Album, error) {
+			if title == "create-api-should-fail" {
+				return &NullAlbum, errors.New("error")
+			}
+			return &albums.Album{Title: title}, nil
+		},
+		GetFn: func(id string, ctx context.Context) (*albums.Album, error) {
+			if id == "get-api-should-fail" {
+				return &NullAlbum, errors.New("error")
+			}
+			return &albums.Album{ID: id}, nil
+		},
+		ListAllAsyncFn: func(options *albums.AlbumsListOptions, ctx context.Context) (<-chan albums.Album, <-chan error) {
+			albumsC := make(chan albums.Album, len(mockedAlbumsRepository))
+			errorsC := make(chan error)
+			go func() {
+				defer close(albumsC)
+				for _, item := range mockedAlbumsRepository {
+					albumsC <- item
+				}
+			}()
+			return albumsC, errorsC
+		},
+		PatchFn: func(album albums.Album, updateMask []albums.Field, ctx context.Context) (*albums.Album, error) {
+			if album.Title == "patch-api-should-fail" {
+				return &NullAlbum, errors.New("error")
+			}
+			original := albums.Album{
+				ID:                    "originalAlbumId",
+				Title:                 "originalTitle",
+				CoverPhotoMediaItemID: "originalCoverPhotoMediaItemId",
+			}
+			for _, field := range updateMask {
+				switch field {
+				case albums.AlbumFieldTitle:
+					original.Title = album.Title
+				case albums.AlbumFieldCoverPhotoMediaItemId:
+					original.CoverPhotoMediaItemID = album.CoverPhotoMediaItemID
+				}
+			}
+			return &original, nil
+		},
+	}
+
+	mockedCache = &mock.Cache{
+		GetAlbumFn: func(ctx context.Context, title string) (album albums.Album, err error) {
+			if title == "get-cache-should-fail" {
+				return NullAlbum, errors.New("error")
+			}
+			if title == "cached-album" {
+				return albums.Album{Title: "cached-album"}, nil
+			}
+			return NullAlbum, cache.ErrCacheMiss
+		},
+		PutAlbumFn: func(ctx context.Context, album albums.Album) error {
+			if album.Title == "put-cache-should-fail" || album.ID == "put-cache-should-fail" {
+				return errors.New("error")
+			}
+			return nil
+		},
+		InvalidateAlbumFn: func(ctx context.Context, title string) error {
+			return nil
+		},
+		InvalidateAllAlbumsFn: func(ctx context.Context) error {
+			return nil
+		},
+	}
+)
+
 func TestCachedAlbumsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "api-should-fail", true},
-		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return error if API fails", "create-api-should-fail", true},
+		{"Should return error if cache fails", "put-cache-should-fail", true},
 		{"Should return the created album on success", "foo", false},
 	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
@@ -40,8 +113,8 @@ func TestCachedAlbumsService_Get(t *testing.T) {
 		input         string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "api-should-fail", true},
-		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return error if API fails", "get-api-should-fail", true},
+		{"Should return error if cache fails", "put-cache-should-fail", true},
 		{"Should return the created album on success", "foo", false},
 	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
@@ -63,11 +136,15 @@ func TestCachedAlbumsService_GetByTitle(t *testing.T) {
 		isErrExpected bool
 		errExpected   error
 	}{
-		{"Should return error if cache fails", "cache-should-fail", true, nil},
-		{"Should return the album on success", "foo", false, nil},
+		{"Should return error if cache fails (get)", "get-cache-should-fail", true, nil},
+		{"Should return error if cache fails (put)", "put-cache-should-fail", true, nil},
+		{"Should return the cached album on success", "cached-album", false, nil},
+		{"Should return the album on success", "bar", false, nil},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", true, ErrAlbumNotFound},
 	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
+	fillMockedRepository([]string{"foo", "bar", "baz"})
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := s.GetByTitle(tc.input, context.Background())
@@ -84,13 +161,14 @@ func TestCachedAlbumsService_GetByTitle(t *testing.T) {
 
 func TestCachedAlbumsService_ListAll(t *testing.T) {
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
+	fillMockedRepository([]string{"foo", "bar", "baz"})
 
 	t.Run("Should return the existing albums", func(t *testing.T) {
 		res, err := s.ListAll(&albums.AlbumsListOptions{}, context.Background())
 		if err != nil {
 			t.Fatalf("error was expected at this point")
 		}
-		if 3 != len(res) {
+		if len(mockedAlbumsRepository) != len(res) {
 			t.Errorf("#albums, want: %d, got: %d", 3, len(res))
 		}
 	})
@@ -102,8 +180,8 @@ func TestCachedAlbumsService_Patch(t *testing.T) {
 		input         string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "api-should-fail", true},
-		{"Should return error if cache fails", "cache-should-fail", true},
+		{"Should return error if API fails", "patch-api-should-fail", true},
+		{"Should return error if cache fails", "put-cache-should-fail", true},
 		{"Should return the modified album on success", "foo", false},
 	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
@@ -120,72 +198,14 @@ func TestCachedAlbumsService_Patch(t *testing.T) {
 	}
 }
 
-var mockedAlbumsAPIClient = mock.AlbumService{
-	CreateFn: func(title string, ctx context.Context) (*albums.Album, error) {
-		if title == "api-should-fail" {
-			return &albums.Album{}, errors.New("error")
-		}
-		return &albums.Album{Title: title}, nil
-	},
-	GetFn: func(id string, ctx context.Context) (*albums.Album, error) {
-		if id == "api-should-fail" {
-			return &albums.Album{}, errors.New("error")
-		}
-		return &albums.Album{ID: id}, nil
-	},
-	ListAllAsyncFn: func(options *albums.AlbumsListOptions, ctx context.Context) (<-chan albums.Album, <-chan error) {
-		items := []string{"foo", "bar", "baz"}
-
-		albumsC := make(chan albums.Album, len(items))
-		errorsC := make(chan error)
-		go func() {
-			defer close(albumsC)
-			for _, item := range items {
-				albumsC <- albums.Album{Title: item}
-			}
-		}()
-		return albumsC, errorsC
-	},
-	PatchFn: func(album albums.Album, updateMask []albums.Field, ctx context.Context) (*albums.Album, error) {
-		if album.Title == "api-should-fail" {
-			return &albums.Album{}, errors.New("error")
-		}
-		original := albums.Album{
-			ID:                    "originalAlbumId",
-			Title:                 "originalTitle",
-			CoverPhotoMediaItemID: "originalCoverPhotoMediaItemId",
-		}
-		for _, field := range updateMask {
-			switch field {
-			case albums.AlbumFieldTitle:
-				original.Title = album.Title
-			case albums.AlbumFieldCoverPhotoMediaItemId:
-				original.CoverPhotoMediaItemID = album.CoverPhotoMediaItemID
-			}
-		}
-		return &original, nil
-	},
-}
-
-var mockedCache = &mock.Cache{
-	GetAlbumFn: func(ctx context.Context, title string) (album albums.Album, err error) {
-		if title == "cached-album" {
-			return albums.Album{Title: "cached-album"}, nil
-		}
-		return albums.Album{}, cache.ErrCacheMiss
-	},
-	PutAlbumFn: func(ctx context.Context, album albums.Album) error {
-		if album.Title == "cache-should-fail" || album.ID == "cache-should-fail" {
-			return errors.New("error")
-		}
-		return nil
-	},
-	InvalidateAlbumFn: func(ctx context.Context, title string) error {
-		return nil
-	},
-	InvalidateAllAlbumsFn: func(ctx context.Context) error {
-		return nil
-	},
+func fillMockedRepository(items []string) {
+	mockedAlbumsRepository = make([]albums.Album, 0)
+	for _, item := range items {
+		mockedAlbumsRepository = append(mockedAlbumsRepository, albums.Album{
+			ID:    item + "Id",
+			Title: item,
+		})
+	}
 }
 
 func assertExpectedError(errExpected bool, err error, t *testing.T) {
