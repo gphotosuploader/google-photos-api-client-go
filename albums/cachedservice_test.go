@@ -77,6 +77,9 @@ var (
 			return nil
 		},
 		InvalidateAlbumFn: func(ctx context.Context, title string) error {
+			if title == "invalidate-cache-should-fail" {
+				return errors.New("error")
+			}
 			return nil
 		},
 		InvalidateAllAlbumsFn: func(ctx context.Context) error {
@@ -137,7 +140,6 @@ func TestCachedAlbumsService_GetByTitle(t *testing.T) {
 		errExpected   error
 	}{
 		{"Should return error if cache fails (get)", "get-cache-should-fail", true, nil},
-		{"Should return error if cache fails (put)", "put-cache-should-fail", true, nil},
 		{"Should return the cached album on success", "cached-album", false, nil},
 		{"Should return the album on success", "bar", false, nil},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", true, ErrAlbumNotFound},
@@ -181,7 +183,8 @@ func TestCachedAlbumsService_Patch(t *testing.T) {
 		isErrExpected bool
 	}{
 		{"Should return error if API fails", "patch-api-should-fail", true},
-		{"Should return error if cache fails", "put-cache-should-fail", true},
+		{"Should return error if cache fails (invalidate)", "invalidate-cache-should-fail", true},
+		{"Should return error if cache fails (put)", "put-cache-should-fail", true},
 		{"Should return the modified album on success", "foo", false},
 	}
 	s := NewCachedAlbumsService(http.DefaultClient, WithAlbumsAPIClient(mockedAlbumsAPIClient), WithCacher(mockedCache))
