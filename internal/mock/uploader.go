@@ -6,13 +6,22 @@ import (
 	"io"
 	"strings"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
 
 // Uploader mocks an uploading service.
 type Uploader struct {
+	UploadFileFn func(filepath string, ctx context.Context) (string, error)
+	UploadFileInvoked bool
+
 	UploadFn      func(context.Context, uploader.UploadItem) (uploader.UploadToken, error)
 	UploadInvoked bool
+}
+
+// Upload invokes the mock implementation and marks the function as invoked.
+func (u *Uploader) UploadFile(filepath string, ctx context.Context) (string, error) {
+	u.UploadFileInvoked = true
+	return u.UploadFileFn(filepath, ctx)
 }
 
 // Upload invokes the mock implementation and marks the function as invoked.
