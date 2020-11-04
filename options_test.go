@@ -1,5 +1,5 @@
 package gphotos_test
-
+/*
 import (
 	"context"
 	"testing"
@@ -12,15 +12,6 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/mock"
 )
-
-func TestWithPhotoService(t *testing.T) {
-	want := &mock.PhotoService{}
-
-	got := gphotos.WithPhotoService(want)
-	if got.Value() != want {
-		t.Errorf("want: %v, got: %v", want, got)
-	}
-}
 
 func TestWithUploader(t *testing.T) {
 	want := &mock.Uploader{}
@@ -70,3 +61,4 @@ func TestWithCacher(t *testing.T) {
 		t.Errorf("want: %v, got: %v", want, got)
 	}
 }
+*/

@@ -1,5 +1,5 @@
 package gphotos
-
+/*
 import (
 	"context"
 	"errors"
@@ -66,3 +66,4 @@ func firstMediaItemResult(res []*photoslibrary.NewMediaItemResult) (*photoslibra
 
 	return nil, fmt.Errorf("found error on MediaItem. err: %s", res[0].Status.Message)
 }
+*/
