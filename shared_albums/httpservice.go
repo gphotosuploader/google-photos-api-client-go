@@ -37,7 +37,7 @@ func defaultRepo(authenticatedClient *http.Client) shared_albums.HttpSharedAlbum
 	return shared_albums.NewHttpSharedAlbumsService(authenticatedClient)
 }
 
-// CachedAlbumsService implements a Google Photos client with cached results.
+// HttpSharedAlbumsService implements a Google Photos client.
 type HttpSharedAlbumsService struct {
 	repo repository
 }
