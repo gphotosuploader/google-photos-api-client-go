@@ -4,53 +4,89 @@ import (
 	"context"
 	"errors"
 	"net/http"
-
-	"github.com/duffpl/google-photos-api-client/albums"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/cache"
 )
 
 var (
-	NullAlbum = albums.Album{}
+	NullAlbum        = Album{}
 	ErrAlbumNotFound = errors.New("album not found")
+
+	// Excludes non app created albums. Google Photos doesn't allow manage non created albums through the API.
+	// https://developers.google.com/photos/library/guides/manage-albums#adding-items-to-album
+	excludeNonAppCreatedData = &ListOptions{ExcludeNonAppCreatedData: true}
 )
 
+// AlbumsService represents a Google Photos client for albums management.
 type AlbumsService interface {
-	albums.AlbumsService
-	GetByTitle(title string, ctx context.Context) (*albums.Album, error)
+	AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
+	RemoveMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
+	Create(ctx context.Context, title string) (*Album, error)
+	GetById(ctx context.Context, id string) (*Album, error)
+	GetByTitle(ctx context.Context, title string) (*Album, error)
+	List(ctx context.Context) ([]Album, error)
+	Update(ctx context.Context, album Album, updateMask []Field) (*Album, error)
 }
 
+// Repository represents the Google Photos API client.
+type Repository interface {
+	BatchAddMediaItemsAll(albumId string, mediaItemIds []string, ctx context.Context) error
+	BatchRemoveMediaItemsAll(albumId string, mediaItemIds []string, ctx context.Context) error
+	Create(title string, ctx context.Context) (*Album, error)
+	Get(id string, ctx context.Context) (*Album, error)
+	ListAll(options *ListOptions, ctx context.Context) ([]Album, error)
+	ListAllAsync(options *ListOptions, ctx context.Context) (<-chan Album, <-chan error)
+	Patch(album Album, fieldMask []Field, ctx context.Context) (*Album, error)
+}
+
+// Cache represents a cache service to store albums.
+type Cache interface {
+	GetAlbum(ctx context.Context, title string) (Album, error)
+	PutAlbum(ctx context.Context, album Album) error
+	InvalidateAlbum(ctx context.Context, title string) error
+	InvalidateAllAlbums(ctx context.Context) error
+}
+
+// CachedAlbumsService implements a Google Photos client with cached results.
 type CachedAlbumsService struct {
-	albums.AlbumsService
-	cache cache.Cache
+	repo  Repository
+	cache Cache
 }
 
-// Create new album
-func (s CachedAlbumsService) Create(title string, ctx context.Context) (*albums.Album, error) {
-	albumPtr, err := s.AlbumsService.Create(title, ctx)
+// AddMediaItems adds multiple media items to the specified album.
+func (s CachedAlbumsService) AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error {
+	return s.repo.BatchAddMediaItemsAll(albumId, mediaItemIds, ctx)
+}
+
+// RemoveMediaItems removes multiple media items from the specified album.
+func (s CachedAlbumsService) RemoveMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error {
+	return s.repo.BatchRemoveMediaItemsAll(albumId, mediaItemIds, ctx)
+}
+
+// Create adds and caches a new album to the repo.
+func (s CachedAlbumsService) Create(ctx context.Context, title string) (*Album, error) {
+	albumPtr, err := s.repo.Create(title, ctx)
 	if err != nil {
 		return &NullAlbum, err
 	}
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
 
-// Fetch album by id
-func (s CachedAlbumsService) Get(id string, ctx context.Context) (*albums.Album, error) {
-	albumPtr, err := s.AlbumsService.Get(id, ctx)
+// GetById fetches and caches an album from the repo by id. It doesn't use the cache to look for it.
+func (s CachedAlbumsService) GetById(ctx context.Context, id string) (*Album, error) {
+	albumPtr, err := s.repo.Get(id, ctx)
 	if err != nil {
 		return &NullAlbum, err
 	}
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
 
-// Fetch album by title. Caches all the albums seen until return the matching one.
-func (s CachedAlbumsService) GetByTitle(title string, ctx context.Context) (*albums.Album, error) {
+// GetByTitle fetches and caches an album from the repo by title. It tries to find it in the cache, first.
+func (s CachedAlbumsService) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	album, err := s.cache.GetAlbum(ctx, title)
 	if err == nil {
 		return &album, nil // album was found in the cache
 	}
 
-	albumsC, errorsC := s.AlbumsService.ListAllAsync(&albums.AlbumsListOptions{}, ctx)
+	albumsC, errorsC := s.repo.ListAllAsync(excludeNonAppCreatedData, ctx)
 	for {
 		select {
 		case item, ok := <-albumsC:
@@ -69,13 +105,13 @@ func (s CachedAlbumsService) GetByTitle(title string, ctx context.Context) (*alb
 	}
 }
 
-// Synchronous wrapper for ListAllAsync with caching. Caches all the returned albums.
-func (s CachedAlbumsService) ListAll(options *albums.AlbumsListOptions, ctx context.Context) ([]albums.Album, error) {
-	result := make([]albums.Album, 0)
+// List fetches and caches all the albums from the repo.
+func (s CachedAlbumsService) List(ctx context.Context) ([]Album, error) {
+	result := make([]Album, 0)
 	if err := s.cache.InvalidateAllAlbums(ctx); err != nil {
 		return result, err
 	}
-	albumsC, errorsC := s.AlbumsService.ListAllAsync(options, ctx)
+	albumsC, errorsC := s.repo.ListAllAsync(excludeNonAppCreatedData, ctx)
 	for {
 		select {
 		case item, ok := <-albumsC:
@@ -93,13 +129,13 @@ func (s CachedAlbumsService) ListAll(options *albums.AlbumsListOptions, ctx cont
 	}
 }
 
-// Patches album. updateMask argument can be used to update only selected fields. Currently only id, title
-// and coverPhotoMediaItemId are read
-func (s CachedAlbumsService) Patch(album albums.Album, updateMask []albums.Field, ctx context.Context) (*albums.Album, error) {
+// Update updates album fields. updateMask argument can be used to update only selected fields. Currently only id, title
+// and coverPhotoMediaItemId are read.
+func (s CachedAlbumsService) Update(ctx context.Context, album Album, updateMask []Field) (*Album, error) {
 	if err := s.cache.InvalidateAlbum(ctx, album.Title); err != nil {
 		return nil, err
 	}
-	albumPtr, err := s.AlbumsService.Patch(album, updateMask, ctx)
+	albumPtr, err := s.repo.Patch(album, updateMask, ctx)
 	if err != nil {
 		return &NullAlbum, err
 	}
@@ -107,31 +143,32 @@ func (s CachedAlbumsService) Patch(album albums.Album, updateMask []albums.Field
 	return albumPtr, err
 }
 
+// NewCachedAlbumsService returns a client of CachedAlbumsService.
 func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option) CachedAlbumsService {
-	var albumsAPIClient albums.AlbumsService = albums.NewHttpAlbumsService(authenticatedClient)
-	var albumCache cache.Cache = cache.NewCachitaCache()
+	var repo Repository = defaultRepo(authenticatedClient)
+	var albumCache Cache = defaultCache()
 
 	for _, o := range options {
 		switch o.Name() {
-		case optkeyAlbumsAPIClient:
-			albumsAPIClient = o.Value().(albums.AlbumsService)
-		case optkeyCacher:
-			albumCache = o.Value().(cache.Cache)
+		case optkeyRepo:
+			repo = o.Value().(Repository)
+		case optkeyCache:
+			albumCache = o.Value().(Cache)
 		}
 	}
 
 	return CachedAlbumsService{
-		AlbumsService: albumsAPIClient,
-		cache:         albumCache,
+		repo:  repo,
+		cache: albumCache,
 	}
 }
 
 const (
-	optkeyAlbumsAPIClient = "albumsAPIClient"
-	optkeyCacher          = "cacher"
+	optkeyRepo  = "repository"
+	optkeyCache = "cache"
 )
 
-// Option represents a configurable parameter for Google Photos API client.
+// Option represents a configurable parameter.
 type Option interface {
 	Name() string
 	Value() interface{}
@@ -145,18 +182,18 @@ type option struct {
 func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
-// WithAlbumsAPIClient configures a Google Photos service
-func WithAlbumsAPIClient(s albums.AlbumsService) Option {
+// WithRepository configures the Google Photos repository.
+func WithRepository(s Repository) Option {
 	return &option{
-		name:  optkeyAlbumsAPIClient,
+		name:  optkeyRepo,
 		value: s,
 	}
 }
 
-// WithCache configures a cache
-func WithCacher(s cache.Cache) Option {
+// WithCache configures the cache.
+func WithCache(s Cache) Option {
 	return &option{
-		name:  optkeyCacher,
+		name:  optkeyCache,
 		value: s,
 	}
 }
