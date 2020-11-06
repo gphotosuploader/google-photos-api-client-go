@@ -26,8 +26,8 @@ type AlbumsService interface {
 	Update(ctx context.Context, album Album, updateMask []Field) (*Album, error)
 }
 
-// Repository represents the Google Photos API client.
-type Repository interface {
+// repository represents the Google Photos API client.
+type repository interface {
 	BatchAddMediaItemsAll(albumId string, mediaItemIds []string, ctx context.Context) error
 	BatchRemoveMediaItemsAll(albumId string, mediaItemIds []string, ctx context.Context) error
 	Create(title string, ctx context.Context) (*Album, error)
@@ -47,7 +47,7 @@ type Cache interface {
 
 // CachedAlbumsService implements a Google Photos client with cached results.
 type CachedAlbumsService struct {
-	repo  Repository
+	repo  repository
 	cache Cache
 }
 
@@ -145,13 +145,13 @@ func (s CachedAlbumsService) Update(ctx context.Context, album Album, updateMask
 
 // NewCachedAlbumsService returns a client of CachedAlbumsService.
 func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option) CachedAlbumsService {
-	var repo Repository = defaultRepo(authenticatedClient)
+	var repo repository = defaultRepo(authenticatedClient)
 	var albumCache Cache = defaultCache()
 
 	for _, o := range options {
 		switch o.Name() {
 		case optkeyRepo:
-			repo = o.Value().(Repository)
+			repo = o.Value().(repository)
 		case optkeyCache:
 			albumCache = o.Value().(Cache)
 		}
@@ -183,7 +183,7 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithRepository configures the Google Photos repository.
-func WithRepository(s Repository) Option {
+func WithRepository(s repository) Option {
 	return &option{
 		name:  optkeyRepo,
 		value: s,
