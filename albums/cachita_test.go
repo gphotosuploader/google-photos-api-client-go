@@ -99,7 +99,7 @@ func TestCachitaCache_InvalidateAlbum(t *testing.T) {
 		{"existing key", "foo", false},
 		{"non-existent key", "dummy", false},
 	}
-	
+
 	populatedCache := []string{"foo", "bar", "baz"}
 
 	for _, tc := range testCases {

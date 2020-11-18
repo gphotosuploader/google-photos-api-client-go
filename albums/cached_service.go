@@ -6,16 +6,6 @@ import (
 	"net/http"
 )
 
-type Album struct {
-	ID                    string
-	Title                 string
-	ProductURL            string
-	IsWriteable           bool
-	MediaItemsCount       string
-	CoverPhotoBaseURL     string
-	CoverPhotoMediaItemID string
-}
-
 // AlbumsService represents a Google Photos client for albums management.
 type AlbumsService interface {
 	AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
