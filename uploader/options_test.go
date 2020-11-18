@@ -1,16 +1,15 @@
-package uploader_test
+package uploader
 
 import (
 	"testing"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
 
 func TestWithLogger(t *testing.T) {
 	want := &log.DiscardLogger{}
 
-	got := uploader.WithLogger(want)
+	got := WithLogger(want)
 	if got.Value() != want {
 		t.Errorf("want: %v, got: %v", want, got)
 	}
@@ -19,7 +18,7 @@ func TestWithLogger(t *testing.T) {
 func TestWithEndpoint(t *testing.T) {
 	want := "https://domain.com/uploads"
 
-	got := uploader.WithEndpoint(want)
+	got := WithEndpoint(want)
 	if got.Value() != want {
 		t.Errorf("want: %v, got: %v", want, got)
 	}
