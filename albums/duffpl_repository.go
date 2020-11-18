@@ -23,19 +23,19 @@ type DuffplAlbumsClient interface {
 	ListAllAsync(options *duffpl.AlbumsListOptions, ctx context.Context) (<-chan duffpl.Album, <-chan error)
 }
 
-type AlbumRepository struct {
+type DuffplAlbumRepository struct {
 	duffplAlbumsClient DuffplAlbumsClient
 }
 
-func (ar AlbumRepository) AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
+func (ar DuffplAlbumRepository) AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return ar.duffplAlbumsClient.BatchAddMediaItemsAll(albumId, mediaItemIds, ctx)
 }
 
-func (ar AlbumRepository) RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
+func (ar DuffplAlbumRepository) RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return ar.duffplAlbumsClient.BatchRemoveMediaItemsAll(albumId, mediaItemIds, ctx)
 }
 
-func (ar AlbumRepository) Create(ctx context.Context, title string) (*Album, error) {
+func (ar DuffplAlbumRepository) Create(ctx context.Context, title string) (*Album, error) {
 	a, err := ar.duffplAlbumsClient.Create(title, ctx)
 	if err != nil {
 		return &NullAlbum, err
@@ -44,7 +44,7 @@ func (ar AlbumRepository) Create(ctx context.Context, title string) (*Album, err
 	return &album, nil
 }
 
-func (ar AlbumRepository) Get(ctx context.Context, albumId string) (*Album, error) {
+func (ar DuffplAlbumRepository) Get(ctx context.Context, albumId string) (*Album, error) {
 	a, err := ar.duffplAlbumsClient.Get(albumId, ctx)
 	if err != nil {
 		return &NullAlbum, err
@@ -53,7 +53,7 @@ func (ar AlbumRepository) Get(ctx context.Context, albumId string) (*Album, erro
 	return &album, nil
 }
 
-func (ar AlbumRepository) GetByTitle(ctx context.Context, title string) (*Album, error) {
+func (ar DuffplAlbumRepository) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	albumsC, errorsC := ar.duffplAlbumsClient.ListAllAsync(excludeNonAppCreatedData, ctx)
 	for {
 		select {
@@ -71,7 +71,7 @@ func (ar AlbumRepository) GetByTitle(ctx context.Context, title string) (*Album,
 	}
 }
 
-func (ar AlbumRepository) ListAll(ctx context.Context) ([]Album, error) {
+func (ar DuffplAlbumRepository) ListAll(ctx context.Context) ([]Album, error) {
 	albums := make([]Album, 0)
 	result, err := ar.duffplAlbumsClient.ListAll(excludeNonAppCreatedData, ctx)
 	if err != nil {
@@ -83,15 +83,14 @@ func (ar AlbumRepository) ListAll(ctx context.Context) ([]Album, error) {
 	return albums, nil
 }
 
-
-// NewDuffplAlbumRepository implements AlbumRepository using https://github.com/duffpl/google-photos-api-client library.
-func NewDuffplAlbumRepository(authenticatedClient *http.Client) AlbumRepository {
-	return AlbumRepository{
+// NewDuffplAlbumRepository implements DuffplAlbumRepository using https://github.com/duffpl/google-photos-api-client library.
+func NewDuffplAlbumRepository(authenticatedClient *http.Client) DuffplAlbumRepository {
+	return DuffplAlbumRepository{
 		duffplAlbumsClient: duffpl.NewHttpAlbumsService(authenticatedClient),
 	}
 }
 
-func (ar AlbumRepository) convertDuffplAlbumToAlbum(a *duffpl.Album) Album {
+func (ar DuffplAlbumRepository) convertDuffplAlbumToAlbum(a *duffpl.Album) Album {
 	return Album{
 		ID:                    a.ID,
 		Title:                 a.Title,

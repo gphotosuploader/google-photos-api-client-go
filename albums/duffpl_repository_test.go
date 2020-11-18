@@ -26,7 +26,7 @@ func TestAlbumRepository_AddManyItems(t *testing.T) {
 			return nil
 		},
 	}
-	ar := AlbumRepository{duffplAlbumsClient: m}
+	ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 	ctx := context.Background()
 	mediaItems := []string{"foo", "bar", "baz"}
 
@@ -56,7 +56,7 @@ func TestAlbumRepository_RemoveManyItems(t *testing.T) {
 			return nil
 		},
 	}
-	ar := AlbumRepository{duffplAlbumsClient: m}
+	ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestAlbumRepository_Create(t *testing.T) {
 			return &duffpl.Album{Title: title}, nil
 		},
 	}
-	ar := AlbumRepository{duffplAlbumsClient: m}
+	ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestAlbumRepository_Get(t *testing.T) {
 			return &duffpl.Album{Title: title}, nil
 		},
 	}
-	ar := AlbumRepository{duffplAlbumsClient: m}
+	ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -153,7 +153,7 @@ func TestAlbumRepository_GetByTitle(t *testing.T) {
 			return albumsC, errorsC
 		},
 	}
-	ar := AlbumRepository{duffplAlbumsClient: m}
+	ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestAlbumRepository_ListAll(t *testing.T) {
 				}, nil
 			},
 		}
-		ar := AlbumRepository{duffplAlbumsClient: m}
+		ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 		got, err := ar.ListAll(context.Background())
 		if err != nil {
 			t.Fatalf("error was not expected, err: %s", err)
@@ -196,7 +196,7 @@ func TestAlbumRepository_ListAll(t *testing.T) {
 				return []duffpl.Album{}, errors.New("error")
 			},
 		}
-		ar := AlbumRepository{duffplAlbumsClient: m}
+		ar := DuffplAlbumRepository{duffplAlbumsClient: m}
 		if _, err := ar.ListAll(context.Background()); err == nil {
 			t.Fatalf("error was expected, but not produced")
 		}
