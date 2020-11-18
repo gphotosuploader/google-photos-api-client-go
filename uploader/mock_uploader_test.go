@@ -1,32 +1,25 @@
-package mock
+package uploader
 
 import (
 	"bytes"
 	"context"
 	"io"
 	"strings"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
 
-// Uploader mocks an uploading service.
-type Uploader struct {
+// MockedUploader mocks an uploading service.
+type MockedUploader struct {
 	UploadFileFn func(filepath string, ctx context.Context) (string, error)
-	UploadFileInvoked bool
-
-	UploadFn      func(context.Context, uploader.UploadItem) (uploader.UploadToken, error)
-	UploadInvoked bool
+	UploadFn     func(context.Context, UploadItem) (UploadToken, error)
 }
 
 // Upload invokes the mock implementation and marks the function as invoked.
-func (u *Uploader) UploadFile(filepath string, ctx context.Context) (string, error) {
-	u.UploadFileInvoked = true
+func (u MockedUploader) UploadFile(filepath string, ctx context.Context) (string, error) {
 	return u.UploadFileFn(filepath, ctx)
 }
 
 // Upload invokes the mock implementation and marks the function as invoked.
-func (u *Uploader) Upload(ctx context.Context, item uploader.UploadItem) (uploader.UploadToken, error) {
-	u.UploadInvoked = true
+func (u MockedUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
 	return u.UploadFn(ctx, item)
 }
 
@@ -59,32 +52,24 @@ func (m MockedUploadItem) Size() int64 {
 	return m.size
 }
 
-// SessionStorer mocks a service to store resumable upload data.
-type SessionStorer struct {
-	GetFn      func(f string) []byte
-	GetInvoked bool
-
-	SetFn      func(f string, u []byte)
-	SetInvoked bool
-
-	DeleteFn      func(f string)
-	DeleteInvoked bool
+// MockedSessionStorer mocks a service to store resumable upload data.
+type MockedSessionStorer struct {
+	GetFn    func(f string) []byte
+	SetFn    func(f string, u []byte)
+	DeleteFn func(f string)
 }
 
 // Get invokes the mock implementation and marks the function as invoked.
-func (s *SessionStorer) Get(f string) []byte {
-	s.GetInvoked = true
+func (s MockedSessionStorer) Get(f string) []byte {
 	return s.GetFn(f)
 }
 
 // Set invokes the mock implementation and marks the function as invoked.
-func (s *SessionStorer) Set(f string, u []byte) {
-	s.SetInvoked = true
+func (s MockedSessionStorer) Set(f string, u []byte) {
 	s.SetFn(f, u)
 }
 
 // Delete invokes the mock implementation and marks the function as invoked.
-func (s *SessionStorer) Delete(f string) {
-	s.DeleteInvoked = true
+func (s MockedSessionStorer) Delete(f string) {
 	s.DeleteFn(f)
 }

@@ -32,10 +32,6 @@ func (m FileUploadItem) Name() string {
 	return path.Base(f.Name())
 }
 
-func (m FileUploadItem) path() string {
-	return string(m)
-}
-
 // Size returns size of the file.
 func (m FileUploadItem) Size() int64 {
 	f, err := os.Stat(m.path())
@@ -43,4 +39,8 @@ func (m FileUploadItem) Size() int64 {
 		return 0
 	}
 	return f.Size()
+}
+
+func (m FileUploadItem) path() string {
+	return string(m)
 }

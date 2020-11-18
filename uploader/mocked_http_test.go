@@ -1,4 +1,4 @@
-package mock
+package uploader
 
 import (
 	"net/http"

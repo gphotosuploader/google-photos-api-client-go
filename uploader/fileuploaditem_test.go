@@ -1,9 +1,7 @@
-package uploader_test
+package uploader
 
 import (
 	"testing"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
 
 var testCases = []struct {
@@ -22,7 +20,7 @@ var testCases = []struct {
 func TestFileUploadItem_Open(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			f := uploader.FileUploadItem(tc.path)
+			f := FileUploadItem(tc.path)
 			if _, _, err := f.Open(); err != nil && !tc.isErrExpected {
 				t.Errorf("error was not expected, err: %s", err)
 			}
@@ -33,7 +31,7 @@ func TestFileUploadItem_Open(t *testing.T) {
 func TestFileUploadItem_Name(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			f := uploader.FileUploadItem(tc.path)
+			f := FileUploadItem(tc.path)
 			if got := f.Name(); tc.wantName != got {
 				t.Errorf("want: %s, got: %s", tc.wantName, got)
 			}
@@ -44,7 +42,7 @@ func TestFileUploadItem_Name(t *testing.T) {
 func TestFileUploadItem_Size(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			f := uploader.FileUploadItem(tc.path)
+			f := FileUploadItem(tc.path)
 			if got := f.Size(); tc.wantSize != got {
 				t.Errorf("want: %d, got: %d", tc.wantSize, got)
 			}
