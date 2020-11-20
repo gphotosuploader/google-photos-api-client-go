@@ -1,17 +1,20 @@
 // Package gphotos provides a client for calling the Google Photos API.
 //
-// Wraps the photoslibray package provided originally by Google, and now maintained in: https://github.com/gphotosuploader/googlemirror.
-//
 // Usage:
 //    import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
 //
 // Construct a new Google Photos client, it needs an authenticated HTTP Client see Authentication section below.
-//    client, err := NewClient(httpClient)
+//    client, err := gphotos.NewClient(httpClient)
 //    ...
+//
+// Use WithUploader(), WithAlbumsService() to customize it.
+// By default:
+//     - Uses an Album repository with an in-memory cache.
+//     - Uses a basic HTTP uploader, you can find a resumable one using uploader.NewResumableUploader().
 //
 // It can get Album from the library, returning ErrAlbumNotFound in case it does not exist:
 //    title := "my-album"
-//    album, err := client.FindAlbum(ctx, title)
+//    album, err := client.Albums.GetByTitle(ctx, title)
 //    if errors.Is(err, ErrAlbumNotFound) {
 //       // album does not exist
 //    }
@@ -23,12 +26,11 @@
 //    ...
 //
 // Or upload and adding it to an Album:
-//    album, err := client.FindAlbum(ctx, title)
+//    album, err := client.Albums.GetByTitle(ctx, title)
 //    if err != nil {
 //       // handle error
 //    }
-//    item := FileUploadItem("/my-folder/my-picture.jpg")
-//    media, err = client.AddMediaToLibrary(ctx, item, album)
+//    media, err = client.MediaItems.CreateItemFromFile(ctx, album.ID, "/my-folder/my-picture.jpg")
 //    ...
 //
 // Authentication
@@ -60,22 +62,9 @@
 // almost never be shared between different users.
 // See the oauth2 docs for complete instructions on using that library.
 //
-// Rate Limiting
+// Limitations
 //
-// Google Photos imposes a rate limit on all API clients. The quota limit for
-// requests to the Library API is 10,000 requests per project per day. The quota
-// limit for requests to access media bytes (by loading a photo or video from a base
-// URL) is 75,000 requests per project per day.
-//
-// Cached
-//
-// To improve performance and reduce number of requests to Google Photos, this module
-// uses a cache to temporary store some information.
-//
-// Photo storage and quality
-//
-// All media items uploaded to Google Photos using the API are stored in full
-// resolution at original quality (https://support.google.com/photos/answer/6220791).
-// They count toward the user’s storage.
+// Google Photos API imposes some limitations, please read them all at:
+// https://github.com/gphotosuploader/google-photos-api-client-go/
 //
 package gphotos // import "github.com/gphotosuploader/google-photos-api-client-go/v2"
