@@ -52,9 +52,9 @@ func (ms HttpMediaItemsService) CreateManyToAlbum(ctx context.Context, albumId s
 }
 
 func (ms HttpMediaItemsService) Get(ctx context.Context, mediaItemId string) (*MediaItem, error) {
-	return ms.Get(ctx, mediaItemId)
+	return ms.repo.Get(ctx, mediaItemId)
 }
 
 func (ms HttpMediaItemsService) ListByAlbum(ctx context.Context, albumId string) ([]MediaItem, error) {
-	return ms.ListByAlbum(ctx, albumId)
+	return ms.repo.ListByAlbum(ctx, albumId)
 }
