@@ -42,8 +42,8 @@ type CachitaCache struct {
 }
 
 // NewCachitaCache returns a Cache service implemented using `gadelkareem/cachita`.
-func NewCachitaCache() CachitaCache {
-	return CachitaCache{
+func NewCachitaCache() *CachitaCache {
+	return &CachitaCache{
 		store:      cachita.NewMemoryCache(1*time.Minute, 1*time.Minute),
 		albumTag:   "album",
 		defaultTTL: 60 * time.Minute,

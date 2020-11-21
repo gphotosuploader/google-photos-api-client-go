@@ -60,12 +60,12 @@ func (ms HttpMediaItemsService) ListByAlbum(ctx context.Context, albumId string)
 	return ms.repo.ListByAlbum(ctx, albumId)
 }
 
-func NewHttpMediaItemsService(authenticatedClient *http.Client) (MediaItemsService, error) {
+func NewHttpMediaItemsService(authenticatedClient *http.Client) (*HttpMediaItemsService, error) {
 	c, err := NewPhotosLibraryClient(authenticatedClient)
 	if err != nil {
-		return HttpMediaItemsService{}, err
+		return nil, err
 	}
-	return HttpMediaItemsService{
+	return &HttpMediaItemsService{
 		repo: c,
 	}, nil
 }

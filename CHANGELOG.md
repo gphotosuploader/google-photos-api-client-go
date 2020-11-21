@@ -6,8 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ## 2.0.0
 > This is a major version update, it means that is **NOT BACKWARDS COMPATIBLE**. New import path is in place.
 ### Added
-- Cache is used to improve performance and reduce the number of calls to Google Photos API. See [cache.Cache](albums/cache/cache.go) interface.
-- Retries has been implemented for almost all calls. ([#8][i8])
+- Cache is used to improve performance and reduce the number of calls to Google Photos API. See [albums.Cache](albums/cachita.go) interface.
 - Improved testing of the whole module.
 - Added `ListAlbums` and `ListAlbumsWithCallback`, to get album list from library.
 - Added `AddMediaToLibrary` to upload media without assigning it to an album.

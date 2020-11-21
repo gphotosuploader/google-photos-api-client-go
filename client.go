@@ -103,7 +103,7 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithUploader configures the Media Uploader.
-func WithUploader(s uploader.MediaUploader) Option {
+func WithUploader(s uploader.MediaUploader) *option {
 	return &option{
 		name:  optkeyUploader,
 		value: s,
@@ -111,7 +111,7 @@ func WithUploader(s uploader.MediaUploader) Option {
 }
 
 // WithAlbumsService configures the Albums Service.
-func WithAlbumsService(s albums.AlbumsService) Option {
+func WithAlbumsService(s albums.AlbumsService) *option {
 	return &option{
 		name:  optkeyAlbumsService,
 		value: s,
@@ -119,7 +119,7 @@ func WithAlbumsService(s albums.AlbumsService) Option {
 }
 
 // WithMediaItemsService configures the Media Items Service.
-func WithMediaItemsService(s media_items.MediaItemsService) Option {
+func WithMediaItemsService(s media_items.MediaItemsService) *option {
 	return &option{
 		name:  optkeyMediaItemsService,
 		value: s,

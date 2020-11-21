@@ -21,12 +21,12 @@ type GooglePhotosRepository struct {
 }
 
 // NewPhotosLibraryClient returns a Repository using PhotosLibrary service.
-func NewPhotosLibraryClient(authenticatedClient *http.Client) (GooglePhotosRepository, error) {
+func NewPhotosLibraryClient(authenticatedClient *http.Client) (*GooglePhotosRepository, error) {
 	service, err := photoslibrary.New(authenticatedClient)
 	if err != nil {
-		return GooglePhotosRepository{}, err
+		return nil, err
 	}
-	return GooglePhotosRepository{
+	return &GooglePhotosRepository{
 		gPhotosClient: photoslibrary.NewMediaItemsService(service),
 	}, nil
 }

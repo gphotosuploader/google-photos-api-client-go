@@ -100,7 +100,7 @@ func defaultCache() Cache {
 }
 
 // NewCachedAlbumsService returns a client of CachedAlbumsService.
-func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option) CachedAlbumsService {
+func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option) *CachedAlbumsService {
 	var repo Repository = defaultRepo(authenticatedClient)
 	var albumCache Cache = defaultCache()
 
@@ -113,7 +113,7 @@ func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option)
 		}
 	}
 
-	return CachedAlbumsService{
+	return &CachedAlbumsService{
 		repo:  repo,
 		cache: albumCache,
 	}
@@ -139,16 +139,16 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithRepository configures the Google Photos repository.
-func WithRepository(s Repository) Option {
-	return &option{
+func WithRepository(s Repository) option {
+	return option{
 		name:  optkeyRepo,
 		value: s,
 	}
 }
 
 // WithCache configures the cache.
-func WithCache(s Cache) Option {
-	return &option{
+func WithCache(s Cache) option {
+	return option{
 		name:  optkeyCache,
 		value: s,
 	}

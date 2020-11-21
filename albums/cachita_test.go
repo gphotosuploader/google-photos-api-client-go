@@ -61,6 +61,33 @@ func TestCachitaCache_PutAlbum(t *testing.T) {
 	}
 }
 
+func TestCachitaCache_PutManyAlbums(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       []string
+		errExpected bool
+	}{
+		{"empty album", []string{}, false},
+		{"album with title", []string{"foo", "bar", "baz"}, false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := NewCachitaCache()
+			albums := make([]Album, len(tc.input))
+			for i, title := range tc.input {
+				albums[i] = Album{Title: title}
+			}
+			err := c.PutManyAlbums(context.Background(), albums)
+			if tc.errExpected && err == nil {
+				t.Errorf("error was expected, but not produced")
+			}
+			if !tc.errExpected && err != nil {
+				t.Errorf("error was not expected. err: %s", err)
+			}
+		})
+	}
+}
+
 func TestCachitaCache_GetAlbum(t *testing.T) {
 	testCases := []struct {
 		name           string

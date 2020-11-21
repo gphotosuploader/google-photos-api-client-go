@@ -13,3 +13,32 @@ func TestNewClient(t *testing.T) {
 		}
 	})
 }
+
+/*func TestClient_UploadFileToLibrary(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		isErrExpected bool
+	}{
+		{"Should return error if upload fails", "upload-should-fail", true},
+		{"Should return success on success", "foo", false},
+	}
+
+	c := Client{
+		MediaItems: media_items.MockedMediaItemsService{},
+		Uploader:   MockedUploader{
+			UploadFileFn: func(ctx context.Context, filepath string) (string, error) {
+				if "upload-should-fail" == filepath {
+					return "", errors.New("error")
+				}
+				return "uploadToken", nil
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := c.UploadFileToLibrary(context.Background(), tc.input)
+		})
+	}
+}*/

@@ -24,7 +24,7 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithLogger changes Client.log value.
-func WithLogger(l log.Logger) Option {
+func WithLogger(l log.Logger) *option {
 	return &option{
 		name:  optkeyLogger,
 		value: l,
@@ -32,7 +32,7 @@ func WithLogger(l log.Logger) Option {
 }
 
 // WithEndpoint changes the Client.endpoint value.
-func WithEndpoint(u string) Option {
+func WithEndpoint(u string) *option {
 	return &option{
 		name:  optkeyEndpoint,
 		value: u,

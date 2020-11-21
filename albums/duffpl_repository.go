@@ -84,8 +84,8 @@ func (ar DuffplAlbumRepository) ListAll(ctx context.Context) ([]Album, error) {
 }
 
 // NewDuffplAlbumRepository implements DuffplAlbumRepository using https://github.com/duffpl/google-photos-api-client library.
-func NewDuffplAlbumRepository(authenticatedClient *http.Client) DuffplAlbumRepository {
-	return DuffplAlbumRepository{
+func NewDuffplAlbumRepository(authenticatedClient *http.Client) *DuffplAlbumRepository {
+	return &DuffplAlbumRepository{
 		duffplAlbumsClient: duffpl.NewHttpAlbumsService(authenticatedClient),
 	}
 }
