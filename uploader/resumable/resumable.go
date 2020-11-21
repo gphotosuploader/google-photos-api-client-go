@@ -1,4 +1,4 @@
-package uploader
+package resumable
 
 import (
 	"context"
@@ -10,13 +10,14 @@ import (
 	"strconv"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
 
 // ResumableUploader implements resumable uploads.
 // It will require a SessionStorer to keep already upload session.
 type ResumableUploader struct {
-	// client is an HTTP client used for uploading. It needs the proper authentication in place.
-	client httpClient
+	// authenticatedClient is an HTTP client used for uploading. It needs the proper authentication in place.
+	authenticatedClient HttpClient
 	// url is the url the endpoint to upload to
 	url string
 	// store is an upload session store.
@@ -24,6 +25,13 @@ type ResumableUploader struct {
 	// log is a logger to send messages.
 	log log.Logger
 }
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// UploadToken represents a pointer to the uploaded item.
+type UploadToken string
 
 // SessionStorer represents an storage to keep resumable uploads.
 type SessionStorer interface {
@@ -33,13 +41,13 @@ type SessionStorer interface {
 }
 
 // NewResumableUploader returns an Uploader or error in case of non valid configuration.
-// The supplied client must have the proper authentication to upload files.
+// The supplied authenticatedClient must have the proper authentication to upload files.
 // The supplied store will be used to keep upload sessions.
 //
 // Use WithLogger(...) and WithEndpoint(...) to customize configuration.
-func NewResumableUploader(client httpClient, store SessionStorer, options ...Option) (*ResumableUploader, error) {
+func NewResumableUploader(authenticatedClient HttpClient, store SessionStorer, options ...Option) (*ResumableUploader, error) {
 	logger := defaultLogger()
-	endpoint := defaultEndpoint()
+	endpoint := uploader.DefaultEndpoint
 
 	for _, o := range options {
 		switch o.Name() {
@@ -51,10 +59,10 @@ func NewResumableUploader(client httpClient, store SessionStorer, options ...Opt
 	}
 
 	u := &ResumableUploader{
-		client: client,
-		url:    endpoint,
-		store:  store,
-		log:    logger,
+		authenticatedClient: authenticatedClient,
+		url:                 endpoint,
+		store:               store,
+		log:                 logger,
 	}
 
 	// validate configuration options.
@@ -66,13 +74,13 @@ func NewResumableUploader(client httpClient, store SessionStorer, options ...Opt
 }
 
 // UploadFile returns the Google Photos upload token after uploading a file.
-func (u *ResumableUploader) UploadFile(filePath string, ctx context.Context) (string, error)  {
-	token, err := u.Upload(ctx, FileUploadItem(filePath))
+func (u ResumableUploader) UploadFile(ctx context.Context, filePath string) (string, error)  {
+	token, err := u.Upload(ctx, uploader.FileUploadItem(filePath))
 	return string(token), err
 }
 
 // Upload returns the Google Photos upload token for an Upload object.
-func (u *ResumableUploader) Upload(ctx context.Context, item UploadItem) (UploadToken, error) {
+func (u ResumableUploader) Upload(ctx context.Context, item uploader.UploadItem) (UploadToken, error) {
 	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.Name())
 	offset := u.offsetFromPreviousSession(ctx, item)
 
@@ -86,7 +94,7 @@ func (u *ResumableUploader) Upload(ctx context.Context, item UploadItem) (Upload
 }
 
 // offsetFromPreviousSession returns the bytes already uploaded in previous upload sessions.
-func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, item UploadItem) int64 {
+func (u ResumableUploader) offsetFromPreviousSession(ctx context.Context, item uploader.UploadItem) int64 {
 	// Query previous upload status and get offsetFromResponse if active.
 	req, err := http.NewRequest("POST", u.uploadSessionUrl(item), nil)
 	if err != nil {
@@ -95,7 +103,7 @@ func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, item 
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "query")
 
-	res, err := u.client.Do(req.WithContext(ctx))
+	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return 0
 	}
@@ -105,7 +113,7 @@ func (u *ResumableUploader) offsetFromPreviousSession(ctx context.Context, item 
 }
 
 // offsetFromResponse returns the current offsetFromResponse if exist on the HTTP Response.
-func (u *ResumableUploader) offsetFromResponse(res *http.Response, item UploadItem) int64 {
+func (u ResumableUploader) offsetFromResponse(res *http.Response, item uploader.UploadItem) int64 {
 	status := res.Header.Get("X-Goog-Upload-Status")
 	if status != "active" {
 		// Other known statuses "final" and "cancelled" are both considered as already completed.
@@ -121,7 +129,7 @@ func (u *ResumableUploader) offsetFromResponse(res *http.Response, item UploadIt
 	return 0
 }
 
-func (u *ResumableUploader) createUploadSession(ctx context.Context, item UploadItem) (UploadToken, error) {
+func (u ResumableUploader) createUploadSession(ctx context.Context, item uploader.UploadItem) (UploadToken, error) {
 	u.log.Debugf("Initiating upload session: file=%s", item.Name())
 
 	req, err := u.prepareUploadRequest(item)
@@ -129,7 +137,7 @@ func (u *ResumableUploader) createUploadSession(ctx context.Context, item Upload
 		return "", err
 	}
 
-	res, err := u.client.Do(req.WithContext(ctx))
+	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
@@ -142,14 +150,14 @@ func (u *ResumableUploader) createUploadSession(ctx context.Context, item Upload
 }
 
 // storeUploadSession keeps the upload session to allow resumes later.
-func (u *ResumableUploader) storeUploadSession(res *http.Response, item UploadItem) {
+func (u ResumableUploader) storeUploadSession(res *http.Response, item uploader.UploadItem) {
 	if url := res.Header.Get("X-Goog-Upload-URL"); url != "" {
 		u.store.Set(fingerprint(item), []byte(url))
 	}
 }
 
 // prepareUploadRequest returns an HTTP request to upload item.
-func (u *ResumableUploader) prepareUploadRequest(item UploadItem) (*http.Request, error) {
+func (u ResumableUploader) prepareUploadRequest(item uploader.UploadItem) (*http.Request, error) {
 	_, size, err := item.Open()
 	if err != nil {
 		return nil, err
@@ -169,13 +177,13 @@ func (u *ResumableUploader) prepareUploadRequest(item UploadItem) (*http.Request
 	return req, nil
 }
 
-func (u *ResumableUploader) resumeUploadSession(ctx context.Context, item UploadItem, offset int64) (UploadToken, error) {
+func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploader.UploadItem, offset int64) (UploadToken, error) {
 	req, err := u.prepareResumeUploadRequest(item, offset)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := u.client.Do(req.WithContext(ctx))
+	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
 	if err != nil {
 		u.log.Errorf("Failed to process request: err=%s", err)
 		return "", err
@@ -191,7 +199,7 @@ func (u *ResumableUploader) resumeUploadSession(ctx context.Context, item Upload
 	return UploadToken(token), nil
 }
 
-func (u *ResumableUploader) prepareResumeUploadRequest(item UploadItem, offset int64) (*http.Request, error) {
+func (u ResumableUploader) prepareResumeUploadRequest(item uploader.UploadItem, offset int64) (*http.Request, error) {
 	r, size, err := item.Open()
 	if err != nil {
 		return nil, err
@@ -212,10 +220,10 @@ func (u *ResumableUploader) prepareResumeUploadRequest(item UploadItem, offset i
 	return req, nil
 }
 
-func (u *ResumableUploader) uploadSessionUrl(item UploadItem) string {
+func (u ResumableUploader) uploadSessionUrl(item uploader.UploadItem) string {
 	return string(u.store.Get(fingerprint(item)))
 }
 
-func fingerprint(item UploadItem) string {
+func fingerprint(item uploader.UploadItem) string {
 	return fmt.Sprintf("%s|%d", item.Name(), item.Size())
 }

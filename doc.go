@@ -7,7 +7,7 @@
 //    client, err := gphotos.NewClient(httpClient)
 //    ...
 //
-// Use WithUploader(), WithAlbumsService() to customize it.
+// Use WithUploader(), WithAlbumsService(), WithMediaItemsService() to customize it.
 // By default:
 //     - Uses an Album repository with an in-memory cache.
 //     - Uses a basic HTTP uploader, you can find a resumable one using uploader.NewResumableUploader().
@@ -21,16 +21,17 @@
 //    ...
 //
 // It can upload a new item to your library:
-//    item := FileUploadItem("/my-folder/my-picture.jpg")
-//    media, err = client.AddMediaToLibrary(ctx, item)
-//    ...
-//
-// Or upload and adding it to an Album:
-//    album, err := client.Albums.GetByTitle(ctx, title)
+//    media, err := client.UploadFileToLibrary(ctx, "/my-folder/my-picture.jpg")
 //    if err != nil {
 //       // handle error
 //    }
-//    media, err = client.MediaItems.CreateItemFromFile(ctx, album.ID, "/my-folder/my-picture.jpg")
+//    ...
+//
+// Or upload and adding it to an Album:
+//    media, err := client.UploadFileToAlbum(ctx, album.ID, "/my-folder/my-picture.jpg")
+//    if err != nil {
+//       // handle error
+//    }
 //    ...
 //
 // Authentication

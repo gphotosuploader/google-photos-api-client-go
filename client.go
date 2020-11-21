@@ -1,18 +1,43 @@
 package gphotos
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/duffpl/google-photos-api-client/media_items"
-	"github.com/duffpl/google-photos-api-client/uploader"
-
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
 )
 
 // Client is a Google Photos client with enhanced capabilities.
 type Client struct {
 	Albums     albums.AlbumsService
 	MediaItems media_items.MediaItemsService
+	Uploader   uploader.MediaUploader
+}
+
+func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
+	token, err := c.Uploader.UploadFile(ctx, filePath)
+	if err != nil {
+		return media_items.MediaItem{}, err
+	}
+	return c.MediaItems.Create(ctx, media_items.SimpleMediaItem{
+		UploadToken: token,
+		FileName:    filePath,
+	})
+}
+
+func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath string) (media_items.MediaItem, error) {
+	token, err := c.Uploader.UploadFile(ctx, filePath)
+	if err != nil {
+		return media_items.MediaItem{}, err
+	}
+	item := media_items.SimpleMediaItem{
+		UploadToken: token,
+		FileName:    filePath,
+	}
+	return c.MediaItems.CreateToAlbum(ctx, albumId, item)
 }
 
 // NewClient constructs a new gphotos.Client from the provided HTTP client and the given options.
@@ -20,12 +45,23 @@ type Client struct {
 //
 // By default it will use a in memory cache for Albums repository.
 //
-// Use WithUploader(), WithAlbumsService() to customize it.
+// Use WithUploader(), WithAlbumsService(), WithAlbumsService() to customize it.
 //
 // There is a resumable uploader implemented on uploader.NewResumableUploader().
 func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, error) {
-	var upldr uploader.MediaUploader = uploader.NewHttpMediaUploader(authenticatedClient)
 	var albumsService albums.AlbumsService = albums.NewCachedAlbumsService(authenticatedClient)
+
+	var upldr uploader.MediaUploader
+	upldr, err := basic.NewBasicUploader(authenticatedClient)
+	if err != nil {
+		return nil, err
+	}
+
+	var mediaItemsService media_items.MediaItemsService
+	mediaItemsService, err = media_items.NewHttpMediaItemsService(authenticatedClient)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, o := range options {
 		switch o.Name() {
@@ -33,19 +69,23 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 			upldr = o.Value().(uploader.MediaUploader)
 		case optkeyAlbumsService:
 			albumsService = o.Value().(albums.AlbumsService)
+		case optkeyMediaItemsService:
+
 		}
 	}
 
 	return &Client{
 		Albums:     albumsService,
-		MediaItems: media_items.NewHttpMediaItemsService(authenticatedClient, upldr),
+		MediaItems: mediaItemsService,
+		Uploader:   upldr,
 	}, nil
 
 }
 
 const (
-	optkeyUploader      = "uploader"
-	optkeyAlbumsService = "albumService"
+	optkeyUploader          = "uploader"
+	optkeyAlbumsService     = "albumService"
+	optkeyMediaItemsService = "mediaItemsService"
 )
 
 // Option represents a configurable parameter.
@@ -74,6 +114,14 @@ func WithUploader(s uploader.MediaUploader) Option {
 func WithAlbumsService(s albums.AlbumsService) Option {
 	return &option{
 		name:  optkeyAlbumsService,
+		value: s,
+	}
+}
+
+// WithMediaItemsService configures the Media Items Service.
+func WithMediaItemsService(s media_items.MediaItemsService) Option {
+	return &option{
+		name:  optkeyMediaItemsService,
 		value: s,
 	}
 }

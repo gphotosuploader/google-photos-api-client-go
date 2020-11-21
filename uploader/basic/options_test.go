@@ -1,4 +1,4 @@
-package uploader
+package basic
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package uploader
+package resumable
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewResumableUploader(t *testing.T) {
-	c := &HttpClient{}
+	c := &MockedHttpClient{}
 	s := &MockedSessionStorer{}
 
 	t.Run("WithoutOptions", func(t *testing.T) {

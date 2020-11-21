@@ -2,6 +2,7 @@ package media_items
 
 import (
 	"context"
+	"net/http"
 )
 
 // MediaItemsService represents a Google Photos client for media management.
@@ -57,4 +58,14 @@ func (ms HttpMediaItemsService) Get(ctx context.Context, mediaItemId string) (*M
 
 func (ms HttpMediaItemsService) ListByAlbum(ctx context.Context, albumId string) ([]MediaItem, error) {
 	return ms.repo.ListByAlbum(ctx, albumId)
+}
+
+func NewHttpMediaItemsService(authenticatedClient *http.Client) (MediaItemsService, error) {
+	c, err := NewPhotosLibraryClient(authenticatedClient)
+	if err != nil {
+		return HttpMediaItemsService{}, err
+	}
+	return HttpMediaItemsService{
+		repo: c,
+	}, nil
 }

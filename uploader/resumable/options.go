@@ -1,4 +1,4 @@
-package uploader
+package resumable
 
 import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
@@ -41,8 +41,4 @@ func WithEndpoint(u string) Option {
 
 func defaultLogger() log.Logger {
 	return &log.DiscardLogger{}
-}
-
-func defaultEndpoint() string {
-	return "https://photoslibrary.googleapis.com/v1/uploads"
 }

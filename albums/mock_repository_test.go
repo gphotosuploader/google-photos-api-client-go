@@ -12,32 +12,32 @@ type MockedRepository struct {
 	GetByTitleFn      func(ctx context.Context, title string) (*Album, error)
 }
 
-// AddManyItems invokes the mock implementation and marks the function as invoked.
+// AddManyItems invokes the mock implementation.
 func (s MockedRepository) AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return s.AddManyItemsFn(ctx, albumId, mediaItemIds)
 }
 
-// RemoveManyItems invokes the mock implementation and marks the function as invoked.
+// RemoveManyItems invokes the mock implementation.
 func (s MockedRepository) RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return s.RemoveManyItemsFn(ctx, albumId, mediaItemIds)
 }
 
-// Create invokes the mock implementation and marks the function as invoked.
+// Create invokes the mock implementation.
 func (s MockedRepository) Create(ctx context.Context, title string) (*Album, error) {
 	return s.CreateFn(ctx, title)
 }
 
-// Get invokes the mock implementation and marks the function as invoked.
+// Get invokes the mock implementation.
 func (s MockedRepository) Get(ctx context.Context, albumId string) (*Album, error) {
 	return s.GetFn(ctx, albumId)
 }
 
-// ListAll invokes the mock implementation and marks the function as invoked.
+// ListAll invokes the mock implementation.
 func (s MockedRepository) ListAll(ctx context.Context) ([]Album, error) {
 	return s.ListAllFn(ctx)
 }
 
-// GetByTitle invokes the mock implementation and marks the function as invoked.
+// GetByTitle invokes the mock implementation.
 func (s MockedRepository) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	return s.GetByTitleFn(ctx, title)
 }
