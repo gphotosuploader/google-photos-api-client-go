@@ -38,6 +38,7 @@ func NewBasicUploader(authenticatedClient HttpClient, options ...Option) (*Basic
 			endpoint = o.Value().(string)
 		}
 	}
+
 	return &BasicUploader{
 		client: authenticatedClient,
 		url:    endpoint,
@@ -47,11 +48,11 @@ func NewBasicUploader(authenticatedClient HttpClient, options ...Option) (*Basic
 
 // UploadFile returns the Google Photos upload token after uploading a file.
 func (u BasicUploader) UploadFile(ctx context.Context, filePath string) (string, error) {
-	token, err := u.Upload(ctx, uploader.FileUploadItem(filePath))
+	token, err := u.upload(ctx, uploader.FileUploadItem(filePath))
 	return string(token), err
 }
 
-func (u BasicUploader) Upload(ctx context.Context, uploadItem uploader.UploadItem) (UploadToken, error) {
+func (u BasicUploader) upload(ctx context.Context, uploadItem uploader.UploadItem) (UploadToken, error) {
 	req, err := u.prepareUploadRequest(uploadItem)
 	if err != nil {
 		return "", err
@@ -61,12 +62,14 @@ func (u BasicUploader) Upload(ctx context.Context, uploadItem uploader.UploadIte
 	res, err := u.client.Do(req)
 	if err != nil {
 		u.log.Errorf("Error while uploading %s: %s", uploadItem, err)
+		return "", err
 	}
 	defer res.Body.Close()
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		u.log.Errorf("Error while uploading %s: %s: could not read body: %s", uploadItem, res.Status, err)
+		return "", err
 	}
 	body := string(b)
 
