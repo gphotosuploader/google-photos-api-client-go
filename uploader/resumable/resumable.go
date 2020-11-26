@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"google.golang.org/api/googleapi"
+
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 )
@@ -29,9 +31,6 @@ type ResumableUploader struct {
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
-
-// UploadToken represents a pointer to the uploaded item.
-type UploadToken string
 
 // SessionStorer represents an storage to keep resumable uploads.
 type SessionStorer interface {
@@ -74,13 +73,24 @@ func NewResumableUploader(authenticatedClient HttpClient, store SessionStorer, o
 }
 
 // UploadFile returns the Google Photos upload token after uploading a file.
-func (u ResumableUploader) UploadFile(ctx context.Context, filePath string) (string, error)  {
-	token, err := u.Upload(ctx, uploader.FileUploadItem(filePath))
+func (u ResumableUploader) UploadFile(ctx context.Context, filePath string) (string, error) {
+	token, err := u.upload(ctx, uploader.FileUploadItem(filePath))
 	return string(token), err
 }
 
-// Upload returns the Google Photos upload token for an Upload object.
-func (u ResumableUploader) Upload(ctx context.Context, item uploader.UploadItem) (UploadToken, error) {
+// doRequest call the request and check if there was any error.
+func (u ResumableUploader) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (u ResumableUploader) upload(ctx context.Context, item uploader.UploadItem) (uploader.UploadToken, error) {
 	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.Name())
 	offset := u.offsetFromPreviousSession(ctx, item)
 
@@ -103,7 +113,7 @@ func (u ResumableUploader) offsetFromPreviousSession(ctx context.Context, item u
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "query")
 
-	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
+	res, err := u.doRequest(ctx, req)
 	if err != nil {
 		return 0
 	}
@@ -129,17 +139,17 @@ func (u ResumableUploader) offsetFromResponse(res *http.Response, item uploader.
 	return 0
 }
 
-func (u ResumableUploader) createUploadSession(ctx context.Context, item uploader.UploadItem) (UploadToken, error) {
+func (u ResumableUploader) createUploadSession(ctx context.Context, item uploader.UploadItem) (uploader.UploadToken, error) {
 	u.log.Debugf("Initiating upload session: file=%s", item.Name())
 
 	req, err := u.prepareUploadRequest(item)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating upload session: %w", err)
 	}
 
-	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
+	res, err := u.doRequest(ctx, req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("creating upload session: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -177,41 +187,39 @@ func (u ResumableUploader) prepareUploadRequest(item uploader.UploadItem) (*http
 	return req, nil
 }
 
-func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploader.UploadItem, offset int64) (UploadToken, error) {
+func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploader.UploadItem, offset int64) (uploader.UploadToken, error) {
+	u.log.Debugf("Resuming upload session: file=%s", item.Name())
 	req, err := u.prepareResumeUploadRequest(item, offset)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
-
 	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
 	if err != nil {
 		u.log.Errorf("Failed to process request: err=%s", err)
-		return "", err
+		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
 	defer res.Body.Close()
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		u.log.Errorf("Failed to read response %s", err)
-		return "", err
+		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
 	token := string(b)
-	return UploadToken(token), nil
+	return uploader.UploadToken(token), nil
 }
 
 func (u ResumableUploader) prepareResumeUploadRequest(item uploader.UploadItem, offset int64) (*http.Request, error) {
 	r, size, err := item.Open()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing resume upload request: %w", err)
 	}
-
 	if _, err := r.Seek(offset, io.SeekStart); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing resume upload request: %w", err)
 	}
-
 	req, err := http.NewRequest("POST", u.uploadSessionUrl(item), r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing resume upload request: %w", err)
 	}
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", size-offset))
 	req.Header.Add("X-Goog-Upload-Command", "upload, finalize")
