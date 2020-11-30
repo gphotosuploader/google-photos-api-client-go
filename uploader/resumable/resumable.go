@@ -73,59 +73,49 @@ func NewResumableUploader(authenticatedClient HttpClient, store SessionStorer, o
 }
 
 // UploadFile returns the Google Photos upload token after uploading a file.
+// Any non-2xx status code is an error. Response headers are in error.(*googleapi.Error).Header.
 func (u ResumableUploader) UploadFile(ctx context.Context, filePath string) (string, error) {
-	token, err := u.upload(ctx, uploader.FileUploadItem(filePath))
+	item, err := uploader.NewFileUploadItem(filePath)
+	if err != nil {
+		return "", err
+	}
+	u.log.Debugf("New resumable upload for file [%s].", item.Name())
+	token, err := u.upload(ctx, item)
 	return string(token), err
 }
 
-// doRequest call the request and check if there was any error.
-func (u ResumableUploader) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
-	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 func (u ResumableUploader) upload(ctx context.Context, item uploader.UploadItem) (uploader.UploadToken, error) {
-	u.log.Debugf("Initiating file upload: type=resumable, file=%s", item.Name())
 	offset := u.offsetFromPreviousSession(ctx, item)
-
+	u.log.Debugf("Current offset for [%s] is %d.", item.Name(), offset)
 	if offset == 0 {
-		u.log.Debugf("Initiating new upload session: file=%s", item.Name())
 		return u.createUploadSession(ctx, item)
 	}
-
-	u.log.Debugf("Resuming previous upload session: file=%s", item.Name())
 	return u.resumeUploadSession(ctx, item, offset)
 }
 
 // offsetFromPreviousSession returns the bytes already uploaded in previous upload sessions.
 func (u ResumableUploader) offsetFromPreviousSession(ctx context.Context, item uploader.UploadItem) int64 {
 	// Query previous upload status and get offsetFromResponse if active.
+	if u.uploadSessionUrl(item) == "" {
+		return 0
+	}
 	req, err := http.NewRequest("POST", u.uploadSessionUrl(item), nil)
 	if err != nil {
 		return 0
 	}
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "query")
-
 	res, err := u.doRequest(ctx, req)
 	if err != nil {
 		return 0
 	}
 	defer res.Body.Close()
-
 	return u.offsetFromResponse(res, item)
 }
 
 // offsetFromResponse returns the current offsetFromResponse if exist on the HTTP Response.
 func (u ResumableUploader) offsetFromResponse(res *http.Response, item uploader.UploadItem) int64 {
-	status := res.Header.Get("X-Goog-Upload-Status")
-	if status != "active" {
+	if res.Header.Get("X-Goog-Upload-Status") != "active" {
 		// Other known statuses "final" and "cancelled" are both considered as already completed.
 		// Let's restart the upload from scratch.
 		u.store.Delete(fingerprint(item))
@@ -136,12 +126,11 @@ func (u ResumableUploader) offsetFromResponse(res *http.Response, item uploader.
 	if err == nil && offset > 0 && offset < item.Size() {
 		return offset
 	}
+	u.store.Delete(fingerprint(item))
 	return 0
 }
 
 func (u ResumableUploader) createUploadSession(ctx context.Context, item uploader.UploadItem) (uploader.UploadToken, error) {
-	u.log.Debugf("Initiating upload session: file=%s", item.Name())
-
 	req, err := u.prepareUploadRequest(item)
 	if err != nil {
 		return "", fmt.Errorf("creating upload session: %w", err)
@@ -188,14 +177,14 @@ func (u ResumableUploader) prepareUploadRequest(item uploader.UploadItem) (*http
 }
 
 func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploader.UploadItem, offset int64) (uploader.UploadToken, error) {
-	u.log.Debugf("Resuming upload session: file=%s", item.Name())
+	u.log.Debugf("Resuming upload session for [%s] starting at offset %d", item.Name(), offset)
 	req, err := u.prepareResumeUploadRequest(item, offset)
 	if err != nil {
 		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
-	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
+	res, err := u.doRequest(ctx, req)
 	if err != nil {
-		u.log.Errorf("Failed to process request: err=%s", err)
+		u.log.Errorf("Failed to resume session: err=%s", err)
 		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
 	defer res.Body.Close()
@@ -226,6 +215,22 @@ func (u ResumableUploader) prepareResumeUploadRequest(item uploader.UploadItem, 
 	req.Header.Set("X-Goog-Upload-Offset", fmt.Sprintf("%d", offset))
 
 	return req, nil
+}
+
+// doRequest executes the request call.
+// Exactly one of *httpResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *httpResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header.
+func (u ResumableUploader) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	res, err := u.authenticatedClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (u ResumableUploader) uploadSessionUrl(item uploader.UploadItem) string {

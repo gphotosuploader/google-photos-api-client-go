@@ -11,6 +11,9 @@ type MediaUploader interface {
 	UploadFile(ctx context.Context, filePath string) (uploadToken string, err error)
 }
 
+// UploadToken represents a pointer to the uploaded item.
+type UploadToken string
+
 // UploadItem represents an uploadable item.
 type UploadItem interface {
 	// Open returns a stream.

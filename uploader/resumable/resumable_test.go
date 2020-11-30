@@ -46,25 +46,32 @@ func TestNewResumableUploader(t *testing.T) {
 
 func TestResumableUploader_UploadFile(t *testing.T) {
 	testCases := []struct {
-		name            string
-		path            string
-		alreadyUploaded bool
-		want            string
-		errExpected     bool
+		name           string
+		path           string
+		alreadyStarted bool
+		want           string
+		errExpected    bool
 	}{
 		{"Should be successful when file is uploaded", "testdata/upload-success", false, "apiToken", false},
+		{"Should be successful when file is resuming upload ", "testdata/upload-resume-success", true, "apiToken", false},
 		{"Should fail when file is not uploaded", "testdata/upload-should-fail", false, "", true},
-		//{"Upload a non-existing file should be a failure", "non-existent", false, "", true},
+		{"Should fail if file doesn't exist", "non-existent", false, "", true},
 	}
 	srv := NewMockedGooglePhotosServer()
 	defer srv.Close()
 
+	var sessionStorerData []byte
+
 	s := &MockedSessionStorer{
 		GetFn: func(f string) []byte {
-			return []byte(srv.URL("/upload-session"))
+			return sessionStorerData
 		},
-		SetFn:    func(f string, u []byte) {},
-		DeleteFn: func(f string) {},
+		SetFn: func(f string, u []byte) {
+			sessionStorerData = u
+		},
+		DeleteFn: func(f string) {
+			sessionStorerData = []byte{}
+		},
 	}
 	l := &MockedLogger{
 		LogFn: func(args ...interface{}) {
@@ -72,13 +79,17 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 		},
 	}
 
-	u, err := resumable.NewResumableUploader(http.DefaultClient, s, resumable.WithEndpoint(srv.URL("/v1/uploads")), resumable.WithLogger(l))
+	u, err := resumable.NewResumableUploader(http.DefaultClient, s, resumable.WithEndpoint(srv.URL("/uploads")), resumable.WithLogger(l))
 	if err != nil {
 		t.Fatalf("error was not expected at this point, err: %s", err)
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			sessionStorerData = []byte{}
+			if tc.alreadyStarted {
+				sessionStorerData = []byte(srv.URL("/upload-session/started"))
+			}
 			got, err := u.UploadFile(context.Background(), tc.path)
 			assertExpectedError(tc.errExpected, err, t)
 			if err == nil && tc.want != got {
@@ -105,16 +116,15 @@ type MockedGooglePhotosServer struct {
 
 func NewMockedGooglePhotosServer() *MockedGooglePhotosServer {
 	ms := &MockedGooglePhotosServer{}
-	ms.server = httptest.NewServer(ms.routes())
+	mux := http.NewServeMux()
+	ms.server = httptest.NewServer(mux)
 	ms.baseURL = ms.server.URL
+	mux.HandleFunc("/uploads", ms.handleUploads)
+	mux.HandleFunc("/upload-session/started", ms.handleExistingUploadSession)
+	mux.HandleFunc("/upload-session/upload-success", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("apiToken"))
+	})
 	return ms
-}
-
-func (ms MockedGooglePhotosServer) routes() *http.ServeMux {
-	handler := http.NewServeMux()
-	handler.HandleFunc("/v1/uploads", ms.handleUploads)
-	handler.HandleFunc("/upload-session", ms.handleUploadSession)
-	return handler
 }
 
 func (ms MockedGooglePhotosServer) URL(endpoint string) string {
@@ -125,10 +135,12 @@ func (ms MockedGooglePhotosServer) Close() {
 	ms.server.Close()
 }
 
-func (ms MockedGooglePhotosServer) handleUploadSession(w http.ResponseWriter, r *http.Request) {
+func (ms MockedGooglePhotosServer) handleExistingUploadSession(w http.ResponseWriter, r *http.Request) {
 	switch r.Header.Get("X-Goog-Upload-Command") {
+	case "query":
+		w.Header().Add("X-Goog-Upload-Status", "active")
+		w.Header().Add("X-Goog-Upload-Size-Received", "1000")
 	case "upload, finalize":
-		// get: X-Goog-Upload-Offset
 		_, _ = w.Write([]byte("apiToken"))
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
@@ -136,24 +148,16 @@ func (ms MockedGooglePhotosServer) handleUploadSession(w http.ResponseWriter, r 
 }
 
 func (ms MockedGooglePhotosServer) handleUploads(w http.ResponseWriter, r *http.Request) {
-	if "upload-should-fail" == r.Header.Get("X-Goog-Upload-File-Name") {
+	if "start" != r.Header.Get("X-Goog-Upload-Command") {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	switch r.Header.Get("X-Goog-Upload-Command") {
-	case "start":
-		// get: X-Goog-Upload-File-Name
-		// get: X-Goog-Upload-Raw-Size
-		w.Header().Add("X-Goog-Upload-URL", ms.URL("/upload-session"))
-	case "query":
-		w.Header().Add("X-Goog-Upload-Status", "active") // other values could be: final and cancelled
-		w.Header().Add("X-Goog-Upload-Size-Received", "0")
-	case "upload, finalize":
-		// get: X-Goog-Upload-Offset
-		_, _ = w.Write([]byte("apiToken"))
-	default:
+	switch r.Header.Get("X-Goog-Upload-File-Name") {
+	case "upload-should-fail":
 		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.Header().Add("X-Goog-Upload-URL", ms.URL("/upload-session/upload-success"))
 	}
 }
 
