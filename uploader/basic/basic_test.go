@@ -1,12 +1,9 @@
 package basic_test
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
@@ -49,10 +46,10 @@ func TestBasicUploader_UploadFile(t *testing.T) {
 		{"Upload existing file with errors should be a failure", "testdata/upload-failure", "", true},
 		{"Upload a non-existing file should be a failure", "non-existent", "", true},
 	}
-	srv := serverMock()
+	srv := NewMockedGooglePhotosServer()
 	defer srv.Close()
 
-	u, err := basic.NewBasicUploader(http.DefaultClient, basic.WithEndpoint(srv.URL+"/v1/uploads"))
+	u, err := basic.NewBasicUploader(http.DefaultClient, basic.WithEndpoint(srv.URL("/uploads")))
 	if err != nil {
 		t.Fatalf("error was not expected at this point, err: %s", err)
 	}
@@ -77,47 +74,34 @@ func assertExpectedError(errExpected bool, err error, t *testing.T) {
 	}
 }
 
-func serverMock() *httptest.Server {
-	handler := http.NewServeMux()
-	handler.HandleFunc("/v1/uploads", uploadsMock)
-
-	return httptest.NewServer(handler)
+// MockedGooglePhotosServer mock the Google Photos Service for uploads.
+type MockedGooglePhotosServer struct {
+	server  *httptest.Server
+	baseURL string
 }
 
-func uploadsMock(w http.ResponseWriter, r *http.Request) {
+func NewMockedGooglePhotosServer() *MockedGooglePhotosServer {
+	ms := &MockedGooglePhotosServer{}
+	mux := http.NewServeMux()
+	ms.server = httptest.NewServer(mux)
+	ms.baseURL = ms.server.URL
+	mux.HandleFunc("/uploads", ms.handleUploads)
+	return ms
+}
+
+func (ms MockedGooglePhotosServer) Close() {
+	ms.server.Close()
+}
+
+func (ms MockedGooglePhotosServer) URL(endpoint string) string {
+	return ms.baseURL + endpoint
+}
+
+func (ms MockedGooglePhotosServer) handleUploads(w http.ResponseWriter, r *http.Request) {
 	switch r.Header.Get("X-Goog-Upload-File-Name") {
 	case "upload-failure":
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, _ = w.Write([]byte("apiToken"))
 	}
-}
-
-// MockedUploadItem represents a mocked file upload item.
-type MockedUploadItem struct {
-	Path string
-	size int64
-}
-
-// Open returns a io.ReadSeeker with a fixed string: "some test content inside a mocked file".
-func (m MockedUploadItem) Open() (io.ReadSeeker, int64, error) {
-	var b bytes.Buffer
-	var err error
-
-	r := strings.NewReader("some test content inside a mocked file")
-	m.size, err = b.ReadFrom(r)
-	if err != nil {
-		return r, 0, err
-	}
-	return r, m.size, nil
-}
-
-// Name returns the name (path) of the item.
-func (m MockedUploadItem) Name() string {
-	return m.Path
-}
-
-// Size returns the length of "some test content inside a mocked file".
-func (m MockedUploadItem) Size() int64 {
-	return m.size
 }
