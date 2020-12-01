@@ -66,7 +66,7 @@ There are several options to customize the Google Photos client:
 
 * `WithSessionStorer`: Enables a [ResumableUploader](internal/uploader/resumable.go) using the provided storage to keep upload sessions (see [uploader.SessionStorer](internal/uploader/resumable.go) interface).
 
-* `WithCacher`: Allows you to use your own cache. It should implement [cache.Cache](internal/cache/cache.go) interface. By default it's using `gadelkareem/cachita`.
+* `WithCacher`: Allows you to use your own cache. It should implement [cache.Cache](albums/cache/cache.go) interface. By default it's using `gadelkareem/cachita`.
 
 * `WithLogger`: Allows you to use a logger to print messages from this library. It should implement [log.Logger](internal/log/logger.go). By default, there is no logging.
 
