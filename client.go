@@ -8,6 +8,7 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 // Client is a Google Photos client with enhanced capabilities.
@@ -43,22 +44,25 @@ func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath 
 // NewClient constructs a new gphotos.Client from the provided HTTP client and the given options.
 // The client is an HTTP client used for calling Google Photos. It needs the proper authentication in place.
 //
-// By default it will use a in memory cache for Albums repository.
+// By default it will use a in memory cache for Albums repository and implements retries with Exponential backoff.
 //
 // Use WithUploader(), WithAlbumsService(), WithAlbumsService() to customize it.
 //
 // There is a resumable uploader implemented on uploader.NewResumableUploader().
 func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, error) {
-	var albumsService albums.AlbumsService = albums.NewCachedAlbumsService(authenticatedClient)
+	client := retryablehttp.NewClient()
+	client.HTTPClient = authenticatedClient
+
+	var albumsService albums.AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
 
 	var upldr uploader.MediaUploader
-	upldr, err := basic.NewBasicUploader(authenticatedClient)
+	upldr, err := basic.NewBasicUploader(client.StandardClient())
 	if err != nil {
 		return nil, err
 	}
 
 	var mediaItemsService media_items.MediaItemsService
-	mediaItemsService, err = media_items.NewHttpMediaItemsService(authenticatedClient)
+	mediaItemsService, err = media_items.NewHttpMediaItemsService(client.StandardClient())
 	if err != nil {
 		return nil, err
 	}

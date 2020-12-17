@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Improved testing of the whole module.
 - Added `ListAlbums` and `ListAlbumsWithCallback`, to get album list from library.
 - Added `AddMediaToLibrary` to upload media without assigning it to an album.
+- Added retries on HTTP Client. The default configuration will use Exponential Backoff with a maximum of 5 retries.
 ### Changed
 - Import path includes **v2**: `github.com/gphotosuploader/google-photos-api-client-go/v2`.
 - Client call has changes to `NewClient` where you can customize with `Options`. See [README](README.md) for more information.
