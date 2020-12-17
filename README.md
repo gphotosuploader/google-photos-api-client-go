@@ -7,10 +7,6 @@
 [![GitHub](https://img.shields.io/github/license/gphotosuploader/google-photos-api-client-go.svg)](LICENSE)
 
 This package provides a client for using the [Google Photos API](https://godoc.org/google.golang.org/api) in Go. Uses the [original Google Photos package](https://github.com/gphotosuploader/googlemirror), that was provided by Google, and [removed](https://code-review.googlesource.com/c/google-api-go-client/+/39951) some time ago. 
-
-On top of the old package has been extended some other features like:
- 
- * Uploads: We have implemented the `/v1/uploads` endpoint to be able to upload media items to your library. Two implementations are available: a `BasicUploader` and a `ResumableUploader` which could be used for large files, like videos. See [Options](#options) 
  
 > This project will maintain compatibility with the last two Go major versions [published](https://golang.org/doc/devel/release.html). 
 
@@ -50,11 +46,12 @@ func main() error {
 
 ## Features
 
+* **Two uploaders**: We have implemented the `/v1/uploads` endpoint to be able to upload media items to your library. Two implementations are available: a `BasicUploader` and a `ResumableUploader` which could be used for large files, like videos. See [Options](#options) 
 * **Uploads**: `AddMediaToLibrary` and `AddMediaToAlbum` allows you to upload media to the the libray.
 * **Album management**: `ListAlbums`, `FindAlbum` and `CreateAlbum` allows you to list, find an album by title and create a new album in the library. 
 * `ListAlbumsWithCallback` allows you to call a function while browse the albums in the library.
 * **Automatic cache**, following [Google Photos best practices](https://developers.google.com/photos/library/guides/best-practices#caching), a cache is used to increase performance and reduce the number of calls to the Google Photos API (see [Rate Limiting](#rate-limiting).
-* **Automatic retries**: It implements retries following [Google Photos error handling documentation](https://developers.google.com/photos/library/guides/best-practices#error-handling). 
+* **Automatic retries**: It implements retries following [Google Photos error handling documentation](https://developers.google.com/photos/library/guides/best-practices#error-handling). By default it uses exponential backoff with a maximum of 5 retries.
 
 ## Options 
 
