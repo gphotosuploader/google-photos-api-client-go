@@ -49,11 +49,11 @@ func (r PhotosLibraryMediaItemsRepository) CreateMany(ctx context.Context, media
 }
 
 func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
-	newMediaItems := make([]*photoslibrary.NewMediaItem, 0)
-	for _, mediaItem := range mediaItems {
-		newMediaItems = append(newMediaItems, &photoslibrary.NewMediaItem{
+	newMediaItems := make([]*photoslibrary.NewMediaItem, len(mediaItems))
+	for i, mediaItem := range mediaItems {
+		newMediaItems[i] = &photoslibrary.NewMediaItem{
 			SimpleMediaItem: &photoslibrary.SimpleMediaItem{UploadToken: mediaItem.UploadToken},
-		})
+		}
 	}
 	req := &photoslibrary.BatchCreateMediaItemsRequest{
 		AlbumId:       albumId,
@@ -63,10 +63,10 @@ func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context
 	if err != nil {
 		return []MediaItem{}, err
 	}
-	mediaItemsResult := make([]MediaItem, 0)
-	for _, res := range result.NewMediaItemResults {
+	mediaItemsResult := make([]MediaItem, len(result.NewMediaItemResults))
+	for i, res := range result.NewMediaItemResults {
 		m := res.MediaItem
-		mediaItemsResult = append(mediaItemsResult, r.convertPhotosLibraryMediaItemToMediaItem(m))
+		mediaItemsResult[i] = r.convertPhotosLibraryMediaItemToMediaItem(m)
 	}
 	return mediaItemsResult, nil
 }

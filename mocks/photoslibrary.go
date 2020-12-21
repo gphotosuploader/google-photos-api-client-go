@@ -53,7 +53,7 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	// MediaItems methods
 	router.HandleFunc("/v1/mediaItems:batchCreate", ms.mediaItemsBatchCreate).Methods("POST")
 	router.HandleFunc("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet).Methods("GET")
-	router.HandleFunc("v1/mediaItems:search", ms.mediaItemsSearch).Methods("POST")
+	router.HandleFunc("/v1/mediaItems:search", ms.mediaItemsSearch).Methods("POST")
 
 	ms.server = httptest.NewServer(router)
 	ms.baseURL = ms.server.URL
@@ -197,6 +197,11 @@ var (
 			ProductUrl:  "fooProductUrl",
 			BaseUrl:     "fooBaseUrl",
 			Filename:    "fooFilename",
+			MediaMetadata: &photoslibrary.MediaMetadata{
+				CreationTime: "2014-10-02T15:01:23.045123456Z",
+				Height:       800,
+				Width:        600,
+			},
 		},
 		{
 			Id:          "barId",
@@ -204,6 +209,11 @@ var (
 			ProductUrl:  "barProductUrl",
 			BaseUrl:     "barBaseUrl",
 			Filename:    "barFilename",
+			MediaMetadata: &photoslibrary.MediaMetadata{
+				CreationTime: "2014-10-02T15:01:23.045123456Z",
+				Height:       800,
+				Width:        600,
+			},
 		},
 		{
 			Id:          "bazId",
@@ -211,6 +221,11 @@ var (
 			ProductUrl:  "bazProductUrl",
 			BaseUrl:     "bazBaseUrl",
 			Filename:    "bazFilename",
+			MediaMetadata: &photoslibrary.MediaMetadata{
+				CreationTime: "2014-10-02T15:01:23.045123456Z",
+				Height:       800,
+				Width:        600,
+			},
 		},
 	}
 	ShouldFailMediaItem = "should-fail"
@@ -232,21 +247,26 @@ func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter,
 		return
 	}
 
-	newMediaItems := make([]*photoslibrary.NewMediaItemResult, 0)
-	for _, item := range req.NewMediaItems {
+	newMediaItems := make([]*photoslibrary.NewMediaItemResult, len(req.NewMediaItems))
+	for i, item := range req.NewMediaItems {
 		if ShouldFailMediaItem == item.SimpleMediaItem.UploadToken {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		newMediaItems = append(newMediaItems, &photoslibrary.NewMediaItemResult{
+		newMediaItems[i] = &photoslibrary.NewMediaItemResult{
 			MediaItem: &photoslibrary.MediaItem{
 				BaseUrl:     item.SimpleMediaItem.UploadToken + "BaseUrl",
 				Description: item.SimpleMediaItem.UploadToken + "Description",
 				Filename:    item.SimpleMediaItem.UploadToken + "Filename",
 				Id:          item.SimpleMediaItem.UploadToken + "Id",
 				ProductUrl:  item.SimpleMediaItem.UploadToken + "ProductUrl",
+				MediaMetadata: &photoslibrary.MediaMetadata{
+					CreationTime: "2014-10-02T15:01:23.045123456Z",
+					Height:       800,
+					Width:        600,
+				},
 			},
-		})
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -304,7 +324,7 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 
 	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.SearchMediaItemsResponse{
-		MediaItems:      AvailableMediaItems,
+		MediaItems: AvailableMediaItems,
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
