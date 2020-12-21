@@ -43,6 +43,35 @@ func TestNewPhotosLibraryClientWithURL(t *testing.T) {
 	}
 }
 
+func TestPhotosLibraryAlbumsRepository_AddManyItems(t *testing.T) {
+	testCases := []struct {
+		name          string
+		album         string
+		mediaItems    []string
+		isErrExpected bool
+	}{
+		{"Should add media items to album", "foo", []string{"mediaItem1", "mediaItem2"}, true},
+		{"Should return error if album does not exist", "non-existent", []string{"mediaItem1", "mediaItem2"}, true},
+		{"Should return error if media item is invalid", "foo", []string{mocks.ShouldFailMediaItem, "mediaItem2"}, true},
+		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, []string{"mediaItem1", "mediaItem2"}, true},
+	}
+
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
+
+	r, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := r.AddManyItems(context.Background(), tc.album, tc.mediaItems)
+			assertExpectedError(tc.isErrExpected, err, t)
+		})
+	}
+}
+
 func TestPhotosLibraryAlbumsRepository_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -113,7 +142,7 @@ func TestPhotosLibraryAlbumsRepository_GetByTitle(t *testing.T) {
 		errExpected   error
 	}{
 		{"Should return the album on success", "fooTitle", "fooId", false, nil},
-		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "",true, albums.ErrAlbumNotFound},
+		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "", true, albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", "", true, albums.ErrAlbumNotFound},
 	}
 
