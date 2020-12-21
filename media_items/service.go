@@ -5,16 +5,6 @@ import (
 	"net/http"
 )
 
-// MediaItemsService represents a Google Photos client for media management.
-type MediaItemsService interface {
-	Create(ctx context.Context, mediaItem SimpleMediaItem) (MediaItem, error)
-	CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error)
-	CreateToAlbum(ctx context.Context, albumId string, mediaItem SimpleMediaItem) (MediaItem, error)
-	CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error)
-	Get(ctx context.Context, mediaItemId string) (*MediaItem, error)
-	ListByAlbum(ctx context.Context, albumId string) ([]MediaItem, error)
-}
-
 // Repository represents a media items repository.
 type Repository interface {
 	CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error)

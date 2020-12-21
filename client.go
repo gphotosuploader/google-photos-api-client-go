@@ -4,17 +4,18 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 // Client is a Google Photos client with enhanced capabilities.
 type Client struct {
-	Albums    AlbumsService
-	MediaItems media_items.MediaItemsService
+	Albums     AlbumsService
+	MediaItems MediaItemsService
 	Uploader   uploader.MediaUploader
 }
 
@@ -61,7 +62,7 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 		return nil, err
 	}
 
-	var mediaItemsService media_items.MediaItemsService
+	var mediaItemsService MediaItemsService
 	mediaItemsService, err = media_items.NewHttpMediaItemsService(client.StandardClient())
 	if err != nil {
 		return nil, err
@@ -123,7 +124,7 @@ func WithAlbumsService(s AlbumsService) *option {
 }
 
 // WithMediaItemsService configures the Media Items Service.
-func WithMediaItemsService(s media_items.MediaItemsService) *option {
+func WithMediaItemsService(s MediaItemsService) *option {
 	return &option{
 		name:  optkeyMediaItemsService,
 		value: s,
