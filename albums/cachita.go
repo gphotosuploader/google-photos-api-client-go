@@ -12,28 +12,6 @@ var (
 	ErrCacheMiss = errors.New("item could not be found in the cache")
 )
 
-// Cache is used to store and retrieve previously obtained objects.
-type Cache interface {
-	// GetAlbum returns Album data from the cache corresponding to the specified title.
-	// It will return ErrCacheMiss if there is no cached Album.
-	GetAlbum(ctx context.Context, title string) (Album, error)
-
-	// PutAlbum stores the Album data in the cache using the title as key.
-	// Underlying implementations may use any data storage format,
-	// as long as the reverse operation, GetAlbum, results in the original data.
-	PutAlbum(ctx context.Context, album Album) error
-
-	// PutManyAlbums stores many Album data in the cache using the title as key.
-	PutManyAlbums(ctx context.Context, albums []Album) error
-
-	// InvalidateAlbum removes the Album data from the cache corresponding to the specified title.
-	// If there's no such Album in the cache, it will return nil.
-	InvalidateAlbum(ctx context.Context, title string) error
-
-	// InvalidateAllAlbums removes all key corresponding to albums
-	InvalidateAllAlbums(ctx context.Context) error
-}
-
 // CachitaCache implements Cache with `gadelkareem/cachita` package.
 type CachitaCache struct {
 	store      cachita.Cache

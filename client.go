@@ -4,18 +4,18 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 // Client is a Google Photos client with enhanced capabilities.
 type Client struct {
-	Albums     albums.AlbumsService
-	MediaItems media_items.MediaItemsService
-	Uploader   uploader.MediaUploader
+	Albums     AlbumsService
+	MediaItems MediaItemsService
+	Uploader   MediaUploader
 }
 
 func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
@@ -53,15 +53,15 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 	client := retryablehttp.NewClient()
 	client.HTTPClient = authenticatedClient
 
-	var albumsService albums.AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
+	var albumsService AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
 
-	var upldr uploader.MediaUploader
+	var upldr MediaUploader
 	upldr, err := basic.NewBasicUploader(client.StandardClient())
 	if err != nil {
 		return nil, err
 	}
 
-	var mediaItemsService media_items.MediaItemsService
+	var mediaItemsService MediaItemsService
 	mediaItemsService, err = media_items.NewHttpMediaItemsService(client.StandardClient())
 	if err != nil {
 		return nil, err
@@ -70,9 +70,9 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 	for _, o := range options {
 		switch o.Name() {
 		case optkeyUploader:
-			upldr = o.Value().(uploader.MediaUploader)
+			upldr = o.Value().(MediaUploader)
 		case optkeyAlbumsService:
-			albumsService = o.Value().(albums.AlbumsService)
+			albumsService = o.Value().(AlbumsService)
 		case optkeyMediaItemsService:
 
 		}
@@ -107,7 +107,7 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithUploader configures the Media Uploader.
-func WithUploader(s uploader.MediaUploader) *option {
+func WithUploader(s MediaUploader) *option {
 	return &option{
 		name:  optkeyUploader,
 		value: s,
@@ -115,7 +115,7 @@ func WithUploader(s uploader.MediaUploader) *option {
 }
 
 // WithAlbumsService configures the Albums Service.
-func WithAlbumsService(s albums.AlbumsService) *option {
+func WithAlbumsService(s AlbumsService) *option {
 	return &option{
 		name:  optkeyAlbumsService,
 		value: s,
@@ -123,7 +123,7 @@ func WithAlbumsService(s albums.AlbumsService) *option {
 }
 
 // WithMediaItemsService configures the Media Items Service.
-func WithMediaItemsService(s media_items.MediaItemsService) *option {
+func WithMediaItemsService(s MediaItemsService) *option {
 	return &option{
 		name:  optkeyMediaItemsService,
 		value: s,
