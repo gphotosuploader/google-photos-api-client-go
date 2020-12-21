@@ -6,16 +6,6 @@ import (
 	"net/http"
 )
 
-// AlbumsService represents a Google Photos client for albums management.
-type AlbumsService interface {
-	AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
-	RemoveMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
-	Create(ctx context.Context, title string) (*Album, error)
-	GetById(ctx context.Context, id string) (*Album, error)
-	GetByTitle(ctx context.Context, title string) (*Album, error)
-	List(ctx context.Context) ([]Album, error)
-}
-
 var (
 	NullAlbum        = Album{}
 	ErrAlbumNotFound = errors.New("album not found")
@@ -29,6 +19,28 @@ type Repository interface {
 	Get(ctx context.Context, albumId string) (*Album, error)
 	ListAll(ctx context.Context) ([]Album, error)
 	GetByTitle(ctx context.Context, title string) (*Album, error)
+}
+
+// Cache is used to store and retrieve previously obtained objects.
+type Cache interface {
+	// GetAlbum returns Album data from the cache corresponding to the specified title.
+	// It will return ErrCacheMiss if there is no cached Album.
+	GetAlbum(ctx context.Context, title string) (Album, error)
+
+	// PutAlbum stores the Album data in the cache using the title as key.
+	// Underlying implementations may use any data storage format,
+	// as long as the reverse operation, GetAlbum, results in the original data.
+	PutAlbum(ctx context.Context, album Album) error
+
+	// PutManyAlbums stores many Album data in the cache using the title as key.
+	PutManyAlbums(ctx context.Context, albums []Album) error
+
+	// InvalidateAlbum removes the Album data from the cache corresponding to the specified title.
+	// If there's no such Album in the cache, it will return nil.
+	InvalidateAlbum(ctx context.Context, title string) error
+
+	// InvalidateAllAlbums removes all key corresponding to albums
+	InvalidateAllAlbums(ctx context.Context) error
 }
 
 // CachedAlbumsService implements a Google Photos client with cached results.
@@ -92,7 +104,8 @@ func (s CachedAlbumsService) List(ctx context.Context) ([]Album, error) {
 }
 
 func defaultRepo(authenticatedClient *http.Client) Repository {
-	return NewDuffplAlbumRepository(authenticatedClient)
+	r, _ := NewPhotosLibraryClient(authenticatedClient)
+	return r
 }
 
 func defaultCache() Cache {
