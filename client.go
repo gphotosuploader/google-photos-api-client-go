@@ -13,7 +13,7 @@ import (
 
 // Client is a Google Photos client with enhanced capabilities.
 type Client struct {
-	Albums     albums.AlbumsService
+	Albums    AlbumsService
 	MediaItems media_items.MediaItemsService
 	Uploader   uploader.MediaUploader
 }
@@ -53,7 +53,7 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 	client := retryablehttp.NewClient()
 	client.HTTPClient = authenticatedClient
 
-	var albumsService albums.AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
+	var albumsService AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
 
 	var upldr uploader.MediaUploader
 	upldr, err := basic.NewBasicUploader(client.StandardClient())
@@ -72,7 +72,7 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 		case optkeyUploader:
 			upldr = o.Value().(uploader.MediaUploader)
 		case optkeyAlbumsService:
-			albumsService = o.Value().(albums.AlbumsService)
+			albumsService = o.Value().(AlbumsService)
 		case optkeyMediaItemsService:
 
 		}
@@ -115,7 +115,7 @@ func WithUploader(s uploader.MediaUploader) *option {
 }
 
 // WithAlbumsService configures the Albums Service.
-func WithAlbumsService(s albums.AlbumsService) *option {
+func WithAlbumsService(s AlbumsService) *option {
 	return &option{
 		name:  optkeyAlbumsService,
 		value: s,
