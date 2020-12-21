@@ -44,12 +44,18 @@ var (
 // NewMockedGooglePhotosService returns a mocked Google Photos service.
 func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	ms := &MockedGooglePhotosService{}
-	mux := mux.NewRouter()
-	mux.HandleFunc("/v1/albums", ms.handleGetAlbumsList).Methods("GET")
-	mux.HandleFunc("/v1/albums", ms.handlePostAlbumsCreate).Methods("POST")
-	mux.HandleFunc("/v1/albums/{albumId}", ms.handleGetAlbumsGet).Methods("GET")
+	router := mux.NewRouter()
+	// Albums methods
+	router.HandleFunc("/v1/albums", ms.albumsList).Methods("GET")
+	router.HandleFunc("/v1/albums", ms.albumsCreate).Methods("POST")
+	router.HandleFunc("/v1/albums/{albumId}", ms.albumsGet).Methods("GET")
+	router.HandleFunc("/v1/albums/{albumId}:batchAddMediaItems", ms.albumsBatchAddMediaItems).Methods("POST")
+	// MediaItems methods
+	router.HandleFunc("/v1/mediaItems:batchCreate", ms.mediaItemsBatchCreate).Methods("POST")
+	router.HandleFunc("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet).Methods("GET")
+	router.HandleFunc("v1/mediaItems:search", ms.mediaItemsSearch).Methods("POST")
 
-	ms.server = httptest.NewServer(mux)
+	ms.server = httptest.NewServer(router)
 	ms.baseURL = ms.server.URL
 	return ms
 }
@@ -62,13 +68,13 @@ func (ms MockedGooglePhotosService) URL() string {
 	return ms.baseURL
 }
 
-// handleCreateAlbum implements 'albums.create' method .
+// albumsCreate implements 'albums.create' method .
 // - Album creation with title == ShouldFailAlbum.Title will response http.StatusInternalServerError.
-// - Any other case will response http.StatusCreated.
+// - Any other case will response http.StatusOK.
 //
 // "flatPath": "v1/albums",
 // "httpMethod": "POST",
-func (ms MockedGooglePhotosService) handlePostAlbumsCreate(w http.ResponseWriter, r *http.Request) {
+func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.Request) {
 	var req photoslibrary.CreateAlbumRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -86,21 +92,21 @@ func (ms MockedGooglePhotosService) handlePostAlbumsCreate(w http.ResponseWriter
 		ProductUrl: req.Album.Title + "ProductUrl",
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(album); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
 
-// handleGetAlbum implements 'albums.get' method.
+// albumsGet implements 'albums.get' method.
 // - Album with Id == ShouldFailAlbum.Title will response http.StatusInternalServerError.
 // - Album with Id in AvailableAlbums will response http.StatusOK.
 // - Any other case will response http.StatusNotFound.
 //
 // "flatPath": "v1/albums/{albumsId}",
 // "httpMethod": "GET",
-func (ms MockedGooglePhotosService) handleGetAlbumsGet(w http.ResponseWriter, r *http.Request) {
+func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	albumId := vars["albumId"]
 
@@ -109,7 +115,7 @@ func (ms MockedGooglePhotosService) handleGetAlbumsGet(w http.ResponseWriter, r 
 		return
 	}
 
-	album, found := findById(albumId)
+	album, found := findAlbumById(albumId)
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -123,11 +129,11 @@ func (ms MockedGooglePhotosService) handleGetAlbumsGet(w http.ResponseWriter, r 
 	}
 }
 
-// handleListAlbum implements 'albums.list' method.
+// albumsList implements 'albums.list' method.
 //
 // "flatPath": "v1/albums",
 // "httpMethod": "GET",
-func (ms MockedGooglePhotosService) handleGetAlbumsList(w http.ResponseWriter, r *http.Request) {
+func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.ListAlbumsResponse{
 		Albums: AvailableAlbums,
@@ -138,12 +144,180 @@ func (ms MockedGooglePhotosService) handleGetAlbumsList(w http.ResponseWriter, r
 	}
 }
 
-// findById returns if AvailableAlbums has an album with the specified Id.
-func findById(albumId string) (*photoslibrary.Album, bool) {
+// albumsBatchAddMediaItems implements 'albums.batchAddMediaItems' method.
+//
+// "flatPath": "v1/albums/{albumsId}:batchAddMediaItems",
+// "httpMethod": "POST",
+func (ms MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	albumId := vars["albumId"]
+
+	if _, found := findAlbumById(albumId); !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if ShouldFailAlbum.Id == albumId {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var req photoslibrary.AlbumBatchAddMediaItemsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for _, mi := range req.MediaItemIds {
+		if ShouldFailMediaItem == mi {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// findAlbumById returns if AvailableAlbums has an album with the specified Id.
+func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 	for _, a := range AvailableAlbums {
 		if albumId == a.Id {
 			return a, true
 		}
 	}
 	return &photoslibrary.Album{}, false
+}
+
+var (
+	// AvailableMediaItems is the media items collection.
+	AvailableMediaItems = []*photoslibrary.MediaItem{
+		{
+			Id:          "fooId",
+			Description: "fooDescription",
+			ProductUrl:  "fooProductUrl",
+			BaseUrl:     "fooBaseUrl",
+			Filename:    "fooFilename",
+		},
+		{
+			Id:          "barId",
+			Description: "barDescription",
+			ProductUrl:  "barProductUrl",
+			BaseUrl:     "barBaseUrl",
+			Filename:    "barFilename",
+		},
+		{
+			Id:          "bazId",
+			Description: "bazDescription",
+			ProductUrl:  "bazProductUrl",
+			BaseUrl:     "bazBaseUrl",
+			Filename:    "bazFilename",
+		},
+	}
+	ShouldFailMediaItem = "should-fail"
+)
+
+// albumsBatchRemoveMediaItems implements 'mediaItems.batchCreate' method.
+//
+// "flatPath": "v1/mediaItems:batchCreate",
+// "httpMethod": "POST",
+func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter, r *http.Request) {
+	var req photoslibrary.BatchCreateMediaItemsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if ShouldFailAlbum.Id == req.AlbumId {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	newMediaItems := make([]*photoslibrary.NewMediaItemResult, 0)
+	for _, item := range req.NewMediaItems {
+		if ShouldFailMediaItem == item.SimpleMediaItem.UploadToken {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		newMediaItems = append(newMediaItems, &photoslibrary.NewMediaItemResult{
+			MediaItem: &photoslibrary.MediaItem{
+				BaseUrl:     item.SimpleMediaItem.UploadToken + "BaseUrl",
+				Description: item.SimpleMediaItem.UploadToken + "Description",
+				Filename:    item.SimpleMediaItem.UploadToken + "Filename",
+				Id:          item.SimpleMediaItem.UploadToken + "Id",
+				ProductUrl:  item.SimpleMediaItem.UploadToken + "ProductUrl",
+			},
+		})
+	}
+
+	w.WriteHeader(http.StatusOK)
+	res := photoslibrary.BatchCreateMediaItemsResponse{
+		NewMediaItemResults: newMediaItems,
+	}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// mediaItemsGet implements 'mediaItems.get' method.
+//
+// "flatPath": "v1/mediaItems/{mediaItemId}",
+// "httpMethod": "GET",
+func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	mediaItemId := vars["mediaItemId"]
+
+	if ShouldFailMediaItem == mediaItemId {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	mediaItem, found := findMediaItemById(mediaItemId)
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	res := mediaItem
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// mediaItemsSearch implements 'mediaItems.search' method.
+//
+// "flatPath": "v1/mediaItems:search",
+// "httpMethod": "POST",
+func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *http.Request) {
+	var req photoslibrary.SearchMediaItemsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if ShouldFailAlbum.Id == req.AlbumId {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	res := photoslibrary.SearchMediaItemsResponse{
+		MediaItems:      AvailableMediaItems,
+	}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// findMediaItemById returns if AvailableMediaItems has a media item with the specified Id.
+func findMediaItemById(mediaItemId string) (*photoslibrary.MediaItem, bool) {
+	for _, a := range AvailableMediaItems {
+		if mediaItemId == a.Id {
+			return a, true
+		}
+	}
+	return &photoslibrary.MediaItem{}, false
 }
