@@ -26,3 +26,8 @@ type MediaItemsService interface {
 	Get(ctx context.Context, mediaItemId string) (*media_items.MediaItem, error)
 	ListByAlbum(ctx context.Context, albumId string) ([]media_items.MediaItem, error)
 }
+
+// MediaUploader represents a Google Photos client fo media upload.
+type MediaUploader interface {
+	UploadFile(ctx context.Context, filePath string) (uploadToken string, err error)
+}

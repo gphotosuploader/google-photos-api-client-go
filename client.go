@@ -8,7 +8,6 @@ import (
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
 )
 
@@ -16,7 +15,7 @@ import (
 type Client struct {
 	Albums     AlbumsService
 	MediaItems MediaItemsService
-	Uploader   uploader.MediaUploader
+	Uploader   MediaUploader
 }
 
 func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
@@ -56,7 +55,7 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 
 	var albumsService AlbumsService = albums.NewCachedAlbumsService(client.StandardClient())
 
-	var upldr uploader.MediaUploader
+	var upldr MediaUploader
 	upldr, err := basic.NewBasicUploader(client.StandardClient())
 	if err != nil {
 		return nil, err
@@ -71,7 +70,7 @@ func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, er
 	for _, o := range options {
 		switch o.Name() {
 		case optkeyUploader:
-			upldr = o.Value().(uploader.MediaUploader)
+			upldr = o.Value().(MediaUploader)
 		case optkeyAlbumsService:
 			albumsService = o.Value().(AlbumsService)
 		case optkeyMediaItemsService:
@@ -108,7 +107,7 @@ func (o option) Name() string       { return o.name }
 func (o option) Value() interface{} { return o.value }
 
 // WithUploader configures the Media Uploader.
-func WithUploader(s uploader.MediaUploader) *option {
+func WithUploader(s MediaUploader) *option {
 	return &option{
 		name:  optkeyUploader,
 		value: s,

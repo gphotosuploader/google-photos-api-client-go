@@ -1,15 +1,10 @@
 package uploader
 
 import (
-	"context"
 	"io"
 )
 
 const DefaultEndpoint = "https://photoslibrary.googleapis.com/v1/uploads"
-
-type MediaUploader interface {
-	UploadFile(ctx context.Context, filePath string) (uploadToken string, err error)
-}
 
 // UploadToken represents a pointer to the uploaded item.
 type UploadToken string
