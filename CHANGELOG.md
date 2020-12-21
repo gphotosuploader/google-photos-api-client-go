@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.0
+### Added
+- Albums repository `albums.PhotosLibraryAlbumsRepository` using `gphotosuploader/googlemirror` package.
+- Method `media_items.NewPhotosLibraryClientWithURL()` for customize Google Photos service `basePath`. 
+- Google Photos library `gphotosuploader/googlemirror` mock.
+### Fixed
+- Code without tests. Test coverage has been improved a lot (~ 70%).
+### Removed
+- Albums repository using `duffpl/google-photos-api-client` package. It has been replaced by `gphotosuploader/googlemirror`.
+
 ## 2.0.0
 > This is a major version update, it means that is **NOT BACKWARDS COMPATIBLE**. New import path is in place.
 ### Added
