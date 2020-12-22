@@ -23,6 +23,7 @@ type BasicUploader struct {
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
+
 // UploadToken represents a pointer to the uploaded item.
 type UploadToken string
 

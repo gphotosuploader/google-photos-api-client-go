@@ -19,7 +19,3 @@ type UploadItem interface {
 	// Size returns the size (in bytes).
 	Size() int64
 }
-
-
-
-
