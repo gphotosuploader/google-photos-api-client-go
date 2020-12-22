@@ -18,6 +18,7 @@ type Client struct {
 	Uploader   MediaUploader
 }
 
+// UploadFileToLibrary uploads the specified file to Google Photos.
 func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
 	token, err := c.Uploader.UploadFile(ctx, filePath)
 	if err != nil {
@@ -29,6 +30,7 @@ func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media
 	})
 }
 
+// UploadFileToAlbum uploads the specified file to the album in Google Photos.
 func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath string) (media_items.MediaItem, error) {
 	token, err := c.Uploader.UploadFile(ctx, filePath)
 	if err != nil {
