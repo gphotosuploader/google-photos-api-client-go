@@ -1,1 +1,2 @@
-internal/mock/*
+mocks/*
+**/mock_*

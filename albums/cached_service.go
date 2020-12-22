@@ -6,12 +6,7 @@ import (
 	"net/http"
 )
 
-var (
-	NullAlbum        = Album{}
-	ErrAlbumNotFound = errors.New("album not found")
-)
-
-// Repository represents the repository to store albums.
+// Repository represents a albums repository.
 type Repository interface {
 	AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
 	RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
@@ -43,18 +38,25 @@ type Cache interface {
 	InvalidateAllAlbums(ctx context.Context) error
 }
 
-// CachedAlbumsService implements a Google Photos client with cached results.
+// CachedAlbumsService implements a albums Google Photos client with cached results.
 type CachedAlbumsService struct {
 	repo  Repository
 	cache Cache
 }
 
-// AddMediaItems adds multiple media items to the specified album.
+var (
+	// NullAlbum is a zero value Album.
+	NullAlbum = Album{}
+
+	ErrAlbumNotFound = errors.New("album not found")
+)
+
+// AddMediaItems adds multiple media item(s) to the specified album.
 func (s CachedAlbumsService) AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return s.repo.AddManyItems(ctx, albumId, mediaItemIds)
 }
 
-// RemoveMediaItems removes multiple media items from the specified album.
+// RemoveMediaItems removes multiple media item(s) from the specified album.
 func (s CachedAlbumsService) RemoveMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	return s.repo.RemoveManyItems(ctx, albumId, mediaItemIds)
 }
@@ -68,16 +70,20 @@ func (s CachedAlbumsService) Create(ctx context.Context, title string) (*Album, 
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
 
-// GetById fetches and caches an album from the repo by id. It doesn't use the cache to look for it.
+// GetById fetches and caches an album from the repo by id.
+// It does not use the cache to look for it.
+// Returns ErrAlbumNotFound if the album does not exist.
 func (s CachedAlbumsService) GetById(ctx context.Context, albumId string) (*Album, error) {
 	albumPtr, err := s.repo.Get(ctx, albumId)
 	if err != nil {
-		return &NullAlbum, err
+		return &NullAlbum, ErrAlbumNotFound
 	}
 	return albumPtr, s.cache.PutAlbum(ctx, *albumPtr)
 }
 
-// GetByTitle fetches and caches an album from the repo by title. It tries to find it in the cache, first.
+// GetByTitle fetches and caches an album from the repo by title.
+// It tries to find it in the cache, first.
+// Returns ErrAlbumNotFound if the album does not exist.
 func (s CachedAlbumsService) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	album, err := s.cache.GetAlbum(ctx, title)
 	if err == nil {
@@ -85,7 +91,7 @@ func (s CachedAlbumsService) GetByTitle(ctx context.Context, title string) (*Alb
 	}
 	a, err := s.repo.GetByTitle(ctx, title)
 	if err != nil {
-		return &NullAlbum, err
+		return &NullAlbum, ErrAlbumNotFound
 	}
 	return a, s.cache.PutAlbum(ctx, *a)
 }
@@ -112,7 +118,8 @@ func defaultCache() Cache {
 	return NewCachitaCache()
 }
 
-// NewCachedAlbumsService returns a client of CachedAlbumsService.
+// NewCachedAlbumsService returns an albums Google Photos client with cached results.
+// The authenticatedClient should have all oAuth credentials in place.
 func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option) *CachedAlbumsService {
 	var repo Repository = defaultRepo(authenticatedClient)
 	var albumCache Cache = defaultCache()

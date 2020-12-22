@@ -8,13 +8,14 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
-// PhotosLibraryClient represents a MediaItemsService using `gphotosuploader/googlemirror/api/photoslibrary`.
+// PhotosLibraryClient represents a media items service using `gphotosuploader/googlemirror/api/photoslibrary`.
 type PhotosLibraryClient interface {
 	BatchCreate(batchcreatemediaitemsrequest *photoslibrary.BatchCreateMediaItemsRequest) *photoslibrary.MediaItemsBatchCreateCall
 	Get(mediaItemId string) *photoslibrary.MediaItemsGetCall
 	Search(searchmediaitemsrequest *photoslibrary.SearchMediaItemsRequest) *photoslibrary.MediaItemsSearchCall
 }
 
+// PhotosLibraryMediaItemsRepository represents a media items Google Photos repository.
 type PhotosLibraryMediaItemsRepository struct {
 	service  PhotosLibraryClient
 	basePath string
@@ -40,14 +41,20 @@ func NewPhotosLibraryClientWithURL(authenticatedClient *http.Client, url string)
 	}, nil
 }
 
+// URL returns the media items repository url.
 func (r PhotosLibraryMediaItemsRepository) URL() string {
 	return r.basePath
 }
 
+// CreateMany creates one or more media items in the repository.
+// By default the media item(s) will be added to the end of the library.
 func (r PhotosLibraryMediaItemsRepository) CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	return r.CreateManyToAlbum(ctx, "", mediaItems)
 }
 
+// CreateManyToAlbum creates one or more media item(s) in the repository.
+// If an album id is specified, the media item(s) are also added to the album.
+// By default the media item(s) will be added to the end of the library or album.
 func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	newMediaItems := make([]*photoslibrary.NewMediaItem, len(mediaItems))
 	for i, mediaItem := range mediaItems {
@@ -71,6 +78,7 @@ func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context
 	return mediaItemsResult, nil
 }
 
+// Get returns the media item specified based on a given media item id.
 func (r PhotosLibraryMediaItemsRepository) Get(ctx context.Context, mediaItemId string) (*MediaItem, error) {
 	result, err := r.service.Get(mediaItemId).Context(ctx).Do()
 	if err != nil {
@@ -80,6 +88,7 @@ func (r PhotosLibraryMediaItemsRepository) Get(ctx context.Context, mediaItemId 
 	return &m, nil
 }
 
+// ListByAlbum list all media items in the specified album.
 func (r PhotosLibraryMediaItemsRepository) ListByAlbum(ctx context.Context, albumId string) ([]MediaItem, error) {
 	req := &photoslibrary.SearchMediaItemsRequest{
 		AlbumId: albumId,

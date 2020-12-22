@@ -12,7 +12,6 @@ type MediaItem struct {
 	Filename      string
 }
 
-
 // MediaMetadata represents metadata for a media item.
 // See: https://developers.google.com/photos/library/reference/rest/v1/mediaItems
 type MediaMetadata struct {

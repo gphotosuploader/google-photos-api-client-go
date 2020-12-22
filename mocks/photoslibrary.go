@@ -9,7 +9,7 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
-// MockedGooglePhotosService mock the Google Photos service.
+// MockedGooglePhotosService mocks the Google Photos service.
 type MockedGooglePhotosService struct {
 	server  *httptest.Server
 	baseURL string
@@ -35,6 +35,7 @@ var (
 		},
 	}
 
+	// ShouldFailAlbum is an album that will make the API fail.
 	ShouldFailAlbum = &photoslibrary.Album{
 		Id:    "should-fail",
 		Title: "should-fail",
@@ -60,10 +61,12 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	return ms
 }
 
+// Close closes the HTTP server.
 func (ms MockedGooglePhotosService) Close() {
 	ms.server.Close()
 }
 
+// URL returns the HTTP server url.
 func (ms MockedGooglePhotosService) URL() string {
 	return ms.baseURL
 }
@@ -228,6 +231,8 @@ var (
 			},
 		},
 	}
+
+	// ShouldFailMediaItem will make API fail.
 	ShouldFailMediaItem = "should-fail"
 )
 

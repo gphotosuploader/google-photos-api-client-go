@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	// ErrCacheMiss is returned when the item does not exist in the cache.
 	ErrCacheMiss = errors.New("item could not be found in the cache")
 )
 
