@@ -7,6 +7,27 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
 )
 
+// OAuth2 scopes used by this API.
+const (
+	// View the photos, videos and albums in your Google Photos
+	DrivePhotosReadonlyScope = "https://www.googleapis.com/auth/drive.photos.readonly"
+
+	// View and manage your Google Photos library
+	PhotoslibraryScope = "https://www.googleapis.com/auth/photoslibrary"
+
+	// Add to your Google Photos library
+	PhotoslibraryAppendonlyScope = "https://www.googleapis.com/auth/photoslibrary.appendonly"
+
+	// View your Google Photos library
+	PhotoslibraryReadonlyScope = "https://www.googleapis.com/auth/photoslibrary.readonly"
+
+	// Manage photos added by this app
+	PhotoslibraryReadonlyAppcreateddataScope = "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata"
+
+	// Manage and add to shared albums on your behalf
+	PhotoslibrarySharingScope = "https://www.googleapis.com/auth/photoslibrary.sharing"
+)
+
 // AlbumsService represents a Google Photos client for albums management.
 type AlbumsService interface {
 	AddMediaItems(ctx context.Context, albumId string, mediaItemIds []string) error
@@ -31,3 +52,4 @@ type MediaItemsService interface {
 type MediaUploader interface {
 	UploadFile(ctx context.Context, filePath string) (uploadToken string, err error)
 }
+

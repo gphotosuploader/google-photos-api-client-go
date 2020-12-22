@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.2.0
+### Added
+- oAuth scopes has been added, given that they are needed to make oAuth works.
+
 ## 2.1.1
 ### Added
 - Mocks for this package. See `mocks` folder.
