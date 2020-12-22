@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ## 2.1.1
 ### Added
 - Mocks for this package. See `mocks` folder.
+- oAuth scopes has been added, given that they are needed to make oAuth works.
 ### Changed
 - Documentation has been improved.
 
