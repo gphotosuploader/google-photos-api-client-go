@@ -9,7 +9,7 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
-// PhotosLibraryClient represents a AlbumsService using `gphotosuploader/googlemirror/api/photoslibrary`.
+// PhotosLibraryClient represents an albums using `gphotosuploader/googlemirror/api/photoslibrary`.
 type PhotosLibraryClient interface {
 	BatchAddMediaItems(albumId string, albumbatchaddmediaitemsrequest *photoslibrary.AlbumBatchAddMediaItemsRequest) *photoslibrary.AlbumBatchAddMediaItemsCall
 	Create(createalbumrequest *photoslibrary.CreateAlbumRequest) *photoslibrary.AlbumsCreateCall
@@ -17,6 +17,7 @@ type PhotosLibraryClient interface {
 	List() *photoslibrary.AlbumsListCall
 }
 
+// PhotosLibraryAlbumsRepository represents an albums Google Photos repository.
 type PhotosLibraryAlbumsRepository struct {
 	service  PhotosLibraryClient
 	basePath string
@@ -42,10 +43,12 @@ func NewPhotosLibraryClientWithURL(authenticatedClient *http.Client, url string)
 	}, nil
 }
 
+// URL returns the albums repository url.
 func (r PhotosLibraryAlbumsRepository) URL() string {
 	return r.basePath
 }
 
+// AddManyItems adds multiple media item(s) to the specified album.
 func (r PhotosLibraryAlbumsRepository) AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	req := &photoslibrary.AlbumBatchAddMediaItemsRequest{
 		MediaItemIds: mediaItemIds,
@@ -54,10 +57,12 @@ func (r PhotosLibraryAlbumsRepository) AddManyItems(ctx context.Context, albumId
 	return err
 }
 
+// RemoveManyItems removes multiple media item(s) from the specified album.
 func (r PhotosLibraryAlbumsRepository) RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error {
 	panic("not implemented on google mirror library")
 }
 
+// Create adds and caches a new album to the repo.
 func (r PhotosLibraryAlbumsRepository) Create(ctx context.Context, title string) (*Album, error) {
 	req := &photoslibrary.CreateAlbumRequest{
 		Album: &photoslibrary.Album{Title: title},
@@ -70,6 +75,7 @@ func (r PhotosLibraryAlbumsRepository) Create(ctx context.Context, title string)
 	return &album, nil
 }
 
+// Get fetches and caches an album from the repo by id.
 func (r PhotosLibraryAlbumsRepository) Get(ctx context.Context, albumId string) (*Album, error) {
 	res, err := r.service.Get(albumId).Context(ctx).Do()
 	if err != nil {
@@ -79,6 +85,7 @@ func (r PhotosLibraryAlbumsRepository) Get(ctx context.Context, albumId string) 
 	return &album, nil
 }
 
+// ListAll fetches and caches all the albums from the repo.
 func (r PhotosLibraryAlbumsRepository) ListAll(ctx context.Context) ([]Album, error) {
 	albumsResult := make([]Album, 0)
 	err := r.service.List().ExcludeNonAppCreatedData().Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
@@ -90,6 +97,7 @@ func (r PhotosLibraryAlbumsRepository) ListAll(ctx context.Context) ([]Album, er
 	return albumsResult, err
 }
 
+// GetByTitle fetches and caches an album from the repo by title.
 func (r PhotosLibraryAlbumsRepository) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	ErrAlbumWasFound := fmt.Errorf("album was found")
 	var result *Album
