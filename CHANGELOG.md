@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.1
+### Added
+- Mocks for this package. See `mocks` folder.
+### Changed
+- Documentation has been improved.
+
 ## 2.1.0
 ### Added
 - Albums repository `albums.PhotosLibraryAlbumsRepository` using `gphotosuploader/googlemirror` package.

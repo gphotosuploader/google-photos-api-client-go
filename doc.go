@@ -44,14 +44,17 @@
 // project. This project must have the Library API enabled as described in
 // https://developers.google.com/photos/library/guides/get-started.
 //
-//	import "golang.org/x/oauth2"
+//	import (
+//		"golang.org/x/oauth2"
+//
+//		gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
+//  )
 //	func main() {
 //		ctx := context.Background()
 //		oc := oauth2Config := oauth2.Config{
 //			ClientID:     "... your application Client ID ...",
 //			ClientSecret: "... your application Client Secret ...",
-//			Endpoint:     photos.Endpoint,
-//			Scopes:       photos.Scopes,
+//          // ...
 //		}
 //		tc := oc.Client(ctx, "... your user Oauth Token ...")
 //		client, err := gphotos.NewClient(tc)
