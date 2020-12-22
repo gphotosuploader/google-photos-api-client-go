@@ -10,6 +10,8 @@ import (
 // FileUploadItem represents a local file.
 type FileUploadItem string
 
+// NewFileUploadItem returns a FileUploadItem from the specified file path.
+// The file path is must exist and it must be a file (not a folder).
 func NewFileUploadItem(filePath string) (FileUploadItem, error) {
 	if !fileExists(filePath) {
 		return "", fmt.Errorf("file does not exist (or is a directory")

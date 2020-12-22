@@ -20,6 +20,7 @@ type BasicUploader struct {
 	log log.Logger
 }
 
+// HttpClient represents a HTTP client.
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -27,6 +28,10 @@ type HttpClient interface {
 // UploadToken represents a pointer to the uploaded item.
 type UploadToken string
 
+// NewBasicUploader returns an Uploader or error in case of non valid configuration.
+// The supplied authenticatedClient must have the proper authentication to upload files.
+//
+// Use WithLogger(...) and WithEndpoint(...) to customize configuration.
 func NewBasicUploader(authenticatedClient HttpClient, options ...Option) (*BasicUploader, error) {
 	logger := defaultLogger()
 	endpoint := uploader.DefaultEndpoint

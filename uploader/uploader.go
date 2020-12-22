@@ -4,6 +4,7 @@ import (
 	"io"
 )
 
+// DefaultEndpoint is the Google Photos endpoint for uploads.
 const DefaultEndpoint = "https://photoslibrary.googleapis.com/v1/uploads"
 
 // UploadToken represents a pointer to the uploaded item.

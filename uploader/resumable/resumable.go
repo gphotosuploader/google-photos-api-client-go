@@ -28,6 +28,7 @@ type ResumableUploader struct {
 	log log.Logger
 }
 
+// HttpClient represents a HTTP client.
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
