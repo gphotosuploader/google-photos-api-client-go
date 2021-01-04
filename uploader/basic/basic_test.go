@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
@@ -102,6 +103,17 @@ func (ms MockedGooglePhotosServer) handleUploads(w http.ResponseWriter, r *http.
 	case "upload-failure":
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
+		var bodyContent []byte
+		bodyLength, err := r.Body.Read(bodyContent)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		expectedLength, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+		if expectedLength != bodyLength {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		_, _ = w.Write([]byte("apiToken"))
 	}
 }
