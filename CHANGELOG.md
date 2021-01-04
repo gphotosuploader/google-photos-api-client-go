@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.2
+### Fixed
+- Crash when Google Photos API returns a `MediaItem` with an error on `mediaItems.batchCreate`. ([#54][i54])
+- Basic uploader is throwing a bad request when trying to upload a file. ([#53][i53])
+
+[i54]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/54
+[i53]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/53
+
 ## 2.1.1
 ### Added
 - Mocks for this package. See `mocks` folder.

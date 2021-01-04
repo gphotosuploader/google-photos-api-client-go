@@ -15,6 +15,23 @@ type MockedGooglePhotosService struct {
 	baseURL string
 }
 
+const (
+	// OK is returned on success.
+	// @see: https://github.com/grpc/grpc-go/blob/master/codes/codes.go
+	grpcOKCode = 0
+	// Unknown error. An example of where this error may be returned is
+	// if a Status value received from another address space belongs to
+	// an error-space that is not known in this address space. Also
+	// errors raised by APIs that do not return enough error information
+	// may be converted to this error.
+	//
+	// The gRPC framework will generate this error code in the above two
+	// mentioned cases.
+	// @see: https://github.com/grpc/grpc-go/blob/master/codes/codes.go
+	grpcUnknownCode = 2
+
+)
+
 var (
 	// AvailableAlbums is the albums collection.
 	AvailableAlbums = []*photoslibrary.Album{
@@ -172,7 +189,7 @@ func (ms MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWrit
 	}
 
 	for _, mi := range req.MediaItemIds {
-		if ShouldFailMediaItem == mi {
+		if ShouldMakeAPIFailMediaItem == mi {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -232,8 +249,10 @@ var (
 		},
 	}
 
-	// ShouldFailMediaItem will make API fail.
-	ShouldFailMediaItem = "should-fail"
+	// ShouldMakeAPIFailMediaItem will make API fail.
+	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
+	// ShouldReturnEmptyMediaItem will return an empty media item
+	ShouldReturnEmptyMediaItem = "should-return-empty-media-item"
 )
 
 // albumsBatchRemoveMediaItems implements 'mediaItems.batchCreate' method.
@@ -254,23 +273,30 @@ func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter,
 
 	newMediaItems := make([]*photoslibrary.NewMediaItemResult, len(req.NewMediaItems))
 	for i, item := range req.NewMediaItems {
-		if ShouldFailMediaItem == item.SimpleMediaItem.UploadToken {
+		if ShouldMakeAPIFailMediaItem == item.SimpleMediaItem.UploadToken {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		newMediaItems[i] = &photoslibrary.NewMediaItemResult{
-			MediaItem: &photoslibrary.MediaItem{
-				BaseUrl:     item.SimpleMediaItem.UploadToken + "BaseUrl",
-				Description: item.SimpleMediaItem.UploadToken + "Description",
-				Filename:    item.SimpleMediaItem.UploadToken + "Filename",
-				Id:          item.SimpleMediaItem.UploadToken + "Id",
-				ProductUrl:  item.SimpleMediaItem.UploadToken + "ProductUrl",
-				MediaMetadata: &photoslibrary.MediaMetadata{
-					CreationTime: "2014-10-02T15:01:23.045123456Z",
-					Height:       800,
-					Width:        600,
+		if ShouldReturnEmptyMediaItem == item.SimpleMediaItem.UploadToken {
+			newMediaItems[i] = &photoslibrary.NewMediaItemResult{
+				Status: &photoslibrary.Status{Code: grpcUnknownCode},
+			}
+		} else {
+			newMediaItems[i] = &photoslibrary.NewMediaItemResult{
+				Status: &photoslibrary.Status{Code: grpcOKCode},
+				MediaItem: &photoslibrary.MediaItem{
+					BaseUrl:     item.SimpleMediaItem.UploadToken + "BaseUrl",
+					Description: item.SimpleMediaItem.UploadToken + "Description",
+					Filename:    item.SimpleMediaItem.UploadToken + "Filename",
+					Id:          item.SimpleMediaItem.UploadToken + "Id",
+					ProductUrl:  item.SimpleMediaItem.UploadToken + "ProductUrl",
+					MediaMetadata: &photoslibrary.MediaMetadata{
+						CreationTime: "2014-10-02T15:01:23.045123456Z",
+						Height:       800,
+						Width:        600,
+					},
 				},
-			},
+			}
 		}
 	}
 
@@ -292,7 +318,7 @@ func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	mediaItemId := vars["mediaItemId"]
 
-	if ShouldFailMediaItem == mediaItemId {
+	if ShouldMakeAPIFailMediaItem == mediaItemId {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
