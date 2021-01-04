@@ -72,8 +72,13 @@ func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context
 	}
 	mediaItemsResult := make([]MediaItem, len(result.NewMediaItemResults))
 	for i, res := range result.NewMediaItemResults {
-		m := res.MediaItem
-		mediaItemsResult[i] = r.convertPhotosLibraryMediaItemToMediaItem(m)
+		// #54: MediaItem is populated if no errors occurred and the media item was created successfully.
+		// If an error occurs res.Status should have more data about the error.
+		// @see: https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#NewMediaItemResult
+		if res.MediaItem != nil {
+			m := res.MediaItem
+			mediaItemsResult[i] = r.convertPhotosLibraryMediaItemToMediaItem(m)
+		}
 	}
 	return mediaItemsResult, nil
 }

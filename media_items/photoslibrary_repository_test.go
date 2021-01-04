@@ -49,7 +49,7 @@ func TestPhotosLibraryMediaItemsRepository_CreateMany(t *testing.T) {
 		input         []string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", []string{mocks.ShouldFailMediaItem}, true},
+		{"Should return error if API fails", []string{mocks.ShouldMakeAPIFailMediaItem}, true},
 		{"Should return a media items on success", []string{"foo"}, false},
 		{"Should return multiple media items on success", []string{"foo", "bar"}, false},
 	}
@@ -81,9 +81,10 @@ func TestPhotosLibraryMediaItemsRepository_CreateManyToAlbum(t *testing.T) {
 		input         []string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "albumId", []string{mocks.ShouldFailMediaItem}, true},
+		{"Should return error if API fails", "albumId", []string{mocks.ShouldMakeAPIFailMediaItem}, true},
 		{"Should return a media items on success", "albumId", []string{"foo"}, false},
 		{"Should return multiple media items on success", "albumId", []string{"foo", "bar"}, false},
+		{"Should return when one media item fails (issue #54)", "", []string{"foo", mocks.ShouldReturnEmptyMediaItem, "bar"}, false},
 	}
 
 	srv := mocks.NewMockedGooglePhotosService()
@@ -115,7 +116,7 @@ func TestPhotosLibraryMediaItemsRepository_Get(t *testing.T) {
 		errExpected   error
 	}{
 		{"Should return the media item on success", "fooId", "fooFilename", false, nil},
-		{"Should return ErrMediaItemNotFound if API fails", mocks.ShouldFailMediaItem, "", true, media_items.ErrMediaItemNotFound},
+		{"Should return ErrMediaItemNotFound if API fails", mocks.ShouldMakeAPIFailMediaItem, "", true, media_items.ErrMediaItemNotFound},
 		{"Should return ErrAlbumNotFound if media item does not exist", "non-existent", "", true, media_items.ErrMediaItemNotFound},
 	}
 

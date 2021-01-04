@@ -52,7 +52,7 @@ func TestPhotosLibraryAlbumsRepository_AddManyItems(t *testing.T) {
 	}{
 		{"Should add media items to album", "foo", []string{"mediaItem1", "mediaItem2"}, true},
 		{"Should return error if album does not exist", "non-existent", []string{"mediaItem1", "mediaItem2"}, true},
-		{"Should return error if media item is invalid", "foo", []string{mocks.ShouldFailMediaItem, "mediaItem2"}, true},
+		{"Should return error if media item is invalid", "foo", []string{mocks.ShouldMakeAPIFailMediaItem, "mediaItem2"}, true},
 		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, []string{"mediaItem1", "mediaItem2"}, true},
 	}
 

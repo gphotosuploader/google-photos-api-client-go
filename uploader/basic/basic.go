@@ -87,12 +87,12 @@ func (u BasicUploader) upload(ctx context.Context, uploadItem uploader.UploadIte
 
 // prepareUploadRequest returns an HTTP request to upload item.
 func (u BasicUploader) prepareUploadRequest(item uploader.UploadItem) (*http.Request, error) {
-	_, size, err := item.Open()
+	r, size, err := item.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", u.url, nil)
+	req, err := http.NewRequest("POST", u.url, r)
 	if err != nil {
 		return nil, err
 	}
