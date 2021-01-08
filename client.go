@@ -46,6 +46,7 @@ func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath 
 // clientWithRetryPolicy returns a HTTP client with a retry policy.
 func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
 	client := retryablehttp.NewClient()
+	client.Logger = nil // Disable DEBUG logs
 	client.HTTPClient = authenticatedClient
 	return client.StandardClient()
 }

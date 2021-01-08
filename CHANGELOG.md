@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.3
+### Fixed
+- Disabled DEBUG log for each request. ([#56][i56])
+
+[i56]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/56
+
 ## 2.1.2
 ### Fixed
 - Crash when Google Photos API returns a `MediaItem` with an error on `mediaItems.batchCreate`. ([#54][i54])
