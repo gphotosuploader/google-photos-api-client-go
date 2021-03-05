@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.2.0
+### Added
+- Removes retry when Google Photos requests quota limit has been reached. ([gphotos-uploader-cli#290][igphotos-uploader-cli-290])
+- Removes retry when Google Photos requests quota limit has been reached. ([gphotos-uploader-cli#248][igphotos-uploader-cli-248])
+
+[igphotos-uploader-cli-290]: https://github.com/gphotosuploader/gphotos-uploader-cli/issues/290
+[igphotos-uploader-cli-248]: https://github.com/gphotosuploader/gphotos-uploader-cli/issues/248
+
 ## 2.1.3
 ### Fixed
 - Disabled DEBUG log for each request. ([#56][i56])
