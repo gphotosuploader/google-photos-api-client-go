@@ -1,6 +1,6 @@
 module github.com/gphotosuploader/google-photos-api-client-go/v2
 
-go 1.14
+go 1.15
 
 require (
 	github.com/gadelkareem/cachita v0.2.1
