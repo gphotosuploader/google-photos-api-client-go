@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.3.0
+### Added
+- Add support to `go` version `1.16`.
+### Removed
+- Support for `go` version `1.14`.
+
 ## 2.2.0
 ### Added
 - Removes retry when Google Photos requests quota limit has been reached. ([gphotos-uploader-cli#290][igphotos-uploader-cli-290])
