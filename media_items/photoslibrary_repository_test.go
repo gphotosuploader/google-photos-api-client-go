@@ -115,7 +115,7 @@ func TestPhotosLibraryMediaItemsRepository_Get(t *testing.T) {
 		isErrExpected bool
 		errExpected   error
 	}{
-		{"Should return the media item on success", "fooId", "fooFilename", false, nil},
+		{"Should return the media item on success", "fooId-0", "fooFilename-0", false, nil},
 		{"Should return ErrMediaItemNotFound if API fails", mocks.ShouldMakeAPIFailMediaItem, "", true, media_items.ErrMediaItemNotFound},
 		{"Should return ErrAlbumNotFound if media item does not exist", "non-existent", "", true, media_items.ErrMediaItemNotFound},
 	}
@@ -160,8 +160,8 @@ func TestPhotosLibraryMediaItemsRepository_ListByAlbum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mediaItems, err := r.ListByAlbum(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
-			if !tc.isErrExpected && len(mocks.AvailableMediaItems) != len(mediaItems) {
-				t.Errorf("want: %d, got: %d", len(mocks.AvailableMediaItems), len(mediaItems))
+			if !tc.isErrExpected && mocks.AvailableMediaItems != len(mediaItems) {
+				t.Errorf("want: %d, got: %d", mocks.AvailableMediaItems, len(mediaItems))
 			}
 		})
 	}

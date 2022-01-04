@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 
@@ -29,7 +30,6 @@ const (
 	// mentioned cases.
 	// @see: https://github.com/grpc/grpc-go/blob/master/codes/codes.go
 	grpcUnknownCode = 2
-
 )
 
 var (
@@ -209,45 +209,8 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 }
 
 var (
-	// AvailableMediaItems is the media items collection.
-	AvailableMediaItems = []*photoslibrary.MediaItem{
-		{
-			Id:          "fooId",
-			Description: "fooDescription",
-			ProductUrl:  "fooProductUrl",
-			BaseUrl:     "fooBaseUrl",
-			Filename:    "fooFilename",
-			MediaMetadata: &photoslibrary.MediaMetadata{
-				CreationTime: "2014-10-02T15:01:23.045123456Z",
-				Height:       800,
-				Width:        600,
-			},
-		},
-		{
-			Id:          "barId",
-			Description: "barDescription",
-			ProductUrl:  "barProductUrl",
-			BaseUrl:     "barBaseUrl",
-			Filename:    "barFilename",
-			MediaMetadata: &photoslibrary.MediaMetadata{
-				CreationTime: "2014-10-02T15:01:23.045123456Z",
-				Height:       800,
-				Width:        600,
-			},
-		},
-		{
-			Id:          "bazId",
-			Description: "bazDescription",
-			ProductUrl:  "bazProductUrl",
-			BaseUrl:     "bazBaseUrl",
-			Filename:    "bazFilename",
-			MediaMetadata: &photoslibrary.MediaMetadata{
-				CreationTime: "2014-10-02T15:01:23.045123456Z",
-				Height:       800,
-				Width:        600,
-			},
-		},
-	}
+	// AvailableMediaItems is the number of media items in the fake collection.
+	AvailableMediaItems = 30
 
 	// ShouldMakeAPIFailMediaItem will make API fail.
 	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
@@ -354,8 +317,9 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 	}
 
 	w.WriteHeader(http.StatusOK)
+
 	res := photoslibrary.SearchMediaItemsResponse{
-		MediaItems: AvailableMediaItems,
+		MediaItems: createFakeMediaItems(AvailableMediaItems),
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -363,12 +327,35 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 	}
 }
 
-// findMediaItemById returns if AvailableMediaItems has a media item with the specified Id.
+// findMediaItemById returns if fake mediaItems collection has a media item with the specified Id.
 func findMediaItemById(mediaItemId string) (*photoslibrary.MediaItem, bool) {
-	for _, a := range AvailableMediaItems {
+	for _, a := range createFakeMediaItems(AvailableMediaItems) {
 		if mediaItemId == a.Id {
 			return a, true
 		}
 	}
 	return &photoslibrary.MediaItem{}, false
+}
+
+// createFakeMediaItems returns a collection of MediaItems with the specified number of it.
+func createFakeMediaItems(numberOfItems int) []*photoslibrary.MediaItem {
+
+	mediaItemsResult := make([]*photoslibrary.MediaItem, numberOfItems)
+
+	for i := 0; i < numberOfItems; i++ {
+		mediaItemsResult[i] = &photoslibrary.MediaItem{
+			Id:          fmt.Sprintf("fooId-%d", i),
+			Description: fmt.Sprintf("fooDescription-%d", i),
+			ProductUrl:  fmt.Sprintf("fooProductUrl-%d", i),
+			BaseUrl:     fmt.Sprintf("fooBaseUrl-%d", i),
+			Filename:    fmt.Sprintf("fooFilename-%d", i),
+			MediaMetadata: &photoslibrary.MediaMetadata{
+				CreationTime: "2014-10-02T15:01:23.045123456Z",
+				Height:       800,
+				Width:        600,
+			},
+		}
+	}
+
+	return mediaItemsResult
 }
