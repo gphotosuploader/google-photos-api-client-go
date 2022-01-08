@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.3.1
+### Added
+- Support for `go` version `1.17`.
+### Fixed
+- `MediaItems.ListByAlbum` does not support paging. ([#65][i65])
+### Removed
+- Support for `go` version `1.15`.
+
+[i65]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/65
+ 
 ## 2.3.0
 ### Added
 - Add support to `go` version `1.16`.
