@@ -324,8 +324,8 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 	if ShouldFailAlbum.Id == req.AlbumId {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-
 	}
+
 	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.SearchMediaItemsResponse{
 		MediaItems: createFakeMediaItems(AvailableMediaItems),
@@ -335,16 +335,13 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 		if req.PageSize == 0 {
 			req.PageSize = int64(DefaultPageSize)
 		}
-
 		totalItems := int64(len(res.MediaItems))
 		pageNumber := getPageNumberFromToken(req.PageToken)
 		pageStartsAt := pageNumber * req.PageSize
 		pageEndsAt := pageStartsAt + req.PageSize
-
 		res.MediaItems = res.MediaItems[pageStartsAt:pageEndsAt]
-		nextPageNumber := pageNumber + 1
 		if totalItems > pageEndsAt {
-			res.NextPageToken = fmt.Sprintf("next-page-token-%d", nextPageNumber)
+			res.NextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber + 1)
 		}
 	}
 
