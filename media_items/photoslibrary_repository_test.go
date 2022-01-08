@@ -146,6 +146,7 @@ func TestPhotosLibraryMediaItemsRepository_ListByAlbum(t *testing.T) {
 		isErrExpected bool
 	}{
 		{"Should return all media items in album", "foo", false},
+		{"Should return all media items with pagination", mocks.ShouldReturnPaginatedAlbum.Id, false},
 		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, true},
 	}
 	srv := mocks.NewMockedGooglePhotosService()
