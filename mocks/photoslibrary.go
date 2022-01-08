@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
@@ -56,6 +58,12 @@ var (
 	ShouldFailAlbum = &photoslibrary.Album{
 		Id:    "should-fail",
 		Title: "should-fail",
+	}
+
+	// ShouldReturnPaginatedAlbum is an album that will contain a token to paginate over it.
+	ShouldReturnPaginatedAlbum = &photoslibrary.Album{
+		Id:    "should-return-paginated-album",
+		Title: "should-return-paginated-album",
 	}
 )
 
@@ -211,6 +219,8 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 var (
 	// AvailableMediaItems is the number of media items in the fake collection.
 	AvailableMediaItems = 30
+	// DefaultPageSize is the number of items by page in results.
+	DefaultPageSize = 10
 
 	// ShouldMakeAPIFailMediaItem will make API fail.
 	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
@@ -314,17 +324,46 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 	if ShouldFailAlbum.Id == req.AlbumId {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+
 	}
-
 	w.WriteHeader(http.StatusOK)
-
 	res := photoslibrary.SearchMediaItemsResponse{
 		MediaItems: createFakeMediaItems(AvailableMediaItems),
 	}
+
+	if ShouldReturnPaginatedAlbum.Id == req.AlbumId {
+		if req.PageSize == 0 {
+			req.PageSize = int64(DefaultPageSize)
+		}
+
+		totalItems := int64(len(res.MediaItems))
+		pageNumber := getPageNumberFromToken(req.PageToken)
+		pageStartsAt := pageNumber * req.PageSize
+		pageEndsAt := pageStartsAt + req.PageSize
+
+		res.MediaItems = res.MediaItems[pageStartsAt:pageEndsAt]
+		nextPageNumber := pageNumber + 1
+		if totalItems > pageEndsAt {
+			res.NextPageToken = fmt.Sprintf("next-page-token-%d", nextPageNumber)
+		}
+	}
+
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// getPageNumberFromToken returns the number of page. Tokens are in the form 'next-page-token-<NUMBER>'.
+func getPageNumberFromToken(token string) int64 {
+	i := strings.Index(token, "next-page-token-")
+	if i < 0 {
+		return 0
+	}
+	if pageNumber, err := strconv.Atoi(token[i+len("next-page-token-"):]); err == nil {
+		return int64(pageNumber)
+	}
+	return 0
 }
 
 // findMediaItemById returns if fake mediaItems collection has a media item with the specified Id.
