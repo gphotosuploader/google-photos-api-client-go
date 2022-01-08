@@ -98,14 +98,22 @@ func (r PhotosLibraryMediaItemsRepository) ListByAlbum(ctx context.Context, albu
 	req := &photoslibrary.SearchMediaItemsRequest{
 		AlbumId: albumId,
 	}
-	result, err := r.service.Search(req).Context(ctx).Do()
-	if err != nil {
-		return []MediaItem{}, err
-	}
 	mediaItemsResult := make([]MediaItem, 0)
-	for _, res := range result.MediaItems {
-		mediaItemsResult = append(mediaItemsResult,
-			r.convertPhotosLibraryMediaItemToMediaItem(res))
+
+	// Iterate until there is no more data to read. NextPageToken in the only reliable way to know it
+	for {
+		result, err := r.service.Search(req).Context(ctx).Do()
+		if err != nil {
+			return []MediaItem{}, err
+		}
+		for _, res := range result.MediaItems {
+			mediaItemsResult = append(mediaItemsResult,
+				r.convertPhotosLibraryMediaItemToMediaItem(res))
+		}
+		req.PageToken = result.NextPageToken
+		if result.NextPageToken == "" {
+			break
+		}
 	}
 	return mediaItemsResult, nil
 }
