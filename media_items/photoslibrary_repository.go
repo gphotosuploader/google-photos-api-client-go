@@ -10,9 +10,9 @@ import (
 
 // PhotosLibraryClient represents a media items service using `gphotosuploader/googlemirror/api/photoslibrary`.
 type PhotosLibraryClient interface {
-	BatchCreate(batchcreatemediaitemsrequest *photoslibrary.BatchCreateMediaItemsRequest) *photoslibrary.MediaItemsBatchCreateCall
+	BatchCreate(batchCreateMediaItemsRequest *photoslibrary.BatchCreateMediaItemsRequest) *photoslibrary.MediaItemsBatchCreateCall
 	Get(mediaItemId string) *photoslibrary.MediaItemsGetCall
-	Search(searchmediaitemsrequest *photoslibrary.SearchMediaItemsRequest) *photoslibrary.MediaItemsSearchCall
+	Search(searchMediaItemsRequest *photoslibrary.SearchMediaItemsRequest) *photoslibrary.MediaItemsSearchCall
 }
 
 // PhotosLibraryMediaItemsRepository represents a media items Google Photos repository.
@@ -41,20 +41,20 @@ func NewPhotosLibraryClientWithURL(authenticatedClient *http.Client, url string)
 	}, nil
 }
 
-// URL returns the media items repository url.
+// URL returns the repository url.
 func (r PhotosLibraryMediaItemsRepository) URL() string {
 	return r.basePath
 }
 
 // CreateMany creates one or more media items in the repository.
-// By default the media item(s) will be added to the end of the library.
+// By default, the media item(s) will be added to the end of the library.
 func (r PhotosLibraryMediaItemsRepository) CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	return r.CreateManyToAlbum(ctx, "", mediaItems)
 }
 
 // CreateManyToAlbum creates one or more media item(s) in the repository.
 // If an album id is specified, the media item(s) are also added to the album.
-// By default the media item(s) will be added to the end of the library or album.
+// By default, the media item(s) will be added to the end of the library or album.
 func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	newMediaItems := make([]*photoslibrary.NewMediaItem, len(mediaItems))
 	for i, mediaItem := range mediaItems {
@@ -76,8 +76,7 @@ func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context
 		// If an error occurs res.Status should have more data about the error.
 		// @see: https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#NewMediaItemResult
 		if res.MediaItem != nil {
-			m := res.MediaItem
-			mediaItemsResult[i] = r.convertPhotosLibraryMediaItemToMediaItem(m)
+			mediaItemsResult[i] = toMediaItem(res.MediaItem)
 		}
 	}
 	return mediaItemsResult, nil
@@ -89,7 +88,7 @@ func (r PhotosLibraryMediaItemsRepository) Get(ctx context.Context, mediaItemId 
 	if err != nil {
 		return &MediaItem{}, err
 	}
-	m := r.convertPhotosLibraryMediaItemToMediaItem(result)
+	m := toMediaItem(result)
 	return &m, nil
 }
 
@@ -98,37 +97,37 @@ func (r PhotosLibraryMediaItemsRepository) ListByAlbum(ctx context.Context, albu
 	req := &photoslibrary.SearchMediaItemsRequest{
 		AlbumId: albumId,
 	}
-	mediaItemsResult := make([]MediaItem, 0)
 
-	// Iterate until there is no more data to read. NextPageToken in the only reliable way to know it
-	for {
-		result, err := r.service.Search(req).Context(ctx).Do()
-		if err != nil {
-			return []MediaItem{}, err
-		}
-		for _, res := range result.MediaItems {
-			mediaItemsResult = append(mediaItemsResult,
-				r.convertPhotosLibraryMediaItemToMediaItem(res))
-		}
-		req.PageToken = result.NextPageToken
-		if result.NextPageToken == "" {
-			break
-		}
+	photosMediaItems := make([]*photoslibrary.MediaItem, 0)
+	appendResultsFn := func(result *photoslibrary.SearchMediaItemsResponse) error {
+		photosMediaItems = append(photosMediaItems, result.MediaItems...)
+		return nil
 	}
-	return mediaItemsResult, nil
+
+	if err := r.service.Search(req).Pages(ctx, appendResultsFn); err != nil {
+		return []MediaItem{}, err
+	}
+
+	mediaItems := make([]MediaItem, len(photosMediaItems))
+	for i, item := range photosMediaItems {
+		mediaItems[i] = toMediaItem(item)
+	}
+
+	return mediaItems, nil
 }
 
-func (r PhotosLibraryMediaItemsRepository) convertPhotosLibraryMediaItemToMediaItem(m *photoslibrary.MediaItem) MediaItem {
+// toMediaItem transforms a `photoslibrary.MediaItem` into a `MediaItem`.
+func toMediaItem(item *photoslibrary.MediaItem) MediaItem {
 	return MediaItem{
-		ID:         m.Id,
-		ProductURL: m.ProductUrl,
-		BaseURL:    m.BaseUrl,
-		MimeType:   m.MimeType,
+		ID:         item.Id,
+		ProductURL: item.ProductUrl,
+		BaseURL:    item.BaseUrl,
+		MimeType:   item.MimeType,
 		MediaMetadata: MediaMetadata{
-			CreationTime: m.MediaMetadata.CreationTime,
-			Width:        strconv.FormatInt(m.MediaMetadata.Width, 10),
-			Height:       strconv.FormatInt(m.MediaMetadata.Height, 10),
+			CreationTime: item.MediaMetadata.CreationTime,
+			Width:        strconv.FormatInt(item.MediaMetadata.Width, 10),
+			Height:       strconv.FormatInt(item.MediaMetadata.Height, 10),
 		},
-		Filename: m.Filename,
+		Filename: item.Filename,
 	}
 }
