@@ -42,9 +42,9 @@ func TestCachitaCache(t *testing.T) {
 
 func TestCachitaCache_PutAlbum(t *testing.T) {
 	testCases := []struct {
-		name        string
-		input       albums.Album
-		errExpected bool
+		name          string
+		input         albums.Album
+		isErrExpected bool
 	}{
 		{"empty album", albums.Album{}, false},
 		{"album with title", albums.Album{Title: "foo"}, false},
@@ -53,21 +53,16 @@ func TestCachitaCache_PutAlbum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := albums.NewCachitaCache()
 			err := c.PutAlbum(context.Background(), tc.input)
-			if tc.errExpected && err == nil {
-				t.Errorf("error was expected, but not produced")
-			}
-			if !tc.errExpected && err != nil {
-				t.Errorf("error was not expected. err: %s", err)
-			}
+			assertExpectedError(tc.isErrExpected, err, t)
 		})
 	}
 }
 
 func TestCachitaCache_PutManyAlbums(t *testing.T) {
 	testCases := []struct {
-		name        string
-		input       []string
-		errExpected bool
+		name          string
+		input         []string
+		isErrExpected bool
 	}{
 		{"empty album", []string{}, false},
 		{"album with title", []string{"foo", "bar", "baz"}, false},
@@ -80,12 +75,7 @@ func TestCachitaCache_PutManyAlbums(t *testing.T) {
 				req[i] = albums.Album{Title: title}
 			}
 			err := c.PutManyAlbums(context.Background(), req)
-			if tc.errExpected && err == nil {
-				t.Errorf("error was expected, but not produced")
-			}
-			if !tc.errExpected && err != nil {
-				t.Errorf("error was not expected. err: %s", err)
-			}
+			assertExpectedError(tc.isErrExpected, err, t)
 		})
 	}
 }
@@ -95,7 +85,7 @@ func TestCachitaCache_GetAlbum(t *testing.T) {
 		name           string
 		populatedCache []string
 		input          string
-		errExpected    error
+		expectedError  error
 	}{
 		{"empty cache", []string{}, "foo", albums.ErrCacheMiss},
 		{"existing key", []string{"foo", "bar"}, "foo", nil},
@@ -112,8 +102,8 @@ func TestCachitaCache_GetAlbum(t *testing.T) {
 				}
 			}
 			_, err := c.GetAlbum(ctx, tc.input)
-			if tc.errExpected != err {
-				t.Errorf("not expected error, want: %v, got: %v", tc.errExpected, err)
+			if tc.expectedError != err {
+				t.Errorf("not expected error, want: %v, got: %v", tc.expectedError, err)
 			}
 		})
 	}
@@ -121,9 +111,9 @@ func TestCachitaCache_GetAlbum(t *testing.T) {
 
 func TestCachitaCache_InvalidateAlbum(t *testing.T) {
 	testCases := []struct {
-		name        string
-		input       string
-		errExpected bool
+		name          string
+		input         string
+		isErrExpected bool
 	}{
 		{"existing key", "foo", false},
 		{"non-existent key", "dummy", false},
@@ -141,12 +131,7 @@ func TestCachitaCache_InvalidateAlbum(t *testing.T) {
 				}
 			}
 			err := c.InvalidateAlbum(ctx, tc.input)
-			if tc.errExpected && err == nil {
-				t.Errorf("error was expected, but not produced")
-			}
-			if !tc.errExpected && err != nil {
-				t.Errorf("error was not expected. err: %s", err)
-			}
+			assertExpectedError(tc.isErrExpected, err, t)
 		})
 	}
 }
