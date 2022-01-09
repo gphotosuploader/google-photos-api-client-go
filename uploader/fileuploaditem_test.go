@@ -17,6 +17,17 @@ var testCases = []struct {
 	{name: "non existent file", path: "testdata/non-existent-file.txt", wantName: "", wantSize: 0, isErrExpected: true},
 }
 
+func TestNewFileUploadItem(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewFileUploadItem(tc.path)
+			if err != nil && !tc.isErrExpected {
+				t.Errorf("error was not expected, err: %s", err)
+			}
+		})
+	}
+}
+
 func TestFileUploadItem_Open(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
