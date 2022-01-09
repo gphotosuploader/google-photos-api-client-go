@@ -3,8 +3,27 @@ package media_items
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 )
+
+func TestNewHttpMediaItemsService(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         *http.Client
+		isErrExpected bool
+	}{
+		{"No HTTP client", nil, true},
+		{"Default HTTP client", http.DefaultClient, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewHttpMediaItemsService(tc.input)
+			assertExpectedError(tc.isErrExpected, err, t)
+		})
+	}
+}
 
 func TestHttpMediaItemsService_Create(t *testing.T) {
 	testCases := []struct {
