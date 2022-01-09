@@ -123,8 +123,8 @@ func TestPhotosLibraryMediaItemsRepository_Get(t *testing.T) {
 		expectedError error
 	}{
 		{"Should return the media item on success", "fooId-0", "fooFilename-0", nil},
-		{"Should return ErrMediaItemNotFound if API fails", mocks.ShouldMakeAPIFailMediaItem, "", media_items.ErrMediaItemNotFound},
-		{"Should return ErrAlbumNotFound if media item does not exist", "non-existent", "", media_items.ErrMediaItemNotFound},
+		{"Should return ErrServerFailed if API fails", mocks.ShouldMakeAPIFailMediaItem, "", media_items.ErrServerFailed},
+		{"Should return ErrNotFound if media item does not exist", "non-existent", "", media_items.ErrNotFound},
 	}
 
 	srv := mocks.NewMockedGooglePhotosService()
