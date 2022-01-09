@@ -11,8 +11,8 @@ import (
 
 // PhotosLibraryClient represents an albums using `gphotosuploader/googlemirror/api/photoslibrary`.
 type PhotosLibraryClient interface {
-	BatchAddMediaItems(albumId string, albumbatchaddmediaitemsrequest *photoslibrary.AlbumBatchAddMediaItemsRequest) *photoslibrary.AlbumBatchAddMediaItemsCall
-	Create(createalbumrequest *photoslibrary.CreateAlbumRequest) *photoslibrary.AlbumsCreateCall
+	BatchAddMediaItems(albumId string, albumBatchAddMediaItemsRequest *photoslibrary.AlbumBatchAddMediaItemsRequest) *photoslibrary.AlbumBatchAddMediaItemsCall
+	Create(createAlbumRequest *photoslibrary.CreateAlbumRequest) *photoslibrary.AlbumsCreateCall
 	Get(albumId string) *photoslibrary.AlbumsGetCall
 	List() *photoslibrary.AlbumsListCall
 }
@@ -71,7 +71,7 @@ func (r PhotosLibraryAlbumsRepository) Create(ctx context.Context, title string)
 	if err != nil {
 		return &NullAlbum, err
 	}
-	album := r.convertPhotosLibraryAlbumToAlbum(res)
+	album := toAlbum(res)
 	return &album, nil
 }
 
@@ -81,7 +81,7 @@ func (r PhotosLibraryAlbumsRepository) Get(ctx context.Context, albumId string) 
 	if err != nil {
 		return &NullAlbum, ErrAlbumNotFound
 	}
-	album := r.convertPhotosLibraryAlbumToAlbum(res)
+	album := toAlbum(res)
 	return &album, nil
 }
 
@@ -90,7 +90,7 @@ func (r PhotosLibraryAlbumsRepository) ListAll(ctx context.Context) ([]Album, er
 	albumsResult := make([]Album, 0)
 	err := r.service.List().ExcludeNonAppCreatedData().Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
 		for _, res := range response.Albums {
-			albumsResult = append(albumsResult, r.convertPhotosLibraryAlbumToAlbum(res))
+			albumsResult = append(albumsResult, toAlbum(res))
 		}
 		return nil
 	})
@@ -102,7 +102,7 @@ func (r PhotosLibraryAlbumsRepository) GetByTitle(ctx context.Context, title str
 	ErrAlbumWasFound := fmt.Errorf("album was found")
 	var result *Album
 	if err := r.service.List().ExcludeNonAppCreatedData().Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
-		if album, found := r.findByTitle(title, response.Albums); found {
+		if album, found := findByTitle(title, response.Albums); found {
 			result = album
 			return ErrAlbumWasFound
 		}
@@ -113,17 +113,17 @@ func (r PhotosLibraryAlbumsRepository) GetByTitle(ctx context.Context, title str
 	return &NullAlbum, ErrAlbumNotFound
 }
 
-func (r PhotosLibraryAlbumsRepository) findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
+func findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
 	for _, a := range albums {
 		if a.Title == title {
-			album := r.convertPhotosLibraryAlbumToAlbum(a)
+			album := toAlbum(a)
 			return &album, true
 		}
 	}
 	return &NullAlbum, false
 }
 
-func (r PhotosLibraryAlbumsRepository) convertPhotosLibraryAlbumToAlbum(a *photoslibrary.Album) Album {
+func toAlbum(a *photoslibrary.Album) Album {
 	return Album{
 		ID:                    a.Id,
 		Title:                 a.Title,

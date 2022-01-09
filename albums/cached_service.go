@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// Repository represents a albums repository.
+// Repository represents an album repository.
 type Repository interface {
 	AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
 	RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
@@ -126,9 +126,9 @@ func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option)
 
 	for _, o := range options {
 		switch o.Name() {
-		case optkeyRepo:
+		case optKeyRepo:
 			repo = o.Value().(Repository)
-		case optkeyCache:
+		case optKeyCache:
 			albumCache = o.Value().(Cache)
 		}
 	}
@@ -140,8 +140,8 @@ func NewCachedAlbumsService(authenticatedClient *http.Client, options ...Option)
 }
 
 const (
-	optkeyRepo  = "repository"
-	optkeyCache = "cache"
+	optKeyRepo  = "repository"
+	optKeyCache = "cache"
 )
 
 // Option represents a configurable parameter.
@@ -161,7 +161,7 @@ func (o option) Value() interface{} { return o.value }
 // WithRepository configures the Google Photos repository.
 func WithRepository(s Repository) option {
 	return option{
-		name:  optkeyRepo,
+		name:  optKeyRepo,
 		value: s,
 	}
 }
@@ -169,7 +169,7 @@ func WithRepository(s Repository) option {
 // WithCache configures the cache.
 func WithCache(s Cache) option {
 	return option{
-		name:  optkeyCache,
+		name:  optKeyCache,
 		value: s,
 	}
 }
