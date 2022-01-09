@@ -233,11 +233,11 @@ func TestHttpMediaItemsService_ListByAlbum(t *testing.T) {
 	}
 }
 
-func assertExpectedError(errExpected bool, err error, t *testing.T) {
-	if errExpected && err == nil {
+func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
+	if isErrExpected && err == nil {
 		t.Fatalf("error was expected, but not produced")
 	}
-	if !errExpected && err != nil {
+	if !isErrExpected && err != nil {
 		t.Fatalf("error was not expected, err: %s", err)
 	}
 }
