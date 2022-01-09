@@ -12,12 +12,20 @@ import (
 const defaultBasePath = "https://photoslibrary.googleapis.com/"
 
 func TestNewPhotosLibraryClient(t *testing.T) {
-	ar, err := media_items.NewPhotosLibraryClient(http.DefaultClient)
-	if err != nil {
-		t.Fatal("error was not expected at this point")
+	testCases := []struct {
+		name          string
+		input         *http.Client
+		isErrExpected bool
+	}{
+		{"No HTTP client", nil, true},
+		{"Default HTTP client", http.DefaultClient, false},
 	}
-	if ar.URL() != defaultBasePath {
-		t.Errorf("want: %s, got: %s", defaultBasePath, ar.URL())
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := media_items.NewPhotosLibraryClient(tc.input)
+			assertExpectedError(tc.isErrExpected, err, t)
+		})
 	}
 }
 
