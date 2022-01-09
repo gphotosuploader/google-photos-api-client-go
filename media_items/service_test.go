@@ -3,8 +3,27 @@ package media_items
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 )
+
+func TestNewHttpMediaItemsService(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         *http.Client
+		isErrExpected bool
+	}{
+		{"No HTTP client", nil, true},
+		{"Default HTTP client", http.DefaultClient, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewHttpMediaItemsService(tc.input)
+			assertExpectedError(tc.isErrExpected, err, t)
+		})
+	}
+}
 
 func TestHttpMediaItemsService_Create(t *testing.T) {
 	testCases := []struct {
@@ -233,11 +252,11 @@ func TestHttpMediaItemsService_ListByAlbum(t *testing.T) {
 	}
 }
 
-func assertExpectedError(errExpected bool, err error, t *testing.T) {
-	if errExpected && err == nil {
+func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
+	if isErrExpected && err == nil {
 		t.Fatalf("error was expected, but not produced")
 	}
-	if !errExpected && err != nil {
+	if !isErrExpected && err != nil {
 		t.Fatalf("error was not expected, err: %s", err)
 	}
 }

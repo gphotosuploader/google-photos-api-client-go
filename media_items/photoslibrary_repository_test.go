@@ -120,12 +120,11 @@ func TestPhotosLibraryMediaItemsRepository_Get(t *testing.T) {
 		name          string
 		input         string
 		want          string
-		isErrExpected bool
-		errExpected   error
+		expectedError error
 	}{
-		{"Should return the media item on success", "fooId-0", "fooFilename-0", false, nil},
-		{"Should return ErrMediaItemNotFound if API fails", mocks.ShouldMakeAPIFailMediaItem, "", true, media_items.ErrMediaItemNotFound},
-		{"Should return ErrAlbumNotFound if media item does not exist", "non-existent", "", true, media_items.ErrMediaItemNotFound},
+		{"Should return the media item on success", "fooId-0", "fooFilename-0", nil},
+		{"Should return ErrServerFailed if API fails", mocks.ShouldMakeAPIFailMediaItem, "", media_items.ErrServerFailed},
+		{"Should return ErrNotFound if media item does not exist", "non-existent", "", media_items.ErrNotFound},
 	}
 
 	srv := mocks.NewMockedGooglePhotosService()
@@ -139,8 +138,10 @@ func TestPhotosLibraryMediaItemsRepository_Get(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mediaItem, err := r.Get(context.Background(), tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-			if !tc.isErrExpected && mediaItem.Filename != tc.want {
+			if tc.expectedError != err {
+				t.Fatalf("not expected error, want: %v, got: %v", tc.expectedError, err)
+			}
+			if err == nil && mediaItem.Filename != tc.want {
 				t.Errorf("want: %s, got: %s", tc.want, mediaItem.Filename)
 			}
 		})
@@ -186,11 +187,11 @@ func createMediaItems(input []string) []media_items.SimpleMediaItem {
 	return mediaItems
 }
 
-func assertExpectedError(errExpected bool, err error, t *testing.T) {
-	if errExpected && err == nil {
+func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
+	if isErrExpected && err == nil {
 		t.Fatalf("error was expected, but not produced")
 	}
-	if !errExpected && err != nil {
+	if !isErrExpected && err != nil {
 		t.Fatalf("error was not expected, err: %s", err)
 	}
 }

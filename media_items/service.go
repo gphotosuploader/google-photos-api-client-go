@@ -23,11 +23,12 @@ var (
 	// NullMediaItem is a zero value MediaItem.
 	NullMediaItem = MediaItem{}
 
-	ErrMediaItemNotFound = errors.New("media item not found")
+	ErrNotFound     = errors.New("media item not found")
+	ErrServerFailed = errors.New("internal server error")
 )
 
 // Create creates a media item in the repository.
-// By default the media item will be added to the end of the library.
+// By default, the media item will be added to the end of the library.
 func (ms HttpMediaItemsService) Create(ctx context.Context, mediaItem SimpleMediaItem) (MediaItem, error) {
 	result, err := ms.CreateMany(ctx, []SimpleMediaItem{mediaItem})
 	if err != nil {
@@ -37,14 +38,14 @@ func (ms HttpMediaItemsService) Create(ctx context.Context, mediaItem SimpleMedi
 }
 
 // CreateMany creates one or more media items in the repository.
-// By default the media item(s) will be added to the end of the library.
+// By default, the media item(s) will be added to the end of the library.
 func (ms HttpMediaItemsService) CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	return ms.repo.CreateMany(ctx, mediaItems)
 }
 
 // CreateToAlbum creates a media item in the repository.
 // If an album id is specified, the media item is also added to the album.
-// By default the media item will be added to the end of the library or album.
+// By default, the media item will be added to the end of the library or album.
 func (ms HttpMediaItemsService) CreateToAlbum(ctx context.Context, albumId string, mediaItem SimpleMediaItem) (MediaItem, error) {
 	result, err := ms.CreateManyToAlbum(ctx, albumId, []SimpleMediaItem{mediaItem})
 	if err != nil {
@@ -55,17 +56,17 @@ func (ms HttpMediaItemsService) CreateToAlbum(ctx context.Context, albumId strin
 
 // CreateManyToAlbum creates one or more media item(s) in the repository.
 // If an album id is specified, the media item(s) are also added to the album.
-// By default the media item(s) will be added to the end of the library or album.
+// By default, the media item(s) will be added to the end of the library or album.
 func (ms HttpMediaItemsService) CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
 	return ms.repo.CreateManyToAlbum(ctx, albumId, mediaItems)
 }
 
 // Get returns the media item specified based on a given media item id.
-// It will return ErrMediaItemNotFound if the media item id does not exist.
+// It will return ErrNotFound if the media item id does not exist.
 func (ms HttpMediaItemsService) Get(ctx context.Context, mediaItemId string) (*MediaItem, error) {
 	mediaItem, err := ms.repo.Get(ctx, mediaItemId)
 	if err != nil {
-		return &NullMediaItem, ErrMediaItemNotFound
+		return &NullMediaItem, ErrNotFound
 	}
 	return mediaItem, nil
 }

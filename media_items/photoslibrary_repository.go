@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
+	"google.golang.org/api/googleapi"
 )
 
 // PhotosLibraryClient represents a media items service using `gphotosuploader/googlemirror/api/photoslibrary`.
@@ -85,8 +86,11 @@ func (r PhotosLibraryMediaItemsRepository) CreateManyToAlbum(ctx context.Context
 // Get returns the media item specified based on a given media item id.
 func (r PhotosLibraryMediaItemsRepository) Get(ctx context.Context, mediaItemId string) (*MediaItem, error) {
 	result, err := r.service.Get(mediaItemId).Context(ctx).Do()
+	if err != nil && err.(*googleapi.Error).Code == http.StatusNotFound {
+		return &MediaItem{}, ErrNotFound
+	}
 	if err != nil {
-		return &MediaItem{}, err
+		return &MediaItem{}, ErrServerFailed
 	}
 	m := toMediaItem(result)
 	return &m, nil
