@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +25,7 @@ const (
 	grpcOKCode = 0
 	// Unknown error. An example of where this error may be returned is
 	// if a Status value received from another address space belongs to
-	// an error-space that is not known in this address space. Also
+	// an error-space that is not known in this address space. Also,
 	// errors raised by APIs that do not return enough error information
 	// may be converted to this error.
 	//
@@ -35,35 +36,10 @@ const (
 )
 
 var (
-	// AvailableAlbums is the albums collection.
-	AvailableAlbums = []*photoslibrary.Album{
-		{
-			Id:         "fooId",
-			ProductUrl: "fooProductUrl",
-			Title:      "fooTitle",
-		},
-		{
-			Id:         "barId",
-			ProductUrl: "barProductUrl",
-			Title:      "barTitle",
-		},
-		{
-			Id:         "bazId",
-			ProductUrl: "bazProductUrl",
-			Title:      "bazTitle",
-		},
-	}
-
 	// ShouldFailAlbum is an album that will make the API fail.
 	ShouldFailAlbum = &photoslibrary.Album{
 		Id:    "should-fail",
 		Title: "should-fail",
-	}
-
-	// ShouldReturnPaginatedAlbum is an album that will contain a token to paginate over it.
-	ShouldReturnPaginatedAlbum = &photoslibrary.Album{
-		Id:    "should-return-paginated-album",
-		Title: "should-return-paginated-album",
 	}
 )
 
@@ -97,8 +73,8 @@ func (ms MockedGooglePhotosService) URL() string {
 }
 
 // albumsCreate implements 'albums.create' method .
-// - Album creation with title == ShouldFailAlbum.Title will response http.StatusInternalServerError.
-// - Any other case will response http.StatusOK.
+// - Album creation with title == ShouldFailAlbum.Title will respond http.StatusInternalServerError.
+// - Any other case will respond http.StatusOK.
 //
 // "flatPath": "v1/albums",
 // "httpMethod": "POST",
@@ -128,9 +104,9 @@ func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.
 }
 
 // albumsGet implements 'albums.get' method.
-// - Album with Id == ShouldFailAlbum.Title will response http.StatusInternalServerError.
+// - Album with Id == ShouldFailAlbum.Id will respond http.StatusInternalServerError.
 // - Album with Id in AvailableAlbums will response http.StatusOK.
-// - Any other case will response http.StatusNotFound.
+// - Any other case will respond http.StatusNotFound.
 //
 // "flatPath": "v1/albums/{albumsId}",
 // "httpMethod": "GET",
@@ -162,14 +138,28 @@ func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Req
 // "flatPath": "v1/albums",
 // "httpMethod": "GET",
 func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
+	albums := createFakeAlbums(AvailableAlbums)
+
 	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.ListAlbumsResponse{
-		Albums: AvailableAlbums,
+		Albums: albums,
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func createFakeAlbums(numberOfItems int) []*photoslibrary.Album {
+	albumsResult := make([]*photoslibrary.Album, numberOfItems)
+	for i := 0; i < numberOfItems; i++ {
+		albumsResult[i] = &photoslibrary.Album{
+			Id:         fmt.Sprintf("fooId-%d", i),
+			ProductUrl: fmt.Sprintf("fooProductUrl-%d", i),
+			Title:      fmt.Sprintf("fooTitle-%d", i),
+		}
+	}
+	return albumsResult
 }
 
 // albumsBatchAddMediaItems implements 'albums.batchAddMediaItems' method.
@@ -208,7 +198,7 @@ func (ms MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWrit
 
 // findAlbumById returns if AvailableAlbums has an album with the specified Id.
 func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
-	for _, a := range AvailableAlbums {
+	for _, a := range createFakeAlbums(AvailableAlbums) {
 		if albumId == a.Id {
 			return a, true
 		}
@@ -217,10 +207,10 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 }
 
 var (
-	// AvailableMediaItems is the number of media items in the fake collection.
-	AvailableMediaItems = 30
-	// DefaultPageSize is the number of items by page in results.
-	DefaultPageSize = 10
+	// AvailableMediaItems is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
+	AvailableMediaItems = int64(150)
+	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
+	AvailableAlbums = 75
 
 	// ShouldMakeAPIFailMediaItem will make API fail.
 	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
@@ -310,6 +300,10 @@ func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http
 	}
 }
 
+// maxMediaItemsPerPage is the maximum number of media items to ask to the PhotosLibrary. Fewer media items might
+// be returned than the specified number. See https://developers.google.com/photos/library/guides/list#pagination
+const maxMediaItemsPerPage = 100
+
 // mediaItemsSearch implements 'mediaItems.search' method.
 //
 // "flatPath": "v1/mediaItems:search",
@@ -326,25 +320,44 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	pageSize := req.PageSize
+
+	if pageSize < 1 || pageSize > maxMediaItemsPerPage {
+		err := errors.New("invalid pageSize")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pageToken := req.PageToken
+	maxPages := AvailableMediaItems / pageSize
+	pageNumber := getPageNumberFromToken(pageToken)
+	if pageToken != "" && pageNumber > maxPages {
+		err := errors.New("invalid pageToken")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	mediaItems := createFakeMediaItems(AvailableMediaItems)
+
+	if pageSize >AvailableMediaItems {
+		pageSize = AvailableMediaItems
+	}
+
+	pageStartsAt := pageNumber * pageSize
+	pageEndsAt := pageStartsAt + pageSize
+	if pageEndsAt > AvailableMediaItems {
+		pageEndsAt = AvailableMediaItems
+	}
+
 	res := photoslibrary.SearchMediaItemsResponse{
-		MediaItems: createFakeMediaItems(AvailableMediaItems),
+		MediaItems: mediaItems[pageStartsAt:pageEndsAt],
 	}
 
-	if ShouldReturnPaginatedAlbum.Id == req.AlbumId {
-		if req.PageSize == 0 {
-			req.PageSize = int64(DefaultPageSize)
-		}
-		totalItems := int64(len(res.MediaItems))
-		pageNumber := getPageNumberFromToken(req.PageToken)
-		pageStartsAt := pageNumber * req.PageSize
-		pageEndsAt := pageStartsAt + req.PageSize
-		res.MediaItems = res.MediaItems[pageStartsAt:pageEndsAt]
-		if totalItems > pageEndsAt {
-			res.NextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber + 1)
-		}
+	if AvailableMediaItems > pageEndsAt {
+		res.NextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber+1)
 	}
 
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -374,17 +387,15 @@ func findMediaItemById(mediaItemId string) (*photoslibrary.MediaItem, bool) {
 }
 
 // createFakeMediaItems returns a collection of MediaItems with the specified number of it.
-func createFakeMediaItems(numberOfItems int) []*photoslibrary.MediaItem {
-
+func createFakeMediaItems(numberOfItems int64) []*photoslibrary.MediaItem {
 	mediaItemsResult := make([]*photoslibrary.MediaItem, numberOfItems)
-
-	for i := 0; i < numberOfItems; i++ {
+	for i := int64(0); i < numberOfItems; i++ {
 		mediaItemsResult[i] = &photoslibrary.MediaItem{
-			Id:          fmt.Sprintf("fooId-%d", i),
-			Description: fmt.Sprintf("fooDescription-%d", i),
-			ProductUrl:  fmt.Sprintf("fooProductUrl-%d", i),
 			BaseUrl:     fmt.Sprintf("fooBaseUrl-%d", i),
+			Description: fmt.Sprintf("fooDescription-%d", i),
 			Filename:    fmt.Sprintf("fooFilename-%d", i),
+			Id:          fmt.Sprintf("fooId-%d", i),
+			ProductUrl:  fmt.Sprintf("fooProductUrl-%d", i),
 			MediaMetadata: &photoslibrary.MediaMetadata{
 				CreationTime: "2014-10-02T15:01:23.045123456Z",
 				Height:       800,
@@ -392,6 +403,5 @@ func createFakeMediaItems(numberOfItems int) []*photoslibrary.MediaItem {
 			},
 		}
 	}
-
 	return mediaItemsResult
 }

@@ -96,10 +96,15 @@ func (r PhotosLibraryMediaItemsRepository) Get(ctx context.Context, mediaItemId 
 	return &m, nil
 }
 
+// maxItemsPerPage is the maximum number of media items to ask to the PhotosLibrary. Fewer media items might
+// be returned than the specified number. See https://developers.google.com/photos/library/guides/list#pagination
+const maxItemsPerPage = 100
+
 // ListByAlbum list all media items in the specified album.
 func (r PhotosLibraryMediaItemsRepository) ListByAlbum(ctx context.Context, albumId string) ([]MediaItem, error) {
 	req := &photoslibrary.SearchMediaItemsRequest{
-		AlbumId: albumId,
+		AlbumId:  albumId,
+		PageSize: maxItemsPerPage,
 	}
 
 	photosMediaItems := make([]*photoslibrary.MediaItem, 0)
