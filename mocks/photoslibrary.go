@@ -339,7 +339,7 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 
 	mediaItems := createFakeMediaItems(AvailableMediaItems)
 
-	if pageSize >AvailableMediaItems {
+	if pageSize > AvailableMediaItems {
 		pageSize = AvailableMediaItems
 	}
 
