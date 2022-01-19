@@ -116,7 +116,7 @@ func TestPhotosLibraryAlbumsRepository_Get(t *testing.T) {
 		input         string
 		expectedError error
 	}{
-		{"Should return the album on success", "fooId", nil},
+		{"Should return the album on success", "fooId-0", nil},
 		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if albums does not exist", "non-existent", albums.ErrAlbumNotFound},
 	}
@@ -149,7 +149,7 @@ func TestPhotosLibraryAlbumsRepository_GetByTitle(t *testing.T) {
 		want          string
 		expectedError error
 	}{
-		{"Should return the album on success", "fooTitle", "fooId", nil},
+		{"Should return the album on success", "fooTitle-0", "fooId-0", nil},
 		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "", albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", "", albums.ErrAlbumNotFound},
 	}
@@ -189,7 +189,7 @@ func TestPhotosLibraryAlbumsRepository_ListAll(t *testing.T) {
 		t.Fatal("error was not expected at this point")
 	}
 
-	if len(res) != len(mocks.AvailableAlbums) {
-		t.Errorf("want: %d, got: %d", len(mocks.AvailableAlbums), len(res))
+	if len(res) != mocks.AvailableAlbums {
+		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
 	}
 }
