@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// Repository represents a media items repository.
+// Repository represents a media items' repository.
 type Repository interface {
 	CreateMany(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error)
 	CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error)
