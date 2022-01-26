@@ -2,7 +2,6 @@ package mocks
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -33,6 +32,21 @@ const (
 	// mentioned cases.
 	// @see: https://github.com/grpc/grpc-go/blob/master/codes/codes.go
 	grpcUnknownCode = 2
+
+	// maxMediaItemsPerPage is the maximum number of media items to request from the PhotosLibrary. Fewer media items
+	// might be returned than the specified number.
+	// See https://developers.google.com/photos/library/guides/list#pagination
+	maxMediaItemsPerPage = 100
+
+	// AvailableMediaItems is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
+	AvailableMediaItems = 150
+	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
+	AvailableAlbums = 75
+
+	// ShouldMakeAPIFailMediaItem will make API fail.
+	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
+	// ShouldReturnEmptyMediaItem will return an empty media item
+	ShouldReturnEmptyMediaItem = "should-return-empty-media-item"
 )
 
 var (
@@ -206,18 +220,6 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 	return &photoslibrary.Album{}, false
 }
 
-var (
-	// AvailableMediaItems is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
-	AvailableMediaItems = int64(150)
-	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
-	AvailableAlbums = 75
-
-	// ShouldMakeAPIFailMediaItem will make API fail.
-	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
-	// ShouldReturnEmptyMediaItem will return an empty media item
-	ShouldReturnEmptyMediaItem = "should-return-empty-media-item"
-)
-
 // albumsBatchRemoveMediaItems implements 'mediaItems.batchCreate' method.
 //
 // "flatPath": "v1/mediaItems:batchCreate",
@@ -300,10 +302,6 @@ func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http
 	}
 }
 
-// maxMediaItemsPerPage is the maximum number of media items to ask to the PhotosLibrary. Fewer media items might
-// be returned than the specified number. See https://developers.google.com/photos/library/guides/list#pagination
-const maxMediaItemsPerPage = 100
-
 // mediaItemsSearch implements 'mediaItems.search' method.
 //
 // "flatPath": "v1/mediaItems:search",
@@ -320,41 +318,12 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 		return
 	}
 
-	pageSize := req.PageSize
-
-	if pageSize < 1 || pageSize > maxMediaItemsPerPage {
-		err := errors.New("invalid pageSize")
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	pageToken := req.PageToken
-	maxPages := AvailableMediaItems / pageSize
-	pageNumber := getPageNumberFromToken(pageToken)
-	if pageToken != "" && pageNumber > maxPages {
-		err := errors.New("invalid pageToken")
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	mediaItems := createFakeMediaItems(AvailableMediaItems)
-
-	if pageSize > AvailableMediaItems {
-		pageSize = AvailableMediaItems
-	}
-
-	pageStartsAt := pageNumber * pageSize
-	pageEndsAt := pageStartsAt + pageSize
-	if pageEndsAt > AvailableMediaItems {
-		pageEndsAt = AvailableMediaItems
-	}
-
+	p := newMediaItemsPaginator(req.PageSize, mediaItems)
+	items, nextPageToken := p.page(req.PageToken)
 	res := photoslibrary.SearchMediaItemsResponse{
-		MediaItems: mediaItems[pageStartsAt:pageEndsAt],
-	}
-
-	if AvailableMediaItems > pageEndsAt {
-		res.NextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber+1)
+		MediaItems:    items,
+		NextPageToken: nextPageToken,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -364,16 +333,51 @@ func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *h
 	}
 }
 
-// getPageNumberFromToken returns the number of page. Tokens are in the form 'next-page-token-<NUMBER>'.
-func getPageNumberFromToken(token string) int64 {
+type mediaItemsPaginator struct {
+	items    []*photoslibrary.MediaItem
+	limit    int64
+	pageSize int64
+}
+
+func newMediaItemsPaginator(pageSize int64, items []*photoslibrary.MediaItem) *mediaItemsPaginator {
+	if pageSize < 1 || pageSize > maxMediaItemsPerPage {
+		pageSize = maxMediaItemsPerPage
+	}
+
+	return &mediaItemsPaginator{
+		limit:    int64(len(items)),
+		items:    items,
+		pageSize: pageSize,
+	}
+}
+
+func (p *mediaItemsPaginator) page(pageToken string) (results []*photoslibrary.MediaItem, nextPageToken string) {
+	pageNumber := p.getPageNumberFromToken(pageToken)
+	pageStartAt := p.pageSize * pageNumber
+	pageEndsAt := pageStartAt + p.pageSize
+
+	if pageEndsAt >= p.limit {
+		return p.items[pageStartAt:], ""
+	}
+
+	nextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber+1)
+	return p.items[pageStartAt:pageEndsAt], nextPageToken
+}
+
+// getPageNumberFromToken returns the number of page.
+// Tokens are in the form 'next-page-token-<NUMBER>'.
+func (p *mediaItemsPaginator) getPageNumberFromToken(token string) int64 {
+	maxPages := int64(len(p.items)) / p.pageSize
+
 	i := strings.Index(token, "next-page-token-")
 	if i < 0 {
 		return 0
 	}
-	if pageNumber, err := strconv.Atoi(token[i+len("next-page-token-"):]); err == nil {
-		return int64(pageNumber)
+	pageNumber, err := strconv.Atoi(token[i+len("next-page-token-"):])
+	if err != nil || int64(pageNumber) > maxPages {
+		return 0
 	}
-	return 0
+	return int64(pageNumber)
 }
 
 // findMediaItemById returns if fake mediaItems collection has a media item with the specified Id.
