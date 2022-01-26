@@ -2,7 +2,7 @@ package albums
 
 import "context"
 
-// MockedRepository mocks the an repository.
+// MockedRepository mocks the repository.
 type MockedRepository struct {
 	AddManyItemsFn    func(ctx context.Context, albumId string, mediaItemIds []string) error
 	RemoveManyItemsFn func(ctx context.Context, albumId string, mediaItemIds []string) error

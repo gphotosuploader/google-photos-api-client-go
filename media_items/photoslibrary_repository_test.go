@@ -154,8 +154,7 @@ func TestPhotosLibraryMediaItemsRepository_ListByAlbum(t *testing.T) {
 		input         string
 		isErrExpected bool
 	}{
-		{"Should return all media items in album", "foo", false},
-		{"Should return all media items with pagination", mocks.ShouldReturnPaginatedAlbum.Id, false},
+		{"Should return all media items in album", "fooId-0", false},
 		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, true},
 	}
 	srv := mocks.NewMockedGooglePhotosService()
@@ -170,7 +169,7 @@ func TestPhotosLibraryMediaItemsRepository_ListByAlbum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mediaItems, err := r.ListByAlbum(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
-			if !tc.isErrExpected && mocks.AvailableMediaItems != len(mediaItems) {
+			if !tc.isErrExpected && mocks.AvailableMediaItems != int64(len(mediaItems)) {
 				t.Errorf("want: %d, got: %d", mocks.AvailableMediaItems, len(mediaItems))
 			}
 		})

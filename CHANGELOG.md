@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ## 2.3.1
 ### Added
 - Support for `go` version `1.17`.
+- Pagination to the mediaItems:search mock.
+### Changed
+- Reduce number of request to Google Photos by using bigger `PageSize` on `mediaItems.search` and `albums.list`.
 ### Fixed
 - `MediaItems.ListByAlbum` does not support paging. ([#65][i65])
 ### Removed
