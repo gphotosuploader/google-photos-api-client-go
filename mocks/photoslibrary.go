@@ -38,6 +38,11 @@ const (
 	// See https://developers.google.com/photos/library/guides/list#pagination
 	maxMediaItemsPerPage = 100
 
+	// maxAlbumsPerPage is the maximum number of albums to request from the PhotosLibrary. Fewer albums
+	// might be returned than the specified number.
+	// See https://developers.google.com/photos/library/guides/list#pagination
+	maxAlbumsPerPage = 50
+
 	// AvailableMediaItems is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
 	AvailableMediaItems = 150
 	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
@@ -154,14 +159,74 @@ func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Req
 func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
 	albums := createFakeAlbums(AvailableAlbums)
 
+	pageSize, pageToken := ms.paginationOptions(r)
+	p := newAlbumsPaginator(pageSize, albums)
+	items, nextPageToken := p.page(pageToken)
+
 	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.ListAlbumsResponse{
-		Albums: albums,
+		Albums:        items,
+		NextPageToken: nextPageToken,
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (ms MockedGooglePhotosService) paginationOptions(r *http.Request) (pageSize int64, pageToken string) {
+	pt := r.URL.Query().Get("pageToken")
+	ps, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	if err != nil {
+		return maxAlbumsPerPage, pt
+	}
+	return int64(ps), pt
+}
+
+type albumsPaginator struct {
+	items    []*photoslibrary.Album
+	limit    int64
+	pageSize int64
+}
+
+func newAlbumsPaginator(pageSize int64, items []*photoslibrary.Album) *albumsPaginator {
+	if pageSize < 1 || pageSize > maxAlbumsPerPage {
+		pageSize = maxAlbumsPerPage
+	}
+
+	return &albumsPaginator{
+		limit:    int64(len(items)),
+		items:    items,
+		pageSize: pageSize,
+	}
+}
+
+func (p *albumsPaginator) page(pageToken string) (results []*photoslibrary.Album, nextPageToken string) {
+	maxPages := int64(len(p.items)) / p.pageSize
+	pageNumber := getPageNumberFromToken(pageToken, maxPages)
+	pageStartAt := p.pageSize * pageNumber
+	pageEndsAt := pageStartAt + p.pageSize
+
+	if pageEndsAt >= p.limit {
+		return p.items[pageStartAt:], ""
+	}
+
+	nextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber+1)
+	return p.items[pageStartAt:pageEndsAt], nextPageToken
+}
+
+// getPageNumberFromToken returns the number of page.
+// Tokens are in the form 'next-page-token-<NUMBER>'.
+func getPageNumberFromToken(token string, maxPages int64) int64 {
+	i := strings.Index(token, "next-page-token-")
+	if i < 0 {
+		return 0
+	}
+	pageNumber, err := strconv.Atoi(token[i+len("next-page-token-"):])
+	if err != nil || int64(pageNumber) > maxPages {
+		return 0
+	}
+	return int64(pageNumber)
 }
 
 func createFakeAlbums(numberOfItems int) []*photoslibrary.Album {
@@ -352,7 +417,8 @@ func newMediaItemsPaginator(pageSize int64, items []*photoslibrary.MediaItem) *m
 }
 
 func (p *mediaItemsPaginator) page(pageToken string) (results []*photoslibrary.MediaItem, nextPageToken string) {
-	pageNumber := p.getPageNumberFromToken(pageToken)
+	maxPages := int64(len(p.items)) / p.pageSize
+	pageNumber := getPageNumberFromToken(pageToken, maxPages)
 	pageStartAt := p.pageSize * pageNumber
 	pageEndsAt := pageStartAt + p.pageSize
 
@@ -362,22 +428,6 @@ func (p *mediaItemsPaginator) page(pageToken string) (results []*photoslibrary.M
 
 	nextPageToken = fmt.Sprintf("next-page-token-%d", pageNumber+1)
 	return p.items[pageStartAt:pageEndsAt], nextPageToken
-}
-
-// getPageNumberFromToken returns the number of page.
-// Tokens are in the form 'next-page-token-<NUMBER>'.
-func (p *mediaItemsPaginator) getPageNumberFromToken(token string) int64 {
-	maxPages := int64(len(p.items)) / p.pageSize
-
-	i := strings.Index(token, "next-page-token-")
-	if i < 0 {
-		return 0
-	}
-	pageNumber, err := strconv.Atoi(token[i+len("next-page-token-"):])
-	if err != nil || int64(pageNumber) > maxPages {
-		return 0
-	}
-	return int64(pageNumber)
 }
 
 // findMediaItemById returns if fake mediaItems collection has a media item with the specified Id.
