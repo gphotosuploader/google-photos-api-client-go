@@ -7,13 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ### Added
 - Support for `go` version `1.17`.
 - Pagination to the mediaItems:search mock.
+- `ListWithOptions()` method to list all albums specifying if non app created albums should be returned or not. ([#72][i72])
 ### Changed
 - Reduce number of request to Google Photos by using bigger `PageSize` on `mediaItems.search` and `albums.list`.
 ### Fixed
+- `ListAll()` method use `excludeNonAppCreatedData` and it doesn't return all albums. ([#72][i72])
+  > This could be a breaking change, given that we were excluding non app created albums previously. If you want to maintain the same behaviour as before, use `ListWithOptions()` instead.
 - `MediaItems.ListByAlbum` does not support paging. ([#65][i65])
 ### Removed
 - Support for `go` version `1.15`.
 
+[i72]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/72
 [i65]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/65
  
 ## 2.3.0

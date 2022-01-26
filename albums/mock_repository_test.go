@@ -9,6 +9,7 @@ type MockedRepository struct {
 	CreateFn          func(ctx context.Context, title string) (*Album, error)
 	GetFn             func(ctx context.Context, albumId string) (*Album, error)
 	ListAllFn         func(ctx context.Context) ([]Album, error)
+	ListWithOptionsFn func(ctx context.Context, options Options) ([]Album, error)
 	GetByTitleFn      func(ctx context.Context, title string) (*Album, error)
 }
 

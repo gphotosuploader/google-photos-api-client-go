@@ -193,3 +193,22 @@ func TestPhotosLibraryAlbumsRepository_ListAll(t *testing.T) {
 		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
 	}
 }
+
+func TestPhotosLibraryAlbumsRepository_ListWithOptions(t *testing.T) {
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
+
+	albumsService, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
+
+	res, err := albumsService.ListWithOptions(context.Background(), albums.Options{ExcludeNonAppCreatedData: true})
+	if err != nil {
+		t.Fatal("error was not expected at this point")
+	}
+
+	if len(res) != mocks.AvailableAlbums {
+		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
+	}
+}
