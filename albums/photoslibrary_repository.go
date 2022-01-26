@@ -85,14 +85,20 @@ func (r PhotosLibraryAlbumsRepository) Get(ctx context.Context, albumId string) 
 	return &album, nil
 }
 
-// maxItemsPerPage is the maximum number of albums to ask to the PhotosLibrary. Fewer albums might
-// be returned than the specified number. See https://developers.google.com/photos/library/guides/list#pagination
-const maxItemsPerPage = 50
-
-// ListAll fetches and caches all the albums from the repo.
+// ListAll fetches all the albums from the repo.
 func (r PhotosLibraryAlbumsRepository) ListAll(ctx context.Context) ([]Album, error) {
+	return r.ListWithOptions(ctx, Options{ExcludeNonAppCreatedData: false})
+}
+
+// ListWithOptions fetches all the albums from the repo with provided options.
+// Options would customize the listing.
+func (r PhotosLibraryAlbumsRepository) ListWithOptions(ctx context.Context, options Options) ([]Album, error) {
 	albumsResult := make([]Album, 0)
-	err := r.service.List().ExcludeNonAppCreatedData().PageSize(maxItemsPerPage).Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
+	albumsListCall := r.service.List().PageSize(maxItemsPerPage)
+	if options.ExcludeNonAppCreatedData {
+		albumsListCall = albumsListCall.ExcludeNonAppCreatedData()
+	}
+	err := albumsListCall.Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
 		for _, res := range response.Albums {
 			albumsResult = append(albumsResult, toAlbum(res))
 		}
