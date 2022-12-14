@@ -1,9 +1,11 @@
 package gphotos
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -77,10 +79,23 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 		return true, nil
 	}
 
-	// 429 Too Many Requests is recoverable. Sometimes the server puts
+	// 429 Too Many Requests can be recoverable. Sometimes the server puts
 	// a Retry-After response header to indicate when the server is
 	// available to start processing request from client.
+	// If the write requests per minute per user quota is exceeded, the error is recoverable.
+	// If the daily API quota is exceeded, the error is not recoverable.
 	if resp.StatusCode == http.StatusTooManyRequests {
+		slurp, ioerr := io.ReadAll(resp.Body)
+		if ioerr != nil {
+			return false, ioerr
+		}
+
+		resp.Body = io.NopCloser(bytes.NewBuffer(slurp))
+
+		if requestQuotaErrorRe.MatchString(string(slurp)) {
+			return false, fmt.Errorf("daily quota exceeded")
+		}
+
 		return true, nil
 	}
 
