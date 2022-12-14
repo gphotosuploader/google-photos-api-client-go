@@ -17,6 +17,3 @@ jobs:
         run: make test
       - name: Send code coverage
         uses: codecov/codecov-action@v3
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          fail_ci_if_error: true
