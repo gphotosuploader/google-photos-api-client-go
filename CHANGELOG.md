@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.4.0
+### Changed
+- Supported `go` versions are `1.18` and `1.19`.
+### Removed
+- Support for `go` version `1.16` and `1.17`.
+
 ## 2.3.1
 ### Added
 - Support for `go` version `1.17`.
