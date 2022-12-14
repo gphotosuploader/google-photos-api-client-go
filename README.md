@@ -15,7 +15,7 @@ The package offers access to these Google Photos services:
 * `MediaItemsService` is a service to manage media items (Photos and Videos).
 * `Uploader` is a service to upload items.
 
-> This project will maintain compatibility with the last two Go major versions [published](https://golang.org/doc/devel/release.html). Currently, v1.16 and v1.17.
+> This project will maintain compatibility with the last two Go major versions [published](https://golang.org/doc/devel/release.html). Currently, v1.18 and v1.19.
 
 ## Installation
 

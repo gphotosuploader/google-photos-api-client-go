@@ -3,7 +3,7 @@ package basic
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
@@ -72,7 +72,7 @@ func (u BasicUploader) upload(ctx context.Context, uploadItem uploader.UploadIte
 	}
 	defer res.Body.Close()
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		u.log.Errorf("Error while uploading %s: %s: could not read body: %s", uploadItem, res.Status, err)
 		return "", err
