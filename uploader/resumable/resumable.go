@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -190,7 +189,7 @@ func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploade
 	}
 	defer res.Body.Close()
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		u.log.Errorf("Failed to read response %s", err)
 		return "", fmt.Errorf("resuming upload session: %w", err)
