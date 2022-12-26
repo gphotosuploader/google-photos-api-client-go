@@ -83,3 +83,4 @@ Google Photos imposes a rate limit on all API clients. The quota limit for reque
 ## Used by
 
 * [gphotos-uploader-cli](https://github.com/gphotosuploader/gphotos-uploader-cli): A command line to sync your pictures and videos with Google Photos. Supporting linux/macOs.
+* [Send To Google Photos app](https://github.com/arran4/send-to-google-photos): A simple "Send To" extension for sending images to Google Photos
