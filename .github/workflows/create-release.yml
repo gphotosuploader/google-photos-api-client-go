@@ -2,25 +2,12 @@ name: Create Release
 on:
   push:
     tags:
-      - v*
+      - 'v*'
 jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Changes in this Release
-            - First Change
-            - Second Change
-            See [CHANGELOG](https://github.com/gphotosuploader/google-photos-api-client-go/blob/master/CHANGELOG.md) for more details.
-          draft: false
-          prerelease: false
+      - name: Create GitHub release from tag
+        uses: softprops/action-gh-release@v1
