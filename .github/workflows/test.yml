@@ -10,6 +10,9 @@ on:
         paths-ignore:
             - '*.md'
 
+permissions:
+    contents: read
+    
 env:
     # run coverage only with the latest Go version
     LATEST_GO_VERSION: '1.20' 
