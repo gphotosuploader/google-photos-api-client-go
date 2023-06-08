@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ## Unreleased
 ### Changed
 - [CI] Updated GHA to create releases on tags.
+- [CI] Run tests against [last three major Go releases](https://go.dev/doc/devel/release#policy).
 
 ## 2.4.0
 ### Changed
