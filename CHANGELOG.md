@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 2.4.1
 ### Changed
 - Supported `Go` versions are `1.18`, `1.19` and `1.20`.
 - Upgraded several dependencies to remove vulnerabilities.
