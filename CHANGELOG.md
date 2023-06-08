@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## Unreleased
 ### Changed
+- Supported `Go` versions are `1.18`, `1.19` and `1.20`.
+- Upgraded several dependencies to remove vulnerabilities.
 - [CI] Updated GHA to create releases on tags.
 - [CI] Run tests against [last three major Go releases](https://go.dev/doc/devel/release#policy).
+- [CI] Enable dependabot to scan vulnerable dependencies.
 
 ## 2.4.0
 ### Changed
