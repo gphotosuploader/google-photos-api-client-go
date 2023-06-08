@@ -1,8 +1,13 @@
 name: Create Release
+
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+    contents: write
+
 jobs:
   create-release:
     name: Create Release
