@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gphotosuploader/googlemirror v0.5.0
 	github.com/hashicorp/go-retryablehttp v0.7.4
-	google.golang.org/api v0.125.0
+	google.golang.org/api v0.126.0
 )
 
 require (
