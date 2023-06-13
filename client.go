@@ -58,7 +58,7 @@ func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
 func defaultGPhotosClient(authenticatedClient *http.Client) (*Client, error) {
 	client := clientWithRetryPolicy(authenticatedClient)
 
-	var albumsService AlbumsService = albums.NewCachedAlbumsService(client)
+	var albumsService AlbumsService = albums.NewService(client)
 
 	var upldr MediaUploader
 	upldr, err := basic.NewBasicUploader(client)
