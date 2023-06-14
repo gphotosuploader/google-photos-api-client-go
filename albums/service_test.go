@@ -38,6 +38,22 @@ func TestAlbumsService_AddMediaItems(t *testing.T) {
 	}
 }
 
+func TestAlbumsService_RemoveMediaItems(t *testing.T) {
+	s, err := albums.NewService(albums.Config{})
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("panic was expected at this point")
+		}
+	}()
+
+	_ = s.RemoveMediaItems(context.Background(), "album", []string{"mediaItem1", "mediaItem2"})
+
+}
+
 func TestAlbumsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
