@@ -171,3 +171,12 @@ func TestAlbumsService_List(t *testing.T) {
 		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
 	}
 }
+
+func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
+	if isErrExpected && err == nil {
+		t.Fatalf("error was expected, but not produced")
+	}
+	if !isErrExpected && err != nil {
+		t.Fatalf("error was not expected, err: %s", err)
+	}
+}
