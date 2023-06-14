@@ -4,72 +4,35 @@ import (
 	"context"
 	"errors"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"net/http"
+	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
 	"testing"
 )
 
 func TestAlbumsService_AddMediaItems(t *testing.T) {
 	testCases := []struct {
 		name          string
-		input         string
+		album         string
+		mediaItems    []string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return success on success", "foo", false},
+		{"Should add media items to album", "foo", []string{"mediaItem1", "mediaItem2"}, true},
+		{"Should return error if album does not exist", "non-existent", []string{"mediaItem1", "mediaItem2"}, true},
+		{"Should return error if media item is invalid", "foo", []string{mocks.ShouldMakeAPIFailMediaItem, "mediaItem2"}, true},
+		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, []string{"mediaItem1", "mediaItem2"}, true},
 	}
 
-	mockedRepository := albums.MockedRepository{
-		AddManyItemsFn: func(ctx context.Context, albumID string, mediaItemIds []string) error {
-			if "should-fail" == albumID {
-				return errors.New("error")
-			}
-			return nil
-		},
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
+
+	c := albums.Config{URL: srv.URL()}
+	s, err := albums.NewService(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
 	}
-
-	s := albums.NewService(
-		http.DefaultClient,
-		albums.WithRepository(mockedRepository),
-	)
-
-	mediaItems := []string{"foo", "bar", "baz"}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := s.AddMediaItems(context.Background(), tc.input, mediaItems)
-			assertExpectedError(tc.isErrExpected, err, t)
-		})
-	}
-}
-func TestAlbumsService_RemoveMediaItems(t *testing.T) {
-	testCases := []struct {
-		name          string
-		input         string
-		isErrExpected bool
-	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return success on success", "foo", false},
-	}
-
-	mockedRepository := albums.MockedRepository{
-		RemoveManyItemsFn: func(ctx context.Context, albumID string, mediaItemIds []string) error {
-			if "should-fail" == albumID {
-				return errors.New("error")
-			}
-			return nil
-		},
-	}
-
-	s := albums.NewService(
-		http.DefaultClient,
-		albums.WithRepository(mockedRepository),
-	)
-
-	mediaItems := []string{"foo", "bar", "baz"}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := s.RemoveMediaItems(context.Background(), tc.input, mediaItems)
+			err := s.AddMediaItems(context.Background(), tc.album, tc.mediaItems)
 			assertExpectedError(tc.isErrExpected, err, t)
 		})
 	}
@@ -79,32 +42,28 @@ func TestAlbumsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
+		want          string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return an album on success", "foo", false},
+		{"Should return error if API fails", mocks.ShouldFailAlbum.Title, "", true},
+		{"Should return the album on success", "foo", "fooId", false},
 	}
 
-	mockedRepository := albums.MockedRepository{
-		CreateFn: func(ctx context.Context, title string) (*albums.Album, error) {
-			if "should-fail" == title {
-				return &albums.NullAlbum, errors.New("error")
-			}
-			return &albums.Album{Title: title}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := albums.NewService(
-		http.DefaultClient,
-		albums.WithRepository(mockedRepository),
-	)
+	c := albums.Config{URL: srv.URL()}
+	s, err := albums.NewService(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := s.Create(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && tc.input != got.Title {
-				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			if !tc.isErrExpected && got.ID != tc.want {
+				t.Errorf("want: %s, got: %s", tc.want, got.ID)
 			}
 		})
 	}
@@ -114,32 +73,30 @@ func TestAlbumsService_GetById(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
-		isErrExpected bool
+		expectedError error
 	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return an album on success", "foo", false},
+		{"Should return the album on success", "fooId-0", nil},
+		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, albums.ErrAlbumNotFound},
+		{"Should return ErrAlbumNotFound if albums does not exist", "non-existent", albums.ErrAlbumNotFound},
 	}
 
-	mockedRepository := albums.MockedRepository{
-		GetFn: func(ctx context.Context, albumId string) (*albums.Album, error) {
-			if "should-fail" == albumId {
-				return &albums.NullAlbum, errors.New("error")
-			}
-			return &albums.Album{ID: albumId}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := albums.NewService(
-		http.DefaultClient,
-		albums.WithRepository(mockedRepository),
-	)
+	c := albums.Config{URL: srv.URL()}
+	s, err := albums.NewService(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := s.GetById(context.Background(), tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && tc.input != got.ID {
-				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			album, err := s.GetById(context.Background(), tc.input)
+			if !errors.Is(err, tc.expectedError) {
+				t.Fatalf("not expected error, want: %v, got: %v", tc.expectedError, err)
+			}
+			if err == nil && album.ID != tc.input {
+				t.Errorf("want: %s, got: %s", tc.input, album.Title)
 			}
 		})
 	}
@@ -149,77 +106,52 @@ func TestAlbumsService_GetByTitle(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
-		isErrExpected bool
+		want          string
+		expectedError error
 	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return an album on success", "foo", false},
+		{"Should return the album on success", "fooTitle-0", "fooId-0", nil},
+		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "", albums.ErrAlbumNotFound},
+		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", "", albums.ErrAlbumNotFound},
 	}
 
-	mockedRepository := albums.MockedRepository{
-		GetByTitleFn: func(ctx context.Context, title string) (*albums.Album, error) {
-			if "should-fail" == title {
-				return &albums.NullAlbum, errors.New("error")
-			}
-			return &albums.Album{Title: title}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := albums.NewService(
-		http.DefaultClient,
-		albums.WithRepository(mockedRepository),
-	)
+	c := albums.Config{URL: srv.URL()}
+	s, err := albums.NewService(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := s.GetByTitle(context.Background(), tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && tc.input != got.Title {
-				t.Errorf("want: %s, got: %s", tc.input, got.Title)
+			if !errors.Is(err, tc.expectedError) {
+				t.Fatalf("not expected error, want: %v, got: %v", tc.expectedError, err)
+			}
+			if err == nil && tc.want != got.ID {
+				t.Errorf("want: %s, got: %s", tc.want, got.ID)
 			}
 		})
 	}
 }
 
 func TestAlbumsService_List(t *testing.T) {
-	t.Run("Should return all the albums on success", func(t *testing.T) {
-		mockedRepository := albums.MockedRepository{
-			ListAllFn: func(ctx context.Context) ([]albums.Album, error) {
-				return []albums.Album{
-					{Title: "foo"},
-					{Title: "bar"},
-					{Title: "baz"},
-				}, nil
-			},
-		}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-		s := albums.NewService(
-			http.DefaultClient,
-			albums.WithRepository(mockedRepository),
-		)
+	c := albums.Config{URL: srv.URL()}
+	s, err := albums.NewService(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
-		got, err := s.List(context.Background())
-		if err != nil {
-			t.Fatalf("error was not expected, err: %s", err)
-		}
-		if 3 != len(got) {
-			t.Errorf("want: %d, got: %d", 3, len(got))
-		}
-	})
+	res, err := s.List(context.Background())
+	if err != nil {
+		t.Fatal("error was not expected at this point")
+	}
 
-	t.Run("Should return error on error", func(t *testing.T) {
-		mockedRepository := albums.MockedRepository{
-			ListAllFn: func(ctx context.Context) ([]albums.Album, error) {
-				return []albums.Album{}, errors.New("error")
-			},
-		}
-
-		s := albums.NewService(
-			http.DefaultClient,
-			albums.WithRepository(mockedRepository),
-		)
-
-		if _, err := s.List(context.Background()); err == nil {
-			t.Fatalf("error was expected, but not produced")
-		}
-	})
+	if len(res) != mocks.AvailableAlbums {
+		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
+	}
 }

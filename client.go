@@ -18,31 +18,6 @@ type Client struct {
 	Uploader   MediaUploader
 }
 
-// UploadFileToLibrary uploads the specified file to Google Photos.
-func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
-	token, err := c.Uploader.UploadFile(ctx, filePath)
-	if err != nil {
-		return media_items.MediaItem{}, err
-	}
-	return c.MediaItems.Create(ctx, media_items.SimpleMediaItem{
-		UploadToken: token,
-		FileName:    filePath,
-	})
-}
-
-// UploadFileToAlbum uploads the specified file to the album in Google Photos.
-func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath string) (media_items.MediaItem, error) {
-	token, err := c.Uploader.UploadFile(ctx, filePath)
-	if err != nil {
-		return media_items.MediaItem{}, err
-	}
-	item := media_items.SimpleMediaItem{
-		UploadToken: token,
-		FileName:    filePath,
-	}
-	return c.MediaItems.CreateToAlbum(ctx, albumId, item)
-}
-
 // clientWithRetryPolicy returns a HTTP client with a retry policy.
 func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
 	client := retryablehttp.NewClient()
@@ -54,20 +29,21 @@ func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
 
 // defaultGPhotosClient returns a gphotos client using the defaults.
 // The client is an HTTP client used for calling Google Photos. It needs the proper authentication in place.
-// By default it will use a in memory cache for Albums repository and implements retries with Exponential backoff.
+// By default, it will implement retries with Exponential backoff.
 func defaultGPhotosClient(authenticatedClient *http.Client) (*Client, error) {
 	client := clientWithRetryPolicy(authenticatedClient)
 
-	var albumsService AlbumsService = albums.NewService(client)
+	albumsService, err := albums.NewService(albums.Config{Client: client})
+	if err != nil {
+		return nil, err
+	}
 
-	var upldr MediaUploader
 	upldr, err := basic.NewBasicUploader(client)
 	if err != nil {
 		return nil, err
 	}
 
-	var mediaItemsService MediaItemsService
-	mediaItemsService, err = media_items.NewHttpMediaItemsService(client)
+	mediaItemsService, err := media_items.NewHttpMediaItemsService(client)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +100,8 @@ type option struct {
 	value interface{}
 }
 
-func (o option) Name() string       { return o.name }
+func (o option) Name() string { return o.name }
+
 func (o option) Value() interface{} { return o.value }
 
 // WithUploader configures the Media Uploader.
@@ -149,4 +126,29 @@ func WithMediaItemsService(s MediaItemsService) *option {
 		name:  optkeyMediaItemsService,
 		value: s,
 	}
+}
+
+// UploadFileToLibrary uploads the specified file to Google Photos.
+func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
+	token, err := c.Uploader.UploadFile(ctx, filePath)
+	if err != nil {
+		return media_items.MediaItem{}, err
+	}
+	return c.MediaItems.Create(ctx, media_items.SimpleMediaItem{
+		UploadToken: token,
+		FileName:    filePath,
+	})
+}
+
+// UploadFileToAlbum uploads the specified file to the album in Google Photos.
+func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath string) (media_items.MediaItem, error) {
+	token, err := c.Uploader.UploadFile(ctx, filePath)
+	if err != nil {
+		return media_items.MediaItem{}, err
+	}
+	item := media_items.SimpleMediaItem{
+		UploadToken: token,
+		FileName:    filePath,
+	}
+	return c.MediaItems.CreateToAlbum(ctx, albumId, item)
 }

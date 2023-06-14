@@ -4,22 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"net/http"
+	"strconv"
 )
 
-// Repository represents an album repository.
-type Repository interface {
-	AddManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
-	RemoveManyItems(ctx context.Context, albumId string, mediaItemIds []string) error
-	Create(ctx context.Context, title string) (*Album, error)
-	Get(ctx context.Context, albumId string) (*Album, error)
-	ListAll(ctx context.Context) ([]Album, error)
-	GetByTitle(ctx context.Context, title string) (*Album, error)
+// Config holds the configuration parameters for the service.
+type Config struct {
+	// Client should have all oAuth credentials in place.
+	Client *http.Client
+	URL    string
 }
 
 // Service implements an albums Google Photos client.
 type Service struct {
-	repo Repository
+	photos PhotosLibraryClient
+}
+
+// PhotosLibraryClient represents a Google Photos client using `gphotosuploader/googlemirror/api/photoslibrary`.
+type PhotosLibraryClient interface {
+	BatchAddMediaItems(albumId string, albumBatchAddMediaItemsRequest *photoslibrary.AlbumBatchAddMediaItemsRequest) *photoslibrary.AlbumBatchAddMediaItemsCall
+	Create(createAlbumRequest *photoslibrary.CreateAlbumRequest) *photoslibrary.AlbumsCreateCall
+	Get(albumId string) *photoslibrary.AlbumsGetCall
+	List() *photoslibrary.AlbumsListCall
 }
 
 var (
@@ -32,68 +39,121 @@ var (
 
 // AddMediaItems adds multiple media item(s) to the specified album.
 func (s Service) AddMediaItems(ctx context.Context, albumID string, mediaItemIDs []string) error {
-	return s.repo.AddManyItems(ctx, albumID, mediaItemIDs)
+	req := &photoslibrary.AlbumBatchAddMediaItemsRequest{
+		MediaItemIds: mediaItemIDs,
+	}
+	_, err := s.photos.BatchAddMediaItems(albumID, req).Context(ctx).Do()
+	return err
 }
 
 // RemoveMediaItems removes multiple media item(s) from the specified album.
 func (s Service) RemoveMediaItems(ctx context.Context, albumID string, mediaItemIDs []string) error {
-	return s.repo.RemoveManyItems(ctx, albumID, mediaItemIDs)
+	panic("not implemented on google mirror library")
 }
 
 // Create adds a new album to the repo.
 func (s Service) Create(ctx context.Context, title string) (*Album, error) {
-	return s.repo.Create(ctx, title)
+	req := &photoslibrary.CreateAlbumRequest{
+		Album: &photoslibrary.Album{Title: title},
+	}
+	res, err := s.photos.Create(req).Context(ctx).Do()
+	if err != nil {
+		return &NullAlbum, err
+	}
+	album := toAlbum(res)
+	return &album, nil
 }
 
 // GetById fetches an album from the repository by id.
 // It returns ErrAlbumNotFound if the album does not exist.
 func (s Service) GetById(ctx context.Context, albumID string) (*Album, error) {
-	album, err := s.repo.Get(ctx, albumID)
+	res, err := s.photos.Get(albumID).Context(ctx).Do()
 	if err != nil {
 		return &NullAlbum, fmt.Errorf("%s: %w", albumID, ErrAlbumNotFound)
 	}
-	return album, nil
+	album := toAlbum(res)
+	return &album, nil
 }
 
 // GetByTitle fetches an album from the repository by title.
 // Ir returns ErrAlbumNotFound if the album does not exist.
 func (s Service) GetByTitle(ctx context.Context, title string) (*Album, error) {
-	album, err := s.repo.GetByTitle(ctx, title)
-	if err != nil {
-		return &NullAlbum, fmt.Errorf("%s: %w", title, ErrAlbumNotFound)
+	errAlbumWasFound := errors.New("album was found")
+	var result *Album
+	if err := s.photos.List().ExcludeNonAppCreatedData().Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
+		if album, found := findByTitle(title, response.Albums); found {
+			result = album
+			return errAlbumWasFound
+		}
+		return nil
+	}); errors.Is(err, errAlbumWasFound) {
+		return result, nil
 	}
-	return album, nil
+	return &NullAlbum, fmt.Errorf("%s: %w", title, ErrAlbumNotFound)
 }
 
 // List fetches all the albums from the repository.
 func (s Service) List(ctx context.Context) ([]Album, error) {
-	return s.repo.ListAll(ctx)
+	albumsResult := make([]Album, 0)
+	albumsListCall := s.photos.List().PageSize(maxItemsPerPage).ExcludeNonAppCreatedData()
+	err := albumsListCall.Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
+		for _, res := range response.Albums {
+			albumsResult = append(albumsResult, toAlbum(res))
+		}
+		return nil
+	})
+	return albumsResult, err
 }
 
-// NewService returns an albums Google Photos client.
-// The authenticatedClient should have all oAuth credentials in place.
-func NewService(authenticatedClient *http.Client, options ...Option) *Service {
-	s := &Service{
-		repo: defaultRepo(authenticatedClient),
+// NewService creates a new instance of Service with the provided configuration.
+func NewService(config Config) (*Service, error) {
+	client := config.Client
+
+	if client == nil {
+		client = http.DefaultClient
 	}
 
-	for _, o := range options {
-		o(s)
+	photosClient, err := newPhotosLibraryClient(client, config.URL)
+	if err != nil {
+		return nil, err
 	}
 
-	return s
+	service := &Service{
+		photos: photosClient,
+	}
+
+	return service, nil
 }
 
-type Option func(service *Service)
-
-// WithRepository configures the Google Photos repository.
-func WithRepository(repository Repository) Option {
-	return func(s *Service) {
-		s.repo = repository
+func newPhotosLibraryClient(authenticatedClient *http.Client, url string) (*photoslibrary.AlbumsService, error) {
+	s, err := photoslibrary.New(authenticatedClient)
+	if err != nil {
+		return nil, err
 	}
+	if url != "" {
+		s.BasePath = url
+	}
+	return s.Albums, nil
 }
 
-func defaultRepo(authenticatedClient *http.Client) Repository {
-	r, _ := NewPhotosLibraryClient(authenticatedClient)
-	return r
+func findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
+	for _, a := range albums {
+		if a.Title == title {
+			album := toAlbum(a)
+			return &album, true
+		}
+	}
+	return &NullAlbum, false
+}
+
+func toAlbum(a *photoslibrary.Album) Album {
+	return Album{
+		ID:                    a.Id,
+		Title:                 a.Title,
+		ProductURL:            a.ProductUrl,
+		IsWriteable:           a.IsWriteable,
+		MediaItemsCount:       strconv.FormatInt(a.TotalMediaItems, 10),
+		CoverPhotoBaseURL:     a.CoverPhotoBaseUrl,
+		CoverPhotoMediaItemID: "",
+	}
 }
