@@ -71,4 +71,20 @@ func TestNewClient(t *testing.T) {
 			t.Errorf("want: %v, got: %v", want, got)
 		}
 	})
+
+	t.Run("Success with a custom Uploader, AlbumManager, MediaItemManager but without Client", func(t *testing.T) {
+		uploader := &mocks.MockedUploader{}
+		albumManager := &mocks.MockedAlbumsService{}
+		mediaItemManager := &mocks.MockedMediaItemsService{}
+
+		c := gphotos.Config{
+			Uploader:         uploader,
+			AlbumManager:     albumManager,
+			MediaItemManager: mediaItemManager,
+		}
+		_, err := gphotos.NewClient(c)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
 }
