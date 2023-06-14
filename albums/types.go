@@ -12,11 +12,12 @@ type Album struct {
 	CoverPhotoMediaItemID string
 }
 
-// maxItemsPerPage is the maximum number of albums to ask to the PhotosLibrary. Fewer albums might
-// be returned than the specified number. See https://developers.google.com/photos/library/guides/list#pagination
+// maxItemsPerPage is the maximum number of albums to ask the PhotosLibrary.
+// Fewer albums might be returned than the specified number.
+// See https://developers.google.com/photos/library/guides/list#pagination
 const maxItemsPerPage = 50
 
-// Options defines the options that could be customized when listing albums.
+// Options define the options that could be customized when listing albums.
 type Options struct {
 	// ExcludeNonAppCreatedData excludes albums that were not created by this app.
 	// Defaults to false (all albums are returned).
