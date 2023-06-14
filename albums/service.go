@@ -105,7 +105,7 @@ func (s Service) List(ctx context.Context) ([]Album, error) {
 	return albumsResult, err
 }
 
-// NewService creates a new instance of Service with the provided configuration.
+// w
 func NewService(config Config) (*Service, error) {
 	client := config.Client
 
