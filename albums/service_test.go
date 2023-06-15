@@ -25,7 +25,7 @@ func TestAlbumsService_AddMediaItems(t *testing.T) {
 	defer srv.Close()
 
 	c := albums.Config{URL: srv.URL()}
-	s, err := albums.NewService(c)
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
@@ -39,7 +39,7 @@ func TestAlbumsService_AddMediaItems(t *testing.T) {
 }
 
 func TestAlbumsService_RemoveMediaItems(t *testing.T) {
-	s, err := albums.NewService(albums.Config{})
+	s, err := albums.New(albums.Config{})
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
@@ -69,7 +69,7 @@ func TestAlbumsService_Create(t *testing.T) {
 	defer srv.Close()
 
 	c := albums.Config{URL: srv.URL()}
-	s, err := albums.NewService(c)
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
@@ -100,7 +100,7 @@ func TestAlbumsService_GetById(t *testing.T) {
 	defer srv.Close()
 
 	c := albums.Config{URL: srv.URL()}
-	s, err := albums.NewService(c)
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
@@ -134,7 +134,7 @@ func TestAlbumsService_GetByTitle(t *testing.T) {
 	defer srv.Close()
 
 	c := albums.Config{URL: srv.URL()}
-	s, err := albums.NewService(c)
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
@@ -157,7 +157,7 @@ func TestAlbumsService_List(t *testing.T) {
 	defer srv.Close()
 
 	c := albums.Config{URL: srv.URL()}
-	s, err := albums.NewService(c)
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}

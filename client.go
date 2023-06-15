@@ -49,7 +49,7 @@ func NewClient(config Config) (*Client, error) {
 	client := newRetryHandler(config.Client)
 
 	if c.Albums == nil {
-		c.Albums, _ = albums.NewService(albums.Config{Client: client})
+		c.Albums, _ = albums.New(albums.Config{Client: client})
 	}
 
 	if c.MediaItems == nil {
