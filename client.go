@@ -53,7 +53,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	if c.MediaItems == nil {
-		c.MediaItems, _ = media_items.NewHttpMediaItemsService(client)
+		c.MediaItems, _ = media_items.New(client)
 	}
 
 	if c.Uploader == nil {
