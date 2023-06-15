@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.0
+> This is a major version update and it is **NOT BACKWARDS COMPATIBLE**.
+
+### Changed
+- Simplified code in the `albums` and `media_items` packages by removing the repository abstraction, resulting in improved code readability.
+- [**BREAKING CHANGE**] Introduced a new constructor for `gphotos.Client` that accepts a `gphotos.Config` struct for easier configuration at creation time.
+- [**BREAKING CHANGE**] Updated constructors for `albums.Service` and `media_items.Service` to utilize the `albums.Config` and `media_items.Config` structs for customizations.
+
+### Fixed
+- Optimized the Albums Service to reduce the number of requests by fixing caching issues.
+- [**BREAKING CHANGE**] Implemented a retry policy that excludes retries when the Google Photos quota per day has been reached. Instead, it returns an error `ErrDailyQuotaExceeded`. ([#62][i62])
+- The HTTP Client is now optional when the `photos.AlbumService`, `photos.MediaService` and `gphotos.Uploader` are set.
+
+### Removed
+- Removed the Albums caching feature, which doesn't affect the previous behavior. ([#86][i86])
+
+[i62]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/62
+[i86]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/86
+
 ## 2.4.1
 ### Changed
 - Supported `Go` versions are `1.18`, `1.19` and `1.20`.
@@ -26,7 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Reduce number of request to Google Photos by using bigger `PageSize` on `mediaItems.search` and `albums.list`.
 ### Fixed
 - `ListAll()` method use `excludeNonAppCreatedData` and it doesn't return all albums. ([#72][i72])
-  > This could be a breaking change, given that we were excluding non app created albums previously. If you want to maintain the same behaviour as before, use `ListWithOptions()` instead.
+  > This could be a breaking change, given that we were excluding non app created albums previously. If you want to maintain the same behavior as before, use `ListWithOptions()` instead.
 - `MediaItems.ListByAlbum` does not support paging. ([#65][i65])
 ### Removed
 - Support for `go` version `1.15`.
