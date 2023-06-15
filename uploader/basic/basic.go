@@ -70,7 +70,7 @@ func (u BasicUploader) upload(ctx context.Context, uploadItem uploader.UploadIte
 		u.log.Errorf("Error while uploading %s: %s", uploadItem, err)
 		return "", err
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // ignoring error
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {

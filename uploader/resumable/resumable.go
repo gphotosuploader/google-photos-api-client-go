@@ -109,14 +109,14 @@ func (u ResumableUploader) offsetFromPreviousSession(ctx context.Context, item u
 	if err != nil {
 		return 0
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // ignoring error
 	return u.offsetFromResponse(res, item)
 }
 
 // offsetFromResponse returns the current offsetFromResponse if exist on the HTTP Response.
 func (u ResumableUploader) offsetFromResponse(res *http.Response, item uploader.UploadItem) int64 {
 	if res.Header.Get("X-Goog-Upload-Status") != "active" {
-		// Other known statuses "final" and "cancelled" are both considered as already completed.
+		// Other known statuses "final" and "canceled" are both considered as already completed.
 		// Let's restart the upload from scratch.
 		u.store.Delete(fingerprint(item))
 		return 0
@@ -140,7 +140,7 @@ func (u ResumableUploader) createUploadSession(ctx context.Context, item uploade
 	if err != nil {
 		return "", fmt.Errorf("creating upload session: %w", err)
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // ignoring error
 
 	u.storeUploadSession(res, item)
 
@@ -187,7 +187,7 @@ func (u ResumableUploader) resumeUploadSession(ctx context.Context, item uploade
 		u.log.Errorf("Failed to resume session: err=%s", err)
 		return "", fmt.Errorf("resuming upload session: %w", err)
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // ignoring error
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
