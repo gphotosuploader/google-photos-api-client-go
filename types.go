@@ -3,8 +3,8 @@ package gphotos
 import (
 	"context"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
 )
 
 // OAuth2 scopes used by this API.

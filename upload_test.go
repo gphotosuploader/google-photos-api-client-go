@@ -3,9 +3,9 @@ package gphotos_test
 import (
 	"context"
 	"fmt"
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"net/http"
 	"testing"
 )
@@ -43,7 +43,7 @@ func TestClient_UploadFileToLibrary(t *testing.T) {
 		Uploader:         mockedUploader,
 		MediaItemManager: mockedMediaItemManager,
 	}
-	client, err := gphotos.NewClient(config)
+	client, err := gphotos.New(config)
 	if err != nil {
 		t.Fatalf("error was not expected at this point: %s", err)
 	}
@@ -95,7 +95,7 @@ func TestClient_UploadFileToAlbum(t *testing.T) {
 		Uploader:         mockedUploader,
 		MediaItemManager: mockedMediaItemManager,
 	}
-	client, err := gphotos.NewClient(config)
+	client, err := gphotos.New(config)
 	if err != nil {
 		t.Fatalf("error was not expected at this point: %s", err)
 	}

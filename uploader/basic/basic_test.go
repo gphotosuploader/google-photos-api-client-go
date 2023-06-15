@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader/basic"
 )
 
 func TestNewBasicUploader(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 
 	"google.golang.org/api/googleapi"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 )
 
 // ResumableUploader implements resumable uploads.

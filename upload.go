@@ -2,7 +2,7 @@ package gphotos
 
 import (
 	"context"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
 )
 
 // UploadFileToLibrary uploads the specified file to Google Photos.

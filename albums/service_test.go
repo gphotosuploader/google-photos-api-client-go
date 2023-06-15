@@ -3,8 +3,8 @@ package albums_test
 import (
 	"context"
 	"errors"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"testing"
 )
 
