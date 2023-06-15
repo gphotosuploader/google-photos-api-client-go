@@ -4,20 +4,20 @@ import (
 	"net/http"
 	"testing"
 
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 )
 
 func TestNewClient(t *testing.T) {
 	t.Run("Fail without an HTTP client", func(t *testing.T) {
-		_, err := gphotos.NewClient(gphotos.Config{})
+		_, err := gphotos.New(gphotos.Config{})
 		if err == nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
 	})
 
 	t.Run("Success with only an HTTP client", func(t *testing.T) {
-		_, err := gphotos.NewClient(gphotos.Config{Client: http.DefaultClient})
+		_, err := gphotos.New(gphotos.Config{Client: http.DefaultClient})
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
@@ -30,7 +30,7 @@ func TestNewClient(t *testing.T) {
 			Client:       http.DefaultClient,
 			AlbumManager: want,
 		}
-		got, err := gphotos.NewClient(c)
+		got, err := gphotos.New(c)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
@@ -47,7 +47,7 @@ func TestNewClient(t *testing.T) {
 			Client:           http.DefaultClient,
 			MediaItemManager: want,
 		}
-		got, err := gphotos.NewClient(c)
+		got, err := gphotos.New(c)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
@@ -63,7 +63,7 @@ func TestNewClient(t *testing.T) {
 			Client:   http.DefaultClient,
 			Uploader: want,
 		}
-		got, err := gphotos.NewClient(c)
+		got, err := gphotos.New(c)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
@@ -82,7 +82,7 @@ func TestNewClient(t *testing.T) {
 			AlbumManager:     albumManager,
 			MediaItemManager: mediaItemManager,
 		}
-		_, err := gphotos.NewClient(c)
+		_, err := gphotos.New(c)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}

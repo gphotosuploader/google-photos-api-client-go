@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 )
 
 // BasicUploader implements an HTTP uploader.
@@ -70,7 +70,7 @@ func (u BasicUploader) upload(ctx context.Context, uploadItem uploader.UploadIte
 		u.log.Errorf("Error while uploading %s: %s", uploadItem, err)
 		return "", err
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // ignoring error
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader/basic"
 )
 
 // Config holds the configuration parameters for the client.
@@ -32,8 +32,8 @@ type Client struct {
 	MediaItems MediaItemsService
 }
 
-// NewClient creates a new instance of Client with the provided configuration.
-func NewClient(config Config) (*Client, error) {
+// New creates a new instance of Client with the provided configuration.
+func New(config Config) (*Client, error) {
 	c := &Client{
 		Uploader:   config.Uploader,
 		Albums:     config.AlbumManager,
@@ -49,11 +49,11 @@ func NewClient(config Config) (*Client, error) {
 	client := newRetryHandler(config.Client)
 
 	if c.Albums == nil {
-		c.Albums, _ = albums.NewService(albums.Config{Client: client})
+		c.Albums, _ = albums.New(albums.Config{Client: client})
 	}
 
 	if c.MediaItems == nil {
-		c.MediaItems, _ = media_items.NewHttpMediaItemsService(client)
+		c.MediaItems, _ = media_items.New(media_items.Config{Client: client})
 	}
 
 	if c.Uploader == nil {

@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/resumable"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader/resumable"
 )
 
 func TestNewResumableUploader(t *testing.T) {

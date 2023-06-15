@@ -105,8 +105,7 @@ func (s Service) List(ctx context.Context) ([]Album, error) {
 	return albumsResult, err
 }
 
-// w
-func NewService(config Config) (*Service, error) {
+func New(config Config) (*Service, error) {
 	client := config.Client
 
 	if client == nil {

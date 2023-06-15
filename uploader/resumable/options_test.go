@@ -3,7 +3,7 @@ package resumable
 import (
 	"testing"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/internal/log"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
 )
 
 func TestWithLogger(t *testing.T) {

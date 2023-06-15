@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
 )
 
 // MockedMediaItemsService mocks the media items service.
