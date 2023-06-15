@@ -45,7 +45,7 @@ const (
 
 	// AvailableMediaItems is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
 	AvailableMediaItems = 150
-	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
+	// AvailableAlbums is the number of albums in the fake collection. It should be bigger than `maxItemsPerPage`.
 	AvailableAlbums = 75
 
 	// ShouldMakeAPIFailMediaItem will make API fail.
@@ -91,7 +91,7 @@ func (ms MockedGooglePhotosService) URL() string {
 	return ms.baseURL
 }
 
-// albumsCreate implements 'albums.create' method .
+// albumsCreate implements 'albums.create' method.
 // - Album creation with title == ShouldFailAlbum.Title will respond http.StatusInternalServerError.
 // - Any other case will respond http.StatusOK.
 //
