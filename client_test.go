@@ -23,12 +23,12 @@ func TestNewClient(t *testing.T) {
 		}
 	})
 
-	t.Run("Success with a custom AlbumManager", func(t *testing.T) {
+	t.Run("Success with a custom AlbumService", func(t *testing.T) {
 		want := &mocks.MockedAlbumsService{}
 
 		c := gphotos.Config{
 			Client:       http.DefaultClient,
-			AlbumManager: want,
+			AlbumService: want,
 		}
 		got, err := gphotos.New(c)
 		if err != nil {
@@ -40,12 +40,12 @@ func TestNewClient(t *testing.T) {
 		}
 	})
 
-	t.Run("Success with a custom MediaItemManager", func(t *testing.T) {
+	t.Run("Success with a custom MediaItemService", func(t *testing.T) {
 		want := &mocks.MockedMediaItemsService{}
 
 		c := gphotos.Config{
 			Client:           http.DefaultClient,
-			MediaItemManager: want,
+			MediaItemService: want,
 		}
 		got, err := gphotos.New(c)
 		if err != nil {
@@ -72,15 +72,15 @@ func TestNewClient(t *testing.T) {
 		}
 	})
 
-	t.Run("Success with a custom Uploader, AlbumManager, MediaItemManager but without Client", func(t *testing.T) {
+	t.Run("Success with a custom Uploader, AlbumService, MediaItemService but without Client", func(t *testing.T) {
 		uploader := &mocks.MockedUploader{}
-		albumManager := &mocks.MockedAlbumsService{}
-		mediaItemManager := &mocks.MockedMediaItemsService{}
+		albumService := &mocks.MockedAlbumsService{}
+		mediaItemService := &mocks.MockedMediaItemsService{}
 
 		c := gphotos.Config{
 			Uploader:         uploader,
-			AlbumManager:     albumManager,
-			MediaItemManager: mediaItemManager,
+			AlbumService:     albumService,
+			MediaItemService: mediaItemService,
 		}
 		_, err := gphotos.New(c)
 		if err != nil {

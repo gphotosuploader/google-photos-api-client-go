@@ -16,18 +16,18 @@ type Config struct {
 
 	// Uploader implements file uploads to Google Photos.
 	// This package offers two basic.NewBasicUploader() or resumable.NewResumableUploader().
-	Uploader MediaUploader
+	Uploader Uploader
 
-	// AlbumManager implements the Google Photos' album manager.
-	AlbumManager AlbumsService
+	// AlbumService implements the Google Photos' album service.
+	AlbumService AlbumsService
 
-	// MediaItemManager implements the Google Photos' media item manager.
-	MediaItemManager MediaItemsService
+	// MediaItemService implements the Google Photos' media item service.
+	MediaItemService MediaItemsService
 }
 
 // Client is a Google Photos client with enhanced capabilities.
 type Client struct {
-	Uploader   MediaUploader
+	Uploader   Uploader
 	Albums     AlbumsService
 	MediaItems MediaItemsService
 }
@@ -36,13 +36,13 @@ type Client struct {
 func New(config Config) (*Client, error) {
 	c := &Client{
 		Uploader:   config.Uploader,
-		Albums:     config.AlbumManager,
-		MediaItems: config.MediaItemManager,
+		Albums:     config.AlbumService,
+		MediaItems: config.MediaItemService,
 	}
 
 	// config.Client is required unless other services are submitted.
 	if config.Client == nil &&
-		(config.AlbumManager == nil || config.MediaItemManager == nil || config.Uploader == nil) {
+		(config.AlbumService == nil || config.MediaItemService == nil || config.Uploader == nil) {
 		return nil, fmt.Errorf("an HTTP client is necessary")
 	}
 

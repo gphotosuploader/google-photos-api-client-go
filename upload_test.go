@@ -30,7 +30,7 @@ func TestClient_UploadFileToLibrary(t *testing.T) {
 		},
 	}
 
-	mockedMediaItemManager := &mocks.MockedMediaItemsService{
+	mockedMediaItemService := &mocks.MockedMediaItemsService{
 		CreateFn: func(ctx context.Context, mediaItem media_items.SimpleMediaItem) (media_items.MediaItem, error) {
 			if "media-item-manager-should-fail" == mediaItem.FileName {
 				return media_items.MediaItem{}, fmt.Errorf("media-item-manager-error")
@@ -41,7 +41,7 @@ func TestClient_UploadFileToLibrary(t *testing.T) {
 	config := gphotos.Config{
 		Client:           http.DefaultClient,
 		Uploader:         mockedUploader,
-		MediaItemManager: mockedMediaItemManager,
+		MediaItemService: mockedMediaItemService,
 	}
 	client, err := gphotos.New(config)
 	if err != nil {
@@ -81,7 +81,7 @@ func TestClient_UploadFileToAlbum(t *testing.T) {
 		},
 	}
 
-	mockedMediaItemManager := &mocks.MockedMediaItemsService{
+	mockedMediaItemService := &mocks.MockedMediaItemsService{
 		CreateToAlbumFn: func(ctx context.Context, albumId string, mediaItem media_items.SimpleMediaItem) (media_items.MediaItem, error) {
 			if "media-item-manager-should-fail" == mediaItem.FileName {
 				return media_items.MediaItem{}, fmt.Errorf("media-item-manager-error")
@@ -93,7 +93,7 @@ func TestClient_UploadFileToAlbum(t *testing.T) {
 	config := gphotos.Config{
 		Client:           http.DefaultClient,
 		Uploader:         mockedUploader,
-		MediaItemManager: mockedMediaItemManager,
+		MediaItemService: mockedMediaItemService,
 	}
 	client, err := gphotos.New(config)
 	if err != nil {
