@@ -9,9 +9,6 @@ import (
 
 // OAuth2 scopes used by this API.
 const (
-	// DrivePhotosReadonlyScope View the photos, videos and albums in your Google Photos
-	DrivePhotosReadonlyScope = "https://www.googleapis.com/auth/drive.photos.readonly"
-
 	// PhotoslibraryScope View and manage your Google Photos library
 	PhotoslibraryScope = "https://www.googleapis.com/auth/photoslibrary"
 
