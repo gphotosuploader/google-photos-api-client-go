@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"net/http"
 	"net/url"
@@ -32,6 +33,15 @@ var (
 	// specifically so we resort to matching on the error string.
 	storageQuotaErrorRe = regexp.MustCompile(`The remaining storage in the user's account is not enough to perform this operation`)
 )
+
+// clientWithRetryPolicy returns a HTTP client with a retry policy.
+func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
+	client := retryablehttp.NewClient()
+	client.CheckRetry = defaultGPhotosRetryPolicy
+	client.Logger = nil // Disable DEBUG logs
+	client.HTTPClient = authenticatedClient
+	return client.StandardClient()
+}
 
 // defaultGPhotosRetryPolicy provides a default callback for Client.CheckRetry, which
 // will retry on connection errors and server errors.

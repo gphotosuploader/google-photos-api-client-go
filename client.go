@@ -1,10 +1,7 @@
 package gphotos
 
 import (
-	"context"
 	"net/http"
-
-	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
@@ -16,40 +13,6 @@ type Client struct {
 	Albums     AlbumsService
 	MediaItems MediaItemsService
 	Uploader   MediaUploader
-}
-
-// UploadFileToLibrary uploads the specified file to Google Photos.
-func (c Client) UploadFileToLibrary(ctx context.Context, filePath string) (media_items.MediaItem, error) {
-	token, err := c.Uploader.UploadFile(ctx, filePath)
-	if err != nil {
-		return media_items.MediaItem{}, err
-	}
-	return c.MediaItems.Create(ctx, media_items.SimpleMediaItem{
-		UploadToken: token,
-		FileName:    filePath,
-	})
-}
-
-// UploadFileToAlbum uploads the specified file to the album in Google Photos.
-func (c Client) UploadFileToAlbum(ctx context.Context, albumId string, filePath string) (media_items.MediaItem, error) {
-	token, err := c.Uploader.UploadFile(ctx, filePath)
-	if err != nil {
-		return media_items.MediaItem{}, err
-	}
-	item := media_items.SimpleMediaItem{
-		UploadToken: token,
-		FileName:    filePath,
-	}
-	return c.MediaItems.CreateToAlbum(ctx, albumId, item)
-}
-
-// clientWithRetryPolicy returns a HTTP client with a retry policy.
-func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
-	client := retryablehttp.NewClient()
-	client.CheckRetry = defaultGPhotosRetryPolicy
-	client.Logger = nil // Disable DEBUG logs
-	client.HTTPClient = authenticatedClient
-	return client.StandardClient()
 }
 
 // defaultGPhotosClient returns a gphotos client using the defaults.
