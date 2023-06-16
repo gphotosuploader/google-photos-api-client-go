@@ -47,69 +47,12 @@ func defaultGPhotosClient(authenticatedClient *http.Client) (*Client, error) {
 //
 // By default it will use a in memory cache for Albums repository and implements retries with Exponential backoff.
 //
-// Use WithUploader(), WithAlbumsService(), WithMediaItemsService() to customize it.
-//
 // There is a resumable uploader implemented on uploader.NewResumableUploader().
-func NewClient(authenticatedClient *http.Client, options ...Option) (*Client, error) {
+func NewClient(authenticatedClient *http.Client) (*Client, error) {
 	client, err := defaultGPhotosClient(authenticatedClient)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, o := range options {
-		switch o.Name() {
-		case optkeyUploader:
-			client.Uploader = o.Value().(MediaUploader)
-		case optkeyAlbumsService:
-			client.Albums = o.Value().(AlbumsService)
-		case optkeyMediaItemsService:
-			client.MediaItems = o.Value().(MediaItemsService)
-		}
-	}
-
 	return client, nil
-}
-
-const (
-	optkeyUploader          = "uploader"
-	optkeyAlbumsService     = "albumService"
-	optkeyMediaItemsService = "mediaItemsService"
-)
-
-// Option represents a configurable parameter.
-type Option interface {
-	Name() string
-	Value() interface{}
-}
-
-type option struct {
-	name  string
-	value interface{}
-}
-
-func (o option) Name() string       { return o.name }
-func (o option) Value() interface{} { return o.value }
-
-// WithUploader configures the Media Uploader.
-func WithUploader(s MediaUploader) *option {
-	return &option{
-		name:  optkeyUploader,
-		value: s,
-	}
-}
-
-// WithAlbumsService configures the Albums Service.
-func WithAlbumsService(s AlbumsService) *option {
-	return &option{
-		name:  optkeyAlbumsService,
-		value: s,
-	}
-}
-
-// WithMediaItemsService configures the Media Items Service.
-func WithMediaItemsService(s MediaItemsService) *option {
-	return &option{
-		name:  optkeyMediaItemsService,
-		value: s,
-	}
 }
