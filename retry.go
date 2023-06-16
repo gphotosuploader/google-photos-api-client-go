@@ -34,8 +34,8 @@ var (
 	storageQuotaErrorRe = regexp.MustCompile(`The remaining storage in the user's account is not enough to perform this operation`)
 )
 
-// clientWithRetryPolicy returns a HTTP client with a retry policy.
-func clientWithRetryPolicy(authenticatedClient *http.Client) *http.Client {
+// addRetryHandler returns a HTTP client with a retry policy.
+func addRetryHandler(authenticatedClient *http.Client) *http.Client {
 	client := retryablehttp.NewClient()
 	client.CheckRetry = defaultGPhotosRetryPolicy
 	client.Logger = nil // Disable DEBUG logs
