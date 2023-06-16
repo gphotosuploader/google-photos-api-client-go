@@ -21,7 +21,7 @@ type Album struct {
 	CoverPhotoBaseURL string
 
 	// Id: [Output only] Identifier for the album. This is a persistent
-	// identifier that can be used uniquely to identify this album.
+	// identifier that can be used to identify this album.
 	ID string
 
 	// IsWriteable: [Output only] True if media items can be created in the
