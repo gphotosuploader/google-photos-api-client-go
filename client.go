@@ -1,36 +1,63 @@
 package gphotos
 
 import (
+	"errors"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
 	"net/http"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/media_items"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
 )
 
-// Client is a Google Photos client with enhanced capabilities.
+const (
+	Version = "v3.0.0"
+
+	defaultBaseURL   = "https://photoslibrary.googleapis.com/"
+	defaultUserAgent = "gphotos" + "/" + Version
+)
+
+// A Client manages communication with the Google Photos API.
 type Client struct {
+	// Uploader implementation used when uploading files to Google Photos.
+	Uploader MediaUploader
+
+	// Services used for talking to different parts of the Google Photos API.
 	Albums     AlbumsService
 	MediaItems MediaItemsService
-	Uploader   MediaUploader
 }
 
-// defaultGPhotosClient returns a gphotos client using the defaults.
-// The client is an HTTP client used for calling Google Photos. It needs the proper authentication in place.
-// By default it will use a in memory cache for Albums repository and implements retries with Exponential backoff.
-func defaultGPhotosClient(authenticatedClient *http.Client) (*Client, error) {
-	client := clientWithRetryPolicy(authenticatedClient)
+// NewClient returns a new Google Photos API client.
+// API methods require authentication, provide an [net/http.Client]
+// that will perform the authentication for you (such as that provided
+// by the [golang.org/x/oauth2] library).
+func NewClient(httpClient *http.Client) (*Client, error) {
+	if httpClient == nil {
+		return nil, errors.New("client is nil")
+	}
 
-	var albumsService AlbumsService = albums.NewCachedAlbumsService(client)
+	httpClient = addRetryHandler(httpClient)
 
-	var upldr MediaUploader
-	upldr, err := basic.NewBasicUploader(client)
+	// Create the Albums Service using default values.
+	albumsConfig := albums.Config{
+		Client:    httpClient,
+		BaseURL:   defaultBaseURL,
+		UserAgent: defaultUserAgent,
+	}
+	albumsService, err := albums.New(albumsConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	var mediaItemsService MediaItemsService
-	mediaItemsService, err = media_items.NewHttpMediaItemsService(client)
+	// Create the Media Items Service using default values.
+	//mediaItemsConfig := albums.Config{
+	//    Client: httpClient,
+	//    BaseURL: defaultBaseURL,
+	//    UserAgent: defaultUserAgent,
+	//}
+	//mediaItemsService, err := media_items.New(mediaItemsConfig)
+	//if err != nil {
+	//    return nil, err
+	//}
+
+	mediaItemsService, err := media_items.NewHttpMediaItemsService(httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -38,21 +65,6 @@ func defaultGPhotosClient(authenticatedClient *http.Client) (*Client, error) {
 	return &Client{
 		Albums:     albumsService,
 		MediaItems: mediaItemsService,
-		Uploader:   upldr,
 	}, nil
-}
 
-// NewClient constructs a new gphotos.Client from the provided HTTP client and the given options.
-// The client is an HTTP client used for calling Google Photos. It needs the proper authentication in place.
-//
-// By default it will use a in memory cache for Albums repository and implements retries with Exponential backoff.
-//
-// There is a resumable uploader implemented on uploader.NewResumableUploader().
-func NewClient(authenticatedClient *http.Client) (*Client, error) {
-	client, err := defaultGPhotosClient(authenticatedClient)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
 }

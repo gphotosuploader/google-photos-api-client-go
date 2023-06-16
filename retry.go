@@ -19,7 +19,7 @@ var (
 	redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
 
 	// A regular expression to match the error returned by net/http when the
-	// scheme specified in the URL is invalid. This error isn't typed
+	// scheme specified in the BaseURL is invalid. This error isn't typed
 	// specifically so we resort to matching on the error string.
 	schemeErrorRe = regexp.MustCompile(`unsupported protocol scheme`)
 

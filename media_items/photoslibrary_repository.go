@@ -27,7 +27,7 @@ func NewPhotosLibraryClient(authenticatedClient *http.Client) (*PhotosLibraryMed
 	return NewPhotosLibraryClientWithURL(authenticatedClient, "")
 }
 
-// NewPhotosLibraryClientWithURL returns a Repository using PhotosLibrary service with a custom URL.
+// NewPhotosLibraryClientWithURL returns a Repository using PhotosLibrary service with a custom BaseURL.
 func NewPhotosLibraryClientWithURL(authenticatedClient *http.Client, url string) (*PhotosLibraryMediaItemsRepository, error) {
 	s, err := photoslibrary.New(authenticatedClient)
 	if err != nil {

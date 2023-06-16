@@ -37,7 +37,7 @@ func TestNewPhotosLibraryClientWithURL(t *testing.T) {
 		isErrExpected bool
 	}{
 		{"New client with defaults", "", defaultBasePath, false},
-		{"New client with custom URL", "https://mydomain.com/path/", "https://mydomain.com/path/", false},
+		{"New client with custom BaseURL", "https://mydomain.com/path/", "https://mydomain.com/path/", false},
 	}
 
 	for _, tc := range testCases {

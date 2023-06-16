@@ -2,56 +2,14 @@ package albums_test
 
 import (
 	"context"
+	"errors"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"net/http"
 	"testing"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/albums"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
 )
 
-const defaultBasePath = "https://photoslibrary.googleapis.com/"
-
-func TestNewPhotosLibraryClient(t *testing.T) {
-	testCases := []struct {
-		name          string
-		input         *http.Client
-		isErrExpected bool
-	}{
-		{"No HTTP client", nil, true},
-		{"Default HTTP client", http.DefaultClient, false},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := albums.NewPhotosLibraryClient(tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-		})
-	}
-}
-
-func TestNewPhotosLibraryClientWithURL(t *testing.T) {
-	testCases := []struct {
-		name          string
-		input         string
-		want          string
-		isErrExpected bool
-	}{
-		{"New client with defaults", "", defaultBasePath, false},
-		{"New client with custom URL", "https://mydomain.com/path/", "https://mydomain.com/path/", false},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ar, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-			if !tc.isErrExpected && ar.URL() != tc.want {
-				t.Errorf("want: %s, got: %s", tc.want, ar.URL())
-			}
-		})
-	}
-}
-
-func TestPhotosLibraryAlbumsRepository_AddManyItems(t *testing.T) {
+func TestAlbumsService_AddMediaItems(t *testing.T) {
 	testCases := []struct {
 		name          string
 		album         string
@@ -67,20 +25,24 @@ func TestPhotosLibraryAlbumsRepository_AddManyItems(t *testing.T) {
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	r, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
 	if err != nil {
-		t.Fatalf("error was not expected at this point")
+		t.Fatalf("error was not expected at this point: %s", err)
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := r.AddManyItems(context.Background(), tc.album, tc.mediaItems)
+			err := s.AddMediaItems(context.Background(), tc.album, tc.mediaItems)
 			assertExpectedError(tc.isErrExpected, err, t)
 		})
 	}
 }
 
-func TestPhotosLibraryAlbumsRepository_Create(t *testing.T) {
+func TestAlbumsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
@@ -94,23 +56,27 @@ func TestPhotosLibraryAlbumsRepository_Create(t *testing.T) {
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	ar, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
 	if err != nil {
-		t.Fatalf("error was not expected at this point")
+		t.Fatalf("error was not expected at this point: %s", err)
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			album, err := ar.Create(context.Background(), tc.input)
+			got, err := s.Create(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
-			if !tc.isErrExpected && album.ID != tc.want {
-				t.Errorf("want: %s, got: %s", tc.want, album.ID)
+			if !tc.isErrExpected && got.ID != tc.want {
+				t.Errorf("want: %s, got: %s", tc.want, got.ID)
 			}
 		})
 	}
 }
 
-func TestPhotosLibraryAlbumsRepository_Get(t *testing.T) {
+func TestAlbumsService_GetById(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
@@ -124,15 +90,19 @@ func TestPhotosLibraryAlbumsRepository_Get(t *testing.T) {
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	ar, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			album, err := ar.Get(context.Background(), tc.input)
-			if tc.expectedError != err {
+			album, err := s.GetById(context.Background(), tc.input)
+			if !errors.Is(err, tc.expectedError) {
 				t.Fatalf("not expected error, want: %v, got: %v", tc.expectedError, err)
 			}
 			if err == nil && album.ID != tc.input {
@@ -142,7 +112,7 @@ func TestPhotosLibraryAlbumsRepository_Get(t *testing.T) {
 	}
 }
 
-func TestPhotosLibraryAlbumsRepository_GetByTitle(t *testing.T) {
+func TestAlbumsService_GetByTitle(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
@@ -157,15 +127,19 @@ func TestPhotosLibraryAlbumsRepository_GetByTitle(t *testing.T) {
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	ar, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ar.GetByTitle(context.Background(), tc.input)
-			if tc.expectedError != err {
+			got, err := s.GetByTitle(context.Background(), tc.input)
+			if !errors.Is(err, tc.expectedError) {
 				t.Fatalf("not expected error, want: %v, got: %v", tc.expectedError, err)
 			}
 			if err == nil && tc.want != got.ID {
@@ -175,16 +149,20 @@ func TestPhotosLibraryAlbumsRepository_GetByTitle(t *testing.T) {
 	}
 }
 
-func TestPhotosLibraryAlbumsRepository_ListAll(t *testing.T) {
+func TestAlbumsService_List(t *testing.T) {
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	albumsService, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
 	if err != nil {
 		t.Fatalf("error was not expected at this point")
 	}
 
-	res, err := albumsService.ListAll(context.Background())
+	res, err := s.List(context.Background())
 	if err != nil {
 		t.Fatal("error was not expected at this point")
 	}
@@ -194,21 +172,11 @@ func TestPhotosLibraryAlbumsRepository_ListAll(t *testing.T) {
 	}
 }
 
-func TestPhotosLibraryAlbumsRepository_ListWithOptions(t *testing.T) {
-	srv := mocks.NewMockedGooglePhotosService()
-	defer srv.Close()
-
-	albumsService, err := albums.NewPhotosLibraryClientWithURL(http.DefaultClient, srv.URL())
-	if err != nil {
-		t.Fatalf("error was not expected at this point")
+func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
+	if isErrExpected && err == nil {
+		t.Fatalf("error was expected, but not produced")
 	}
-
-	res, err := albumsService.ListWithOptions(context.Background(), albums.Options{ExcludeNonAppCreatedData: true})
-	if err != nil {
-		t.Fatal("error was not expected at this point")
-	}
-
-	if len(res) != mocks.AvailableAlbums {
-		t.Errorf("want: %d, got: %d", mocks.AvailableAlbums, len(res))
+	if !isErrExpected && err != nil {
+		t.Fatalf("error was not expected, err: %s", err)
 	}
 }
