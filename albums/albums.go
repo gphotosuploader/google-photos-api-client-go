@@ -13,8 +13,8 @@ import (
 //
 // See: https://developers.google.com/photos/library/reference/rest/v1/albums.
 type Album struct {
-	// CoverPhotoBaseUrl: [Output only] A BaseURL to the cover photo's bytes.
-	// This should not be used as it.
+	// CoverPhotoBaseURL: [Output only] A BaseURL to the cover photo's bytes.
+	// This should not be used as is.
 	// Parameters should be appended to this BaseURL before use. For example,
 	// '=w2048-h1024' will set the dimensions of the cover photo to have a
 	// width of 2048 px and height of 1024 px.
@@ -31,7 +31,7 @@ type Album struct {
 	// field will be updated.
 	IsWriteable bool
 
-	// ProductUrl: [Output only] Google Photos BaseURL for the album. The user
+	// ProductURL: [Output only] Google Photos BaseURL for the album. The user
 	// needs to be signed in to their Google Photos account to access this link.
 	ProductURL string
 
