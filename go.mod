@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/gadelkareem/cachita v0.2.3
 	github.com/gorilla/mux v1.8.0
+	github.com/gphotosuploader/google-photos-api-client-go/v2 v2.4.1
 	github.com/gphotosuploader/googlemirror v0.5.0
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	google.golang.org/api v0.125.0
