@@ -70,6 +70,7 @@ type PhotosLibraryClient interface {
 	List() *photoslibrary.AlbumsListCall
 }
 
+// New returns an albums Google Photos service.
 func New(config Config) (*Service, error) {
 	if config.Client == nil {
 		return nil, errors.New("client is nil")
@@ -134,6 +135,7 @@ func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 
 // maxAlbumsPerPage is the maximum number of albums per pages.
 // Fewer albums might be returned than the specified number.
+//
 // See https://developers.google.com/photos/library/guides/list#pagination.
 const maxAlbumsPerPage = 50
 
