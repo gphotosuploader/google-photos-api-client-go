@@ -1,60 +1,42 @@
-package media_items
+package media_items_test
 
 import (
 	"context"
-	"errors"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"net/http"
 	"testing"
 )
 
-func TestNewHttpMediaItemsService(t *testing.T) {
-	testCases := []struct {
-		name          string
-		input         *http.Client
-		isErrExpected bool
-	}{
-		{"No HTTP client", nil, true},
-		{"Default HTTP client", http.DefaultClient, false},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewHttpMediaItemsService(tc.input)
-			assertExpectedError(tc.isErrExpected, err, t)
-		})
-	}
-}
-
 func TestHttpMediaItemsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
-		filename      string
+		uploadToken   string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", true},
+		{"Should return error if API fails", mocks.ShouldMakeAPIFailMediaItem, true},
 		{"Should return success on success", "foo", false},
 	}
 
-	r := MockedRepository{
-		CreateManyFn: func(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
-			if "should-fail" == mediaItems[0].FileName {
-				return []MediaItem{}, errors.New("error")
-			}
-			return []MediaItem{
-				{Filename: mediaItems[0].FileName},
-			}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := s.Create(ctx, SimpleMediaItem{FileName: tc.filename})
+			got, err := m.Create(context.Background(), media_items.SimpleMediaItem{UploadToken: tc.uploadToken})
 			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && tc.filename != got.Filename {
-				t.Errorf("want: %s, got: %s", tc.filename, got.Filename)
+			want := tc.uploadToken + "Id"
+			if err == nil && want != got.ID {
+				t.Errorf("want: %s, got: %s", want, got.ID)
 			}
 		})
 	}
@@ -63,37 +45,33 @@ func TestHttpMediaItemsService_Create(t *testing.T) {
 func TestHttpMediaItemsService_CreateMany(t *testing.T) {
 	testCases := []struct {
 		name          string
-		filenames     []string
+		uploadTokens  []string
 		want          int
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", []string{"should-fail", "dummy"}, 0, true},
+		{"Should return error if API fails", []string{mocks.ShouldMakeAPIFailMediaItem, "dummy"}, 0, true},
 		{"Should return success on success", []string{"foo", "bar", "baz"}, 3, false},
 	}
 
-	r := MockedRepository{
-		CreateManyFn: func(ctx context.Context, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
-			ret := make([]MediaItem, len(mediaItems))
-			for i, item := range mediaItems {
-				if "should-fail" == item.FileName {
-					return []MediaItem{}, errors.New("error")
-				}
-				ret[i].Filename = item.FileName
-			}
-			return ret, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mediaItems := make([]SimpleMediaItem, len(tc.filenames))
-			for i, filename := range tc.filenames {
-				mediaItems[i].FileName = filename
+			mediaItems := make([]media_items.SimpleMediaItem, len(tc.uploadTokens))
+			for i, token := range tc.uploadTokens {
+				mediaItems[i].UploadToken = token
 			}
-			got, err := s.CreateMany(ctx, mediaItems)
+			got, err := m.CreateMany(context.Background(), mediaItems)
 			assertExpectedError(tc.isErrExpected, err, t)
 			if err == nil && tc.want != len(got) {
 				t.Errorf("want: %d, got: %d", tc.want, len(got))
@@ -106,33 +84,32 @@ func TestHttpMediaItemsService_CreateToAlbum(t *testing.T) {
 	testCases := []struct {
 		name          string
 		albumId       string
-		filename      string
+		uploadToken   string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", "dummy", true},
+		{"Should return error if API fails", "albumId", mocks.ShouldMakeAPIFailMediaItem, true},
 		{"Should return success on success", "foo", "bar", false},
 	}
 
-	r := MockedRepository{
-		CreateManyToAlbumFn: func(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
-			if "should-fail" == albumId {
-				return []MediaItem{}, errors.New("error")
-			}
-			return []MediaItem{
-				{Filename: mediaItems[0].FileName},
-			}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := s.CreateToAlbum(ctx, tc.albumId, SimpleMediaItem{FileName: tc.filename})
+			got, err := m.CreateToAlbum(context.Background(), tc.albumId, media_items.SimpleMediaItem{UploadToken: tc.uploadToken})
 			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && tc.filename != got.Filename {
-				t.Errorf("want: %s, got: %s", tc.filename, got.Filename)
+			want := tc.uploadToken + "Id"
+			if err == nil && want != got.ID {
+				t.Errorf("want: %s, got: %s", want, got.ID)
 			}
 		})
 	}
@@ -142,37 +119,33 @@ func TestHttpMediaItemsService_CreateManyToAlbum(t *testing.T) {
 	testCases := []struct {
 		name          string
 		albumId       string
-		filenames     []string
+		uploadTokens  []string
 		want          int
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", []string{"dummy-1", "dummy-2"}, 0, true},
+		{"Should return error if API fails", "foo", []string{mocks.ShouldMakeAPIFailMediaItem, "dummy-2"}, 0, true},
 		{"Should return success on success", "foo", []string{"bar", "baz"}, 2, false},
 	}
 
-	r := MockedRepository{
-		CreateManyToAlbumFn: func(ctx context.Context, albumId string, mediaItems []SimpleMediaItem) ([]MediaItem, error) {
-			if "should-fail" == albumId {
-				return []MediaItem{}, errors.New("error")
-			}
-			ret := make([]MediaItem, len(mediaItems))
-			for i, item := range mediaItems {
-				ret[i].Filename = item.FileName
-			}
-			return ret, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mediaItems := make([]SimpleMediaItem, len(tc.filenames))
-			for i, filename := range tc.filenames {
-				mediaItems[i].FileName = filename
+			mediaItems := make([]media_items.SimpleMediaItem, len(tc.uploadTokens))
+			for i, token := range tc.uploadTokens {
+				mediaItems[i].UploadToken = token
 			}
-			got, err := s.CreateManyToAlbum(ctx, tc.albumId, mediaItems)
+			got, err := m.CreateManyToAlbum(context.Background(), tc.albumId, mediaItems)
 			assertExpectedError(tc.isErrExpected, err, t)
 			if err == nil && tc.want != len(got) {
 				t.Errorf("want: %d, got: %d", tc.want, len(got))
@@ -188,25 +161,26 @@ func TestHttpMediaItemsService_Get(t *testing.T) {
 		want          string
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", "", true},
-		{"Should return success on success", "foo", "foo", false},
+		{"Should return error if API fails", mocks.ShouldMakeAPIFailMediaItem, "", true},
+		{"Should return error if media item does not exist", "non-existent", "", true},
+		{"Should return success on success", "fooId-0", "fooId-0", false},
 	}
 
-	r := MockedRepository{
-		GetFn: func(ctx context.Context, itemId string) (*MediaItem, error) {
-			if "should-fail" == itemId {
-				return &MediaItem{}, errors.New("error")
-			}
-			return &MediaItem{ID: itemId}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := s.Get(ctx, tc.input)
+			got, err := m.Get(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
 			if err == nil && tc.want != got.ID {
 				t.Errorf("want: %s, got: %s", tc.want, got.ID)
@@ -222,31 +196,28 @@ func TestHttpMediaItemsService_ListByAlbum(t *testing.T) {
 
 		isErrExpected bool
 	}{
-		{"Should return error if API fails", "should-fail", true},
-		{"Should return success on success", "foo", false},
+		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, true},
+		{"Should return success on success", "fooId-0", false},
 	}
 
-	r := MockedRepository{
-		ListByAlbumFn: func(ctx context.Context, albumId string) ([]MediaItem, error) {
-			if "should-fail" == albumId {
-				return []MediaItem{}, errors.New("error")
-			}
-			return []MediaItem{
-				{ID: "item-1", Filename: "filename-1"},
-				{ID: "item-2", Filename: "filename-2"},
-			}, nil
-		},
-	}
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
 
-	s := HttpMediaItemsService{repo: r}
-	ctx := context.Background()
+	config := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	m, err := media_items.New(config)
+	if err != nil {
+		t.Fatalf("error was not expected at this point")
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := s.ListByAlbum(ctx, tc.input)
+			got, err := m.ListByAlbum(context.Background(), tc.input)
 			assertExpectedError(tc.isErrExpected, err, t)
-			if err == nil && 2 != len(got) {
-				t.Errorf("want: %d, got: %d", 2, len(got))
+			if err == nil && mocks.AvailableMediaItems != len(got) {
+				t.Errorf("want: %d, got: %d", mocks.AvailableMediaItems, len(got))
 			}
 		})
 	}
