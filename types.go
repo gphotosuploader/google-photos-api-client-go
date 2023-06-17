@@ -39,12 +39,12 @@ type AlbumsService interface {
 
 // MediaItemsService represents a Google Photos client for media management.
 type MediaItemsService interface {
-	Create(ctx context.Context, mediaItem media_items.SimpleMediaItem) (media_items.MediaItem, error)
-	CreateMany(ctx context.Context, mediaItems []media_items.SimpleMediaItem) ([]media_items.MediaItem, error)
-	CreateToAlbum(ctx context.Context, albumId string, mediaItem media_items.SimpleMediaItem) (media_items.MediaItem, error)
-	CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []media_items.SimpleMediaItem) ([]media_items.MediaItem, error)
+	Create(ctx context.Context, mediaItem media_items.SimpleMediaItem) (*media_items.MediaItem, error)
+	CreateMany(ctx context.Context, mediaItems []media_items.SimpleMediaItem) ([]*media_items.MediaItem, error)
+	CreateToAlbum(ctx context.Context, albumId string, mediaItem media_items.SimpleMediaItem) (*media_items.MediaItem, error)
+	CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []media_items.SimpleMediaItem) ([]*media_items.MediaItem, error)
 	Get(ctx context.Context, mediaItemId string) (*media_items.MediaItem, error)
-	ListByAlbum(ctx context.Context, albumId string) ([]media_items.MediaItem, error)
+	ListByAlbum(ctx context.Context, albumId string) ([]*media_items.MediaItem, error)
 }
 
 // MediaUploader represents a Google Photos client fo media upload.

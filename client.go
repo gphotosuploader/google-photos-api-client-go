@@ -47,17 +47,12 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 	}
 
 	// Create the Media Items Service using default values.
-	//mediaItemsConfig := albums.Config{
-	//    Client: httpClient,
-	//    BaseURL: defaultBaseURL,
-	//    UserAgent: defaultUserAgent,
-	//}
-	//mediaItemsService, err := media_items.New(mediaItemsConfig)
-	//if err != nil {
-	//    return nil, err
-	//}
-
-	mediaItemsService, err := media_items.NewHttpMediaItemsService(httpClient)
+	mediaItemsConfig := media_items.Config{
+		Client:    httpClient,
+		BaseURL:   defaultBaseURL,
+		UserAgent: defaultUserAgent,
+	}
+	mediaItemsService, err := media_items.New(mediaItemsConfig)
 	if err != nil {
 		return nil, err
 	}
