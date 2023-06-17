@@ -57,7 +57,13 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 		return nil, err
 	}
 
+	uploader, err := NewSimpleUploader(httpClient)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
+		Uploader:   uploader,
 		Albums:     albumsService,
 		MediaItems: mediaItemsService,
 	}, nil

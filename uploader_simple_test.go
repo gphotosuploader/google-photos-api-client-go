@@ -1,39 +1,25 @@
-package basic_test
+package gphotos_test
 
 import (
 	"context"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/basic"
-	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
 )
 
 func TestNewBasicUploader(t *testing.T) {
-	t.Run("WithoutOptions", func(t *testing.T) {
-		_, err := basic.NewBasicUploader(http.DefaultClient)
-		if err != nil {
-			t.Fatalf("error was not expected here: err=%s", err)
-		}
-	})
+	got, err := gphotos.NewSimpleUploader(http.DefaultClient)
+	if err != nil {
+		t.Fatalf("error was not expected at this point: %s", err)
+	}
+	want := uploader.DefaultEndpoint
 
-	t.Run("WithOptionLog", func(t *testing.T) {
-		want := &log.DiscardLogger{}
-		_, err := basic.NewBasicUploader(http.DefaultClient, basic.WithLogger(want))
-		if err != nil {
-			t.Fatalf("error was not expected here: err=%s", err)
-		}
-	})
-
-	t.Run("WithOptionEndpoint", func(t *testing.T) {
-		want := "https://localhost/test/TestMe"
-		_, err := basic.NewBasicUploader(http.DefaultClient, basic.WithEndpoint(want))
-		if err != nil {
-			t.Errorf("NewUploader error was not expected here: err=%s", err)
-		}
-	})
+	if want != got.BaseURL {
+		t.Errorf("want: %s, got: %s", want, got)
+	}
 }
 
 func TestBasicUploader_UploadFile(t *testing.T) {
@@ -50,10 +36,11 @@ func TestBasicUploader_UploadFile(t *testing.T) {
 	srv := NewMockedGooglePhotosServer()
 	defer srv.Close()
 
-	u, err := basic.NewBasicUploader(http.DefaultClient, basic.WithEndpoint(srv.URL("/uploads")))
+	u, err := gphotos.NewSimpleUploader(http.DefaultClient)
 	if err != nil {
-		t.Fatalf("error was not expected at this point, err: %s", err)
+		t.Fatalf("error was not expected at this point: %s", err)
 	}
+	u.BaseURL = srv.URL("/uploads")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
