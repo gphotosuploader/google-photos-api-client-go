@@ -3,12 +3,12 @@ package mocks
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
@@ -65,16 +65,16 @@ var (
 // NewMockedGooglePhotosService returns a mocked Google Photos service.
 func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	ms := &MockedGooglePhotosService{}
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	// Albums methods
-	router.HandleFunc("/v1/albums", ms.albumsList).Methods("GET")
-	router.HandleFunc("/v1/albums", ms.albumsCreate).Methods("POST")
-	router.HandleFunc("/v1/albums/{albumId}", ms.albumsGet).Methods("GET")
-	router.HandleFunc("/v1/albums/{albumId}:batchAddMediaItems", ms.albumsBatchAddMediaItems).Methods("POST")
+	router.Get("/v1/albums", ms.albumsList)
+	router.Post("/v1/albums", ms.albumsCreate)
+	router.Get("/v1/albums/{albumId}", ms.albumsGet)
+	router.Post("/v1/albums/{albumId}:batchAddMediaItems", ms.albumsBatchAddMediaItems)
 	// MediaItems methods
-	router.HandleFunc("/v1/mediaItems:batchCreate", ms.mediaItemsBatchCreate).Methods("POST")
-	router.HandleFunc("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet).Methods("GET")
-	router.HandleFunc("/v1/mediaItems:search", ms.mediaItemsSearch).Methods("POST")
+	router.Post("/v1/mediaItems:batchCreate", ms.mediaItemsBatchCreate)
+	router.Get("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet)
+	router.Post("/v1/mediaItems:search", ms.mediaItemsSearch)
 
 	ms.server = httptest.NewServer(router)
 	ms.baseURL = ms.server.URL
@@ -98,6 +98,11 @@ func (ms MockedGooglePhotosService) URL() string {
 // "flatPath": "v1/albums",
 // "httpMethod": "POST",
 func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req photoslibrary.CreateAlbumRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -130,8 +135,12 @@ func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.
 // "flatPath": "v1/albums/{albumsId}",
 // "httpMethod": "GET",
 func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	albumId := vars["albumId"]
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	albumId := chi.URLParam(r, "albumId")
 
 	if albumId == ShouldFailAlbum.Id {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -157,6 +166,11 @@ func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Req
 // "flatPath": "v1/albums",
 // "httpMethod": "GET",
 func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	albums := createFakeAlbums(AvailableAlbums)
 
 	pageSize, pageToken := ms.paginationOptions(r)
@@ -246,8 +260,12 @@ func createFakeAlbums(numberOfItems int) []*photoslibrary.Album {
 // "flatPath": "v1/albums/{albumsId}:batchAddMediaItems",
 // "httpMethod": "POST",
 func (ms MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	albumId := vars["albumId"]
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	albumId := chi.URLParam(r, "albumId")
 
 	if _, found := findAlbumById(albumId); !found {
 		w.WriteHeader(http.StatusNotFound)
@@ -290,6 +308,11 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 // "flatPath": "v1/mediaItems:batchCreate",
 // "httpMethod": "POST",
 func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req photoslibrary.BatchCreateMediaItemsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -345,8 +368,12 @@ func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter,
 // "flatPath": "v1/mediaItems/{mediaItemId}",
 // "httpMethod": "GET",
 func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	mediaItemId := vars["mediaItemId"]
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	mediaItemId := chi.URLParam(r, "mediaItemId")
 
 	if ShouldMakeAPIFailMediaItem == mediaItemId {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -372,6 +399,11 @@ func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http
 // "flatPath": "v1/mediaItems:search",
 // "httpMethod": "POST",
 func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req photoslibrary.SearchMediaItemsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
