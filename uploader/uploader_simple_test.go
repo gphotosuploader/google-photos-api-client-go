@@ -3,7 +3,6 @@ package gphotos_test
 import (
 	"context"
 	"github.com/gphotosuploader/google-photos-api-client-go/v3"
-	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -15,7 +14,7 @@ func TestNewBasicUploader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error was not expected at this point: %s", err)
 	}
-	want := uploader.DefaultEndpoint
+	want := gphotos.DefaultEndpoint
 
 	if want != got.BaseURL {
 		t.Errorf("want: %s, got: %s", want, got)

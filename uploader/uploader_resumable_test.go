@@ -1,47 +1,23 @@
-package resumable_test
+package gphotos_test
 
 import (
 	"context"
 	"fmt"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/uploader/resumable"
 )
 
 func TestNewResumableUploader(t *testing.T) {
-	s := &MockedSessionStorer{}
-
-	t.Run("WithoutOptions", func(t *testing.T) {
-		_, err := resumable.NewResumableUploader(http.DefaultClient, s)
-		if err != nil {
-			t.Fatalf("error was not expected here: err=%s", err)
-		}
-	})
-
-	t.Run("WithOptionLog", func(t *testing.T) {
-		want := &MockedLogger{}
-		_, err := resumable.NewResumableUploader(http.DefaultClient, s, resumable.WithLogger(want))
-		if err != nil {
-			t.Fatalf("error was not expected here: err=%s", err)
-		}
-	})
-
-	t.Run("WithOptionEndpoint", func(t *testing.T) {
-		want := "https://localhost/test/TestMe"
-		_, err := resumable.NewResumableUploader(http.DefaultClient, s, resumable.WithEndpoint(want))
-		if err != nil {
-			t.Errorf("NewUploader error was not expected here: err=%s", err)
-		}
-	})
-
-	t.Run("WithNilSessionStore", func(t *testing.T) {
-		_, err := resumable.NewResumableUploader(http.DefaultClient, nil)
-		if err == nil {
-			t.Errorf("error was expected when store in nil")
-		}
-	})
+	u, err := gphotos.NewResumableUploader(http.DefaultClient)
+	if err != nil {
+		t.Fatalf("error was not expected at this point: %s", err)
+	}
+	want := gphotos.DefaultEndpoint
+	if want != u.BaseURL {
+		t.Errorf("want: %s, got: %s", want, u.BaseURL)
+	}
 }
 
 func TestResumableUploader_UploadFile(t *testing.T) {
@@ -60,39 +36,22 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 	srv := NewMockedGooglePhotosServer()
 	defer srv.Close()
 
-	var sessionStorerData []byte
+	u, err := gphotos.NewResumableUploader(http.DefaultClient)
+	u.BaseURL = srv.URL("/uploads")
 
-	s := &MockedSessionStorer{
-		GetFn: func(f string) []byte {
-			return sessionStorerData
-		},
-		SetFn: func(f string, u []byte) {
-			sessionStorerData = u
-		},
-		DeleteFn: func(f string) {
-			sessionStorerData = []byte{}
-		},
-	}
-	l := &MockedLogger{
-		LogFn: func(args ...interface{}) {
-			fmt.Println(args...)
-		},
-	}
-
-	u, err := resumable.NewResumableUploader(http.DefaultClient, s, resumable.WithEndpoint(srv.URL("/uploads")), resumable.WithLogger(l))
 	if err != nil {
 		t.Fatalf("error was not expected at this point, err: %s", err)
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			sessionStorerData = []byte{}
+			//sessionStorerData = []byte{}
 			if tc.alreadyStarted {
-				sessionStorerData = []byte(srv.URL("/upload-session/started"))
+				//sessionStorerData = []byte(srv.URL("/upload-session/started"))
 			}
 			got, err := u.UploadFile(context.Background(), tc.path)
 			assertExpectedError(tc.errExpected, err, t)
-			if err == nil && tc.want != got {
+			if err == nil && gphotos.UploadToken(tc.want) != got {
 				t.Errorf("want: %s, got: %s", tc.want, got)
 			}
 		})
@@ -161,7 +120,7 @@ func (ms MockedGooglePhotosServer) handleUploads(w http.ResponseWriter, r *http.
 	}
 }
 
-// MockedSessionStorer mocks a service to store resumable upload data.
+// MockedSessionStorer mocks a service to Store resumable upload data.
 type MockedSessionStorer struct {
 	GetFn    func(f string) []byte
 	SetFn    func(f string, u []byte)

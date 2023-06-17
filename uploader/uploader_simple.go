@@ -22,16 +22,6 @@ type SimpleUploader struct {
 	Logger log.Logger
 }
 
-// HttpClient represent a client to make an HTTP request.
-// It is usually implemented by [net/http.Client].
-type HttpClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-// UploadToken represents a pointer to the uploaded item in Google Photos.
-// Use this upload token to create a media item with [media_items.Create].
-type UploadToken string
-
 // NewSimpleUploader returns a new client to upload data to Google Photos.
 // API methods require authentication, provide an [net/http.Client]
 // that will perform the authentication for you (such as that provided
@@ -41,7 +31,7 @@ func NewSimpleUploader(httpClient HttpClient) (*SimpleUploader, error) {
 
 	u := &SimpleUploader{
 		client:  httpClient,
-		BaseURL: uploader.DefaultEndpoint,
+		BaseURL: DefaultEndpoint,
 		Logger:  defaultLogger,
 	}
 
@@ -56,7 +46,7 @@ func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (strin
 	return string(token), err
 }
 
-func (u *SimpleUploader) upload(ctx context.Context, uploadItem uploader.UploadItem) (UploadToken, error) {
+func (u *SimpleUploader) upload(ctx context.Context, uploadItem UploadItem) (UploadToken, error) {
 	req, err := u.prepareUploadRequest(uploadItem)
 	if err != nil {
 		return "", err
@@ -89,7 +79,7 @@ func (u *SimpleUploader) upload(ctx context.Context, uploadItem uploader.UploadI
 // prepareUploadRequest returns an HTTP request to upload item.
 //
 // See: https://developers.google.com/photos/library/guides/upload-media#uploading-bytes.
-func (u *SimpleUploader) prepareUploadRequest(item uploader.UploadItem) (*http.Request, error) {
+func (u *SimpleUploader) prepareUploadRequest(item UploadItem) (*http.Request, error) {
 	r, size, err := item.Open()
 	if err != nil {
 		return nil, err
