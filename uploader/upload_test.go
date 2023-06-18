@@ -1,6 +1,7 @@
-package uploader
+package uploader_test
 
 import (
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"os"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestNewUploadFromFile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error was not expected at this point: %s", err)
 			}
-			_, err = NewUploadFromFile(f)
+			_, err = uploader.NewUploadFromFile(f)
 			if err != nil && !tc.isErrExpected {
 				t.Errorf("error was not expected, err: %s", err)
 			}
