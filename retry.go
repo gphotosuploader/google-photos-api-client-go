@@ -3,7 +3,6 @@ package gphotos
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
 	"fmt"
 	"github.com/hashicorp/go-retryablehttp"
 	"io"
@@ -27,11 +26,6 @@ var (
 	// the requests quota limit has been exceeded. This error isn't typed
 	// specifically so we resort to matching on the error string.
 	requestQuotaErrorRe = regexp.MustCompile(`Quota exceeded for quota metric 'All requests' and limit 'All requests per day'`)
-
-	// A regular expression to match the error returned by Google Photos when
-	// the storage quota limit has been exceeded. This error isn't typed
-	// specifically so we resort to matching on the error string.
-	storageQuotaErrorRe = regexp.MustCompile(`The remaining storage in the user's account is not enough to perform this operation`)
 )
 
 // addRetryHandler returns a HTTP client with a retry policy.
@@ -70,21 +64,6 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 			if schemeErrorRe.MatchString(v.Error()) {
 				return false, v
 			}
-
-			// Don't retry if the error was due to a requests quota limit exceed.
-			if requestQuotaErrorRe.MatchString(v.Error()) {
-				return false, v
-			}
-
-			// Don't retry if the error was due to a storage quota limit exceed.
-			if storageQuotaErrorRe.MatchString(v.Error()) {
-				return false, v
-			}
-
-			// Don't retry if the error was due to TLS cert verification failure.
-			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
-				return false, v
-			}
 		}
 
 		// The error is likely recoverable so retry.
@@ -104,6 +83,7 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 
 		resp.Body = io.NopCloser(bytes.NewBuffer(slurp))
 
+		// Don't retry if the daily quota for 'All request' has been exceeded.
 		if requestQuotaErrorRe.MatchString(string(slurp)) {
 			return false, fmt.Errorf("daily quota exceeded")
 		}

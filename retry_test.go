@@ -18,8 +18,14 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 	}{
 		// SHOULD BE RETRIED
 		{
-			name:            "TooManyRequest response should retry",
+			name:            "TooManyRequest response should retry (except 'Daily requests per day exceeded')",
 			body:            ` `,
+			statusCode:      http.StatusTooManyRequests,
+			shouldBeRetried: true,
+		},
+		{
+			name:            "TooManyRequest for 'Write requests per minute exceeded' response should retry",
+			body:            sampleGoogleWriteRequestsPerMinuteExceededBodyResponse,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: true,
 		},
@@ -27,12 +33,6 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 			name:            "InternalServerError response should retry",
 			body:            ` `,
 			statusCode:      http.StatusInternalServerError,
-			shouldBeRetried: true,
-		},
-		{
-			name:            "Write requests per minute exceeded response should retry",
-			body:            sampleGoogleWriteRequestsPerMinuteExceededBodyResponse,
-			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: true,
 		},
 
@@ -44,7 +44,7 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 			shouldBeRetried: false,
 		},
 		{
-			name:            "Daily requests per day exceeded response should not retry",
+			name:            "TooManyRequest for 'Daily requests per day exceeded' response should not retry",
 			body:            sampleGoogleRequestPerDayExceededBodyResponse,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: false,
