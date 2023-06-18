@@ -27,8 +27,8 @@ func TestSimpleUploader_UploadFile(t *testing.T) {
 		want        uploader.UploadToken
 		errExpected bool
 	}{
-		{name: "Upload should be successful", path: "testdata/createOrResumeUpload-success", want: "apiToken", errExpected: false},
-		{name: "Upload existing file with errors should be a failure", path: "testdata/createOrResumeUpload-failure", want: "", errExpected: true},
+		{name: "Upload should be successful", path: "testdata/upload-success", want: mocks.UploadToken, errExpected: false},
+		{name: "Upload existing file with errors should be a failure", path: "testdata/upload-should/fail", want: "", errExpected: true},
 		{name: "Upload a non-existing file should be a failure", path: "non-existent", want: "", errExpected: true},
 	}
 	srv := mocks.NewMockedGooglePhotosService()

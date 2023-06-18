@@ -1,10 +1,10 @@
 package uploader
 
 import (
-    "errors"
+	"errors"
 )
 
 var (
-    ErrUploadNotFound    = errors.New("upload not found")
-    ErrFingerprintNotSet = errors.New("fingerprint not set")
+	ErrUploadNotFound    = errors.New("upload not found")
+	ErrFingerprintNotSet = errors.New("fingerprint not set")
 )

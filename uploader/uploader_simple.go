@@ -65,10 +65,10 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToke
 	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", upload.EncodedMetadata())
+	req.Header.Set("X-Goog-Upload-Name", upload.Name)
 	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
-	u.Logger.Debugf("Uploading %s (%d kB)", upload.EncodedMetadata(), upload.size/1024)
+	u.Logger.Debugf("Uploading %s (%d kB)", upload.Name, upload.size/1024)
 
 	res, err := u.doRequest(ctx, req)
 	if err != nil {
@@ -93,6 +93,7 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToke
 }
 
 // doRequest executes the request call.
+//
 // Exactly one of *httpResponse or error will be non-nil.
 // Any non-2xx status code is an error. Response headers are in either
 // *httpResponse.Header or (if a response was returned at all) in

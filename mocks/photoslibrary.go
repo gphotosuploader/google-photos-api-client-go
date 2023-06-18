@@ -12,11 +12,25 @@ import (
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
 
-// MockedGooglePhotosService mocks the Google Photos service.
-type MockedGooglePhotosService struct {
-	server  *httptest.Server
-	baseURL string
-}
+const (
+	// ShouldMakeAPIFailMediaItem will make API fail.
+	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
+
+	// ShouldReturnEmptyMediaItem will return an empty media item.
+	ShouldReturnEmptyMediaItem = "should-return-empty-media-item"
+
+	// AlbumShouldFail used as album ID or Title to make the album service fail.
+	AlbumShouldFail = "should-fail"
+
+	// UploadShouldFail used as X-Goog-Upload-Name to make the upload service fai.
+	UploadShouldFail = "upload-should-fail"
+
+	// UploadToken is sent when the upload was successful.
+	UploadToken = "valid-upload-token"
+
+	// ResumableUploadURLPrefix is the relative URL to resume the upload.
+	ResumableUploadURLPrefix = "/v1/upload-session/started"
+)
 
 const (
 	// OK is returned on success.
@@ -47,20 +61,13 @@ const (
 	AvailableMediaItems = 150
 	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
 	AvailableAlbums = 75
-
-	// ShouldMakeAPIFailMediaItem will make API fail.
-	ShouldMakeAPIFailMediaItem = "should-make-API-fail"
-	// ShouldReturnEmptyMediaItem will return an empty media item
-	ShouldReturnEmptyMediaItem = "should-return-empty-media-item"
 )
 
-var (
-	// ShouldFailAlbum is an album that will make the API fail.
-	ShouldFailAlbum = &photoslibrary.Album{
-		Id:    "should-fail",
-		Title: "should-fail",
-	}
-)
+// MockedGooglePhotosService mocks the Google Photos service.
+type MockedGooglePhotosService struct {
+	server  *httptest.Server
+	baseURL string
+}
 
 // NewMockedGooglePhotosService returns a mocked Google Photos service.
 func NewMockedGooglePhotosService() *MockedGooglePhotosService {
@@ -76,8 +83,8 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	router.Get("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet)
 	router.Post("/v1/mediaItems:search", ms.mediaItemsSearch)
 	// Uploads methods
-	router.Post("/v1/uploads", ms.uploads)
-	router.Post("/v1/upload-session/started", ms.handleExistingUploadSession)
+	router.Post("/v1/uploads", ms.handleUploads)
+	router.Post("/v1/upload-session/started", ms.handleResumeUpload)
 	router.Post("/v1/upload-session/upload-success", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -100,6 +107,14 @@ func (ms *MockedGooglePhotosService) Close() {
 func (ms *MockedGooglePhotosService) URL() string {
 	return ms.baseURL
 }
+
+var (
+	// ShouldFailAlbum is an album that will make the API fail.
+	ShouldFailAlbum = &photoslibrary.Album{
+		Id:    AlbumShouldFail,
+		Title: AlbumShouldFail,
+	}
+)
 
 // albumsCreate implements 'albums.create' method .
 // - Album creation with title == ShouldFailAlbum.Title will respond http.StatusInternalServerError.
@@ -502,66 +517,76 @@ func createFakeMediaItems(numberOfItems int64) []*photoslibrary.MediaItem {
 	return mediaItemsResult
 }
 
-func (ms *MockedGooglePhotosService) uploads(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) handleUploads(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	if "resumable" == r.Header.Get("X-Goog-Upload-Protocol") {
-		ms.handleResumableUpload(w, r)
+		ms.handleStartUpload(w, r)
+		return
 	}
 
 	ms.handleSimpleUpload(w, r)
 }
 
 func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r *http.Request) {
-	switch r.Header.Get("X-Goog-Upload-File-Name") {
-	case "upload-failure":
-		w.WriteHeader(http.StatusInternalServerError)
-	default:
-		var bodyContent []byte
-		bodyLength, err := r.Body.Read(bodyContent)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		expectedLength, _ := strconv.Atoi(r.Header.Get("Content-Length"))
-		if expectedLength != bodyLength {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		_, _ = w.Write([]byte("apiToken"))
-	}
-}
-
-func (ms *MockedGooglePhotosService) handleResumableUpload(w http.ResponseWriter, r *http.Request) {
-	if "start" != r.Header.Get("X-Goog-Upload-Command") {
-		w.WriteHeader(http.StatusInternalServerError)
+	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
+		http.Error(w, fmt.Sprintf("upload should fail"), http.StatusInternalServerError)
 		return
 	}
 
-	switch r.Header.Get("X-Goog-Upload-File-Name") {
-	case "upload-should-fail":
-		w.WriteHeader(http.StatusInternalServerError)
-	default:
-		w.Header().Add("X-Goog-Upload-URL", ms.URL()+"/v1/upload-session/upload-success")
+	var bodyContent []byte
+	bodyLength, err := r.Body.Read(bodyContent)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	expectedLength, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+	if expectedLength != bodyLength {
+		http.Error(w, fmt.Sprintf("different length"), http.StatusBadRequest)
+		return
+	}
+
+	// success: response the upload token.
+	_, _ = w.Write([]byte(UploadToken))
 }
 
-func (ms *MockedGooglePhotosService) handleExistingUploadSession(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r *http.Request) {
+	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
+		http.Error(w, fmt.Sprintf("upload should fail"), http.StatusInternalServerError)
+		return
+	}
+
+	if "start" != r.Header.Get("X-Goog-Upload-Command") {
+		http.Error(w, fmt.Sprintf("unexpected upload command: %s", r.Header.Get("X-Goog-Upload-Command")), http.StatusBadRequest)
+		return
+	}
+
+	// success: sent the URL to resume the upload
+	w.Header().Set("X-Goog-Upload-URL", ms.URL()+ResumableUploadURLPrefix)
+}
+
+func (ms *MockedGooglePhotosService) handleResumeUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	switch r.Header.Get("X-Goog-Upload-Command") {
+
 	case "query":
-		w.Header().Add("X-Goog-Upload-Status", "active")
-		w.Header().Add("X-Goog-Upload-Size-Received", "1000")
+		w.Header().Set("X-Goog-Upload-Status", "active")
+		w.Header().Set("X-Goog-Upload-Size-Received", "1000")
+		return
+
 	case "upload, finalize":
-		_, _ = w.Write([]byte("apiToken"))
+		// success: response the upload token.
+		_, _ = w.Write([]byte(UploadToken))
+		return
+
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("unexpected upload command: %s", r.Header.Get("X-Goog-Upload-Command")), http.StatusBadRequest)
 	}
 }

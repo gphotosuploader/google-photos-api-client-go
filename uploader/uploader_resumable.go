@@ -94,7 +94,7 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (U
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "start")
 	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-Metadata", upload.EncodedMetadata())
+	req.Header.Set("X-Goog-Upload-Name", upload.Name)
 	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
 	req.Header.Set("X-Goog-Upload-Raw-Size", strconv.FormatInt(upload.size, 10))
 
@@ -112,7 +112,6 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (U
 		}
 	}
 
-	// Start createOrResumeUpload session
 	return u.resumeUpload(ctx, upload)
 }
 
@@ -202,6 +201,7 @@ func (u *ResumableUploader) getUploadOffset(ctx context.Context, url string) (in
 }
 
 // doRequest executes the request call.
+//
 // Exactly one of *httpResponse or error will be non-nil.
 // Any non-2xx status code is an error. Response headers are in either
 // *httpResponse.Header or (if a response was returned at all) in

@@ -2,25 +2,21 @@ package uploader
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
-
-type Metadata map[string]string
 
 type Upload struct {
 	stream io.ReadSeeker
 	size   int64
 
+	Name        string
 	Fingerprint string
-	Metadata    Metadata
 }
 
 // NewUpload creates a new upload from an io.Reader.
-func NewUpload(reader io.Reader, size int64, metadata Metadata, fingerprint string) *Upload {
+func NewUpload(reader io.Reader, size int64, name string, fingerprint string) *Upload {
 	stream, ok := reader.(io.ReadSeeker)
 
 	if !ok {
@@ -28,17 +24,12 @@ func NewUpload(reader io.Reader, size int64, metadata Metadata, fingerprint stri
 		buf.ReadFrom(reader)
 		stream = bytes.NewReader(buf.Bytes())
 	}
-
-	if metadata == nil {
-		metadata = make(Metadata)
-	}
-
 	return &Upload{
 		stream: stream,
 		size:   size,
 
+		Name:        name,
 		Fingerprint: fingerprint,
-		Metadata:    metadata,
 	}
 }
 
@@ -49,31 +40,7 @@ func NewUploadFromFile(f *os.File) (*Upload, error) {
 		return nil, err
 	}
 
-	metadata := map[string]string{
-		"filename": fi.Name(),
-	}
-
 	fingerprint := fmt.Sprintf("%s-%d-%s", fi.Name(), fi.Size(), fi.ModTime())
 
-	return NewUpload(f, fi.Size(), metadata, fingerprint), nil
-}
-
-// Size returns the size of the upload body.
-func (u *Upload) Size() int64 {
-	return u.size
-}
-
-// EncodedMetadata encodes the upload metadata.
-func (u *Upload) EncodedMetadata() string {
-	var encoded []string
-
-	for k, v := range u.Metadata {
-		encoded = append(encoded, fmt.Sprintf("%s %s", k, b64encode(v)))
-	}
-
-	return strings.Join(encoded, ",")
-}
-
-func b64encode(s string) string {
-	return base64.StdEncoding.EncodeToString([]byte(s))
+	return NewUpload(f, fi.Size(), fi.Name(), fingerprint), nil
 }
