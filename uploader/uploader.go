@@ -12,7 +12,3 @@ const defaultEndpoint = "https://photoslibrary.googleapis.com/v1/uploads"
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
-
-// UploadToken represents a pointer to the uploaded item in Google Photos.
-// Use this upload token to create a media item with [media_items.Create].
-type UploadToken string

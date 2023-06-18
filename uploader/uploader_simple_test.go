@@ -24,12 +24,12 @@ func TestSimpleUploader_UploadFile(t *testing.T) {
 	testCases := []struct {
 		name        string
 		path        string
-		want        uploader.UploadToken
+		uploadToken string
 		errExpected bool
 	}{
-		{name: "Upload should be successful", path: "testdata/upload-success", want: mocks.UploadToken, errExpected: false},
-		{name: "Upload existing file with errors should be a failure", path: "testdata/upload-should/fail", want: "", errExpected: true},
-		{name: "Upload a non-existing file should be a failure", path: "non-existent", want: "", errExpected: true},
+		{name: "Upload should be successful", path: "testdata/upload-success", uploadToken: mocks.UploadToken, errExpected: false},
+		{name: "Upload existing file with errors should be a failure", path: "testdata/upload-should/fail", uploadToken: "", errExpected: true},
+		{name: "Upload a non-existing file should be a failure", path: "non-existent", uploadToken: "", errExpected: true},
 	}
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
@@ -49,8 +49,8 @@ func TestSimpleUploader_UploadFile(t *testing.T) {
 			if !tc.errExpected && err != nil {
 				t.Fatalf("error was not expected, err: %s", err)
 			}
-			if err == nil && tc.want != got {
-				t.Errorf("want: %s, got: %s", tc.want, got)
+			if err == nil && tc.uploadToken != got {
+				t.Errorf("want: %s, got: %s", tc.uploadToken, got)
 			}
 		})
 	}

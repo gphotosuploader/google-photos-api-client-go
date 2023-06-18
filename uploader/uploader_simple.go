@@ -42,7 +42,7 @@ func NewSimpleUploader(httpClient HttpClient) (*SimpleUploader, error) {
 // UploadFile uploads a file to Google Photos using upload request.
 // A successful upload request returns an upload token. Use this upload
 // token to create a media item with [media_items.Create].
-func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (UploadToken, error) {
+func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (uploadToken string, err error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -56,7 +56,7 @@ func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (Uploa
 	return u.upload(ctx, upload)
 }
 
-func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToken, error) {
+func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
 	req, err := http.NewRequest("POST", u.BaseURL, upload.stream)
 	if err != nil {
 		return "", err
@@ -76,14 +76,13 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToke
 	}
 	defer res.Body.Close()
 
-	b, err := io.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		u.Logger.Errorf("Error while uploading %s: %s: could not read body: %s", upload, res.Status, err)
 		return "", err
 	}
-	body := string(b)
 
-	return UploadToken(body), nil
+	return string(body), nil
 
 }
 

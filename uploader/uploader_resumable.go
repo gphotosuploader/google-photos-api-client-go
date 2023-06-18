@@ -58,7 +58,7 @@ func NewResumableUploader(httpClient HttpClient) (*ResumableUploader, error) {
 
 // UploadFile returns the Google Photos upload token after uploading a file.
 // Any non-2xx status code is an error. Response headers are in error.(*googleapi.Error).Header.
-func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (UploadToken, error) {
+func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (uploadToken string, err error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -72,21 +72,20 @@ func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (Up
 
 	u.Logger.Debugf("Starting resumable upload for file [%s].", filePath)
 
-	token, err := u.createOrResumeUpload(ctx, upload)
-	return token, err
+	return u.createOrResumeUpload(ctx, upload)
 }
 
-func (u *ResumableUploader) createOrResumeUpload(ctx context.Context, upload *Upload) (UploadToken, error) {
-	token, err := u.resumeUpload(ctx, upload)
+func (u *ResumableUploader) createOrResumeUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
+	uploadToken, err = u.resumeUpload(ctx, upload)
 
 	if err == nil {
-		return token, err
+		return uploadToken, err
 	}
 
 	return u.createUpload(ctx, upload)
 }
 
-func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (UploadToken, error) {
+func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
 	req, err := http.NewRequest("POST", u.BaseURL, nil)
 	if err != nil {
 		return "", err
@@ -122,7 +121,7 @@ func (u *ResumableUploader) isResumeEnabled() bool {
 	return false
 }
 
-func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (UploadToken, error) {
+func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
 	if len(upload.Fingerprint) == 0 {
 		return "", ErrFingerprintNotSet
 	}
@@ -167,8 +166,7 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (U
 		u.Store.Delete(upload.Fingerprint)
 	}
 
-	token := string(b)
-	return UploadToken(token), nil
+	return string(b), nil
 }
 
 func (u *ResumableUploader) getUploadOffset(ctx context.Context, url string) (int64, error) {

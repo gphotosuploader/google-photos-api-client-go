@@ -54,7 +54,7 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 			if !tc.errExpected && err != nil {
 				t.Fatalf("error was not expected, err: %s", err)
 			}
-			want := uploader.UploadToken(mocks.UploadToken)
+			want := mocks.UploadToken
 			if err == nil && want != got {
 				t.Errorf("want: %s, got: %s", want, got)
 			}

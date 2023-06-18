@@ -13,7 +13,7 @@ func (c *Client) Upload(ctx context.Context, filePath string) (*media_items.Medi
 		return nil, err
 	}
 	return c.MediaItems.Create(ctx, media_items.SimpleMediaItem{
-		UploadToken: string(token),
+		UploadToken: token,
 	})
 }
 
@@ -25,7 +25,7 @@ func (c *Client) UploadToAlbum(ctx context.Context, albumId string, filePath str
 		return nil, err
 	}
 	item := media_items.SimpleMediaItem{
-		UploadToken: string(token),
+		UploadToken: token,
 	}
 	return c.MediaItems.CreateToAlbum(ctx, albumId, item)
 }
