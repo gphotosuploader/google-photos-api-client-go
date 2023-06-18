@@ -8,23 +8,20 @@ import (
 
 // OAuth2 scopes used by this API.
 const (
-	// View the photos, videos and albums in your Google Photos
-	DrivePhotosReadonlyScope = "https://www.googleapis.com/auth/drive.photos.readonly"
-
-	// View and manage your Google Photos library
+	// PhotoslibraryScope allows viewing and managing your Google Photos library
+	// Not recommended. Only request access to the scopes you need with [incremental authorization].
+	//
+	// [incremental authorization]: https://developers.google.com/photos/library/guides/authorization#what-scopes
 	PhotoslibraryScope = "https://www.googleapis.com/auth/photoslibrary"
 
-	// Add to your Google Photos library
+	// PhotoslibraryAppendonlyScope allows adding to your Google Photos library
 	PhotoslibraryAppendonlyScope = "https://www.googleapis.com/auth/photoslibrary.appendonly"
 
-	// View your Google Photos library
+	// PhotoslibraryReadonlyScope allows viewing your Google Photos library
 	PhotoslibraryReadonlyScope = "https://www.googleapis.com/auth/photoslibrary.readonly"
 
-	// Manage photos added by this app
+	// PhotoslibraryReadonlyAppcreateddataScope allows managing photos added by this app
 	PhotoslibraryReadonlyAppcreateddataScope = "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata"
-
-	// Manage and add to shared albums on your behalf
-	PhotoslibrarySharingScope = "https://www.googleapis.com/auth/photoslibrary.sharing"
 )
 
 // AlbumsService represents a Google Photos client for albums management.
