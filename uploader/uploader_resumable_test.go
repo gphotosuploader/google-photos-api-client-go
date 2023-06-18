@@ -37,10 +37,7 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 
 	store := NewMockStore()
 
-	client := http.DefaultClient
-	//client.Transport = MyRoundTripper{}
-
-	u, err := uploader.NewResumableUploader(client)
+	u, err := uploader.NewResumableUploader(http.DefaultClient)
 	u.BaseURL = srv.URL() + "/v1/uploads"
 	u.Store = store
 
@@ -63,6 +60,33 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResumableUploader_IsResumeEnabled(t *testing.T) {
+	t.Run("Should return False by default", func(t *testing.T) {
+		u, err := uploader.NewResumableUploader(http.DefaultClient)
+		if err != nil {
+			t.Fatalf("error not expected at this point: %s", err)
+		}
+
+		if u.IsResumeEnabled() {
+			t.Errorf("want: false, got: true")
+		}
+	})
+
+	t.Run("Should return True when an Store is configured", func(t *testing.T) {
+		store := NewMockStore()
+
+		u, err := uploader.NewResumableUploader(http.DefaultClient)
+		if err != nil {
+			t.Fatalf("error not expected at this point: %s", err)
+		}
+		u.Store = store
+
+		if !u.IsResumeEnabled() {
+			t.Errorf("want: true, got: false")
+		}
+	})
 }
 
 type MockStore struct {

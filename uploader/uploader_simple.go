@@ -2,7 +2,6 @@ package uploader
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/api/googleapi"
 	"io"
 	"net/http"
@@ -83,10 +82,6 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToke
 		return "", err
 	}
 	body := string(b)
-
-	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("got %s: %s", res.Status, body)
-	}
 
 	return UploadToken(body), nil
 
