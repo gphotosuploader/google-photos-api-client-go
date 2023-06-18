@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestNew(t *testing.T) {
+	t.Run("Should fail without httpClient", func(t *testing.T) {
+		cfg := albums.Config{}
+		_, err := albums.New(cfg)
+		if err == nil {
+			t.Errorf("error was expected but not produced")
+		}
+	})
+
+	t.Run("Should success with an httpClient", func(t *testing.T) {
+		cfg := albums.Config{
+			Client: http.DefaultClient,
+		}
+		_, err := albums.New(cfg)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
+
+	t.Run("Should success with a custom User Agent", func(t *testing.T) {
+		cfg := albums.Config{
+			Client:    http.DefaultClient,
+			UserAgent: "testing-agent",
+		}
+		_, err := albums.New(cfg)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
+}
+
 func TestAlbumsService_AddMediaItems(t *testing.T) {
 	testCases := []struct {
 		name          string

@@ -72,10 +72,6 @@ type PhotosLibraryClient interface {
 
 // New returns an albums Google Photos service.
 func New(config Config) (*Service, error) {
-	if config.Client == nil {
-		return nil, errors.New("client is nil")
-	}
-
 	s, err := photoslibrary.New(config.Client)
 	if err != nil {
 		return nil, err

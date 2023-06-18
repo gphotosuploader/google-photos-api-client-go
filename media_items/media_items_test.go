@@ -8,7 +8,38 @@ import (
 	"testing"
 )
 
-func TestHttpMediaItemsService_Create(t *testing.T) {
+func TestNew(t *testing.T) {
+	t.Run("Should fail without httpClient", func(t *testing.T) {
+		cfg := media_items.Config{}
+		_, err := media_items.New(cfg)
+		if err == nil {
+			t.Errorf("error was expected but not produced")
+		}
+	})
+
+	t.Run("Should success with an httpClient", func(t *testing.T) {
+		cfg := media_items.Config{
+			Client: http.DefaultClient,
+		}
+		_, err := media_items.New(cfg)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
+
+	t.Run("Should success with a custom User Agent", func(t *testing.T) {
+		cfg := media_items.Config{
+			Client:    http.DefaultClient,
+			UserAgent: "testing-agent",
+		}
+		_, err := media_items.New(cfg)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
+}
+
+func TestMediaItemsService_Create(t *testing.T) {
 	testCases := []struct {
 		name          string
 		uploadToken   string
@@ -42,7 +73,7 @@ func TestHttpMediaItemsService_Create(t *testing.T) {
 	}
 }
 
-func TestHttpMediaItemsService_CreateMany(t *testing.T) {
+func TestMediaItemsService_CreateMany(t *testing.T) {
 	testCases := []struct {
 		name          string
 		uploadTokens  []string
@@ -80,7 +111,7 @@ func TestHttpMediaItemsService_CreateMany(t *testing.T) {
 	}
 }
 
-func TestHttpMediaItemsService_CreateToAlbum(t *testing.T) {
+func TestMediaItemsService_CreateToAlbum(t *testing.T) {
 	testCases := []struct {
 		name          string
 		albumId       string
@@ -115,7 +146,7 @@ func TestHttpMediaItemsService_CreateToAlbum(t *testing.T) {
 	}
 }
 
-func TestHttpMediaItemsService_CreateManyToAlbum(t *testing.T) {
+func TestMediaItemsService_CreateManyToAlbum(t *testing.T) {
 	testCases := []struct {
 		name          string
 		albumId       string
@@ -154,7 +185,7 @@ func TestHttpMediaItemsService_CreateManyToAlbum(t *testing.T) {
 	}
 }
 
-func TestHttpMediaItemsService_Get(t *testing.T) {
+func TestMediaItemsService_Get(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         string
@@ -189,7 +220,7 @@ func TestHttpMediaItemsService_Get(t *testing.T) {
 	}
 }
 
-func TestHttpMediaItemsService_ListByAlbum(t *testing.T) {
+func TestMediaItemsService_ListByAlbum(t *testing.T) {
 	testCases := []struct {
 		name  string
 		input string

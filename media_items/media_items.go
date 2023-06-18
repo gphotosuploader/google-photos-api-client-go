@@ -2,7 +2,6 @@ package media_items
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 	"google.golang.org/api/googleapi"
@@ -204,10 +203,6 @@ func (s *Service) ListByAlbum(ctx context.Context, albumId string) ([]*MediaItem
 
 // New returns a media items Google Photos service.
 func New(config Config) (*Service, error) {
-	if config.Client == nil {
-		return nil, errors.New("client is nil")
-	}
-
 	s, err := photoslibrary.New(config.Client)
 	if err != nil {
 		return nil, err
