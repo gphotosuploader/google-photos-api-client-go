@@ -35,17 +35,19 @@ var (
 )
 
 // addRetryHandler returns a HTTP client with a retry policy.
-func addRetryHandler(authenticatedClient *http.Client) *http.Client {
-	client := retryablehttp.NewClient()
-	client.CheckRetry = defaultGPhotosRetryPolicy
-	client.Logger = nil // Disable DEBUG logs
-	client.HTTPClient = authenticatedClient
-	return client.StandardClient()
+func addRetryHandler(client *http.Client) *http.Client {
+	c := retryablehttp.NewClient()
+	c.HTTPClient = client
+	c.CheckRetry = GooglePhotosServiceRetryPolicy
+	c.Logger = nil // Disable DEBUG logs
+	return c.StandardClient()
 }
 
-// defaultGPhotosRetryPolicy provides a default callback for Client.CheckRetry, which
-// will retry on connection errors and server errors.
-func defaultGPhotosRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+// GooglePhotosServiceRetryPolicy provides a retry policy implementing Google Photos
+// best practices.
+//
+// See: https://developers.google.com/photos/library/guides/best-practices#error-handling
+func GooglePhotosServiceRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	// do not retry on context.Canceled or context.DeadlineExceeded
 	if ctx.Err() != nil {
 		return false, ctx.Err()
