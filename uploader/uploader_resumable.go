@@ -2,7 +2,6 @@ package uploader
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -123,11 +122,6 @@ func (u *ResumableUploader) isResumeEnabled() bool {
 	}
 	return false
 }
-
-var (
-	ErrUploadNotFound    = errors.New("upload not found")
-	ErrFingerprintNotSet = errors.New("fingerprint not set")
-)
 
 func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (UploadToken, error) {
 	if len(upload.Fingerprint) == 0 {
