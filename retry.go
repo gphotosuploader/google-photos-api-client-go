@@ -3,12 +3,14 @@ package gphotos
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
 )
 
 var (
@@ -30,10 +32,18 @@ var (
 
 // addRetryHandler returns a HTTP client with a retry policy.
 func addRetryHandler(client *http.Client) *http.Client {
-	c := retryablehttp.NewClient()
-	c.HTTPClient = client
-	c.CheckRetry = GooglePhotosServiceRetryPolicy
-	c.Logger = nil // Disable DEBUG logs
+	c := retryablehttp.Client{
+		HTTPClient: client,
+
+		RetryWaitMin: 1 * time.Second,
+		RetryWaitMax: 30 * time.Second,
+		RetryMax:     3,
+
+		CheckRetry: GooglePhotosServiceRetryPolicy,
+
+		Backoff: retryablehttp.DefaultBackoff,
+	}
+
 	return c.StandardClient()
 }
 
@@ -47,8 +57,14 @@ func GooglePhotosServiceRetryPolicy(ctx context.Context, resp *http.Response, er
 		return false, ctx.Err()
 	}
 
+	shouldRetry, err := baseRetryPolicy(resp, err)
+
+	var e *ErrDailyQuotaExceeded
+	if errors.As(err, &e) {
+		return shouldRetry, err
+	}
+
 	// don't propagate other errors
-	shouldRetry, _ := baseRetryPolicy(resp, err)
 	return shouldRetry, nil
 }
 
@@ -83,9 +99,9 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 
 		resp.Body = io.NopCloser(bytes.NewBuffer(slurp))
 
-		// Don't retry if the daily quota for 'All request' has been exceeded.
+		// Don't retry if the 'All request' per day quota has been exceeded.
 		if requestQuotaErrorRe.MatchString(string(slurp)) {
-			return false, fmt.Errorf("daily quota exceeded")
+			return false, &ErrDailyQuotaExceeded{}
 		}
 
 		return true, nil

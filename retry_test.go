@@ -2,6 +2,7 @@ package gphotos_test
 
 import (
 	"context"
+	"errors"
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 	"io"
 	"net/http"
@@ -69,6 +70,28 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 				t.Errorf("want: %t, got: %t", tc.shouldBeRetried, got)
 			}
 		})
+	}
+}
+
+func TestErrDailyQuotaExceeded_Error(t *testing.T) {
+	res := &http.Response{
+		StatusCode: http.StatusTooManyRequests,
+		Body:       io.NopCloser(strings.NewReader(sampleGoogleRequestPerDayExceededBodyResponse)),
+	}
+
+	shouldBeRetried, err := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), res, nil)
+	if err == nil {
+		t.Fatalf("error was expected at this point but not happened")
+	}
+
+	if shouldBeRetried {
+		t.Errorf("it should not retry if the 'All request' per day quota has been exceeded")
+	}
+
+	// returned error should be ErrDailyQuotaExceeded
+	var e *gphotos.ErrDailyQuotaExceeded
+	if !errors.As(err, &e) {
+		t.Errorf("unexpected error type: %v", err)
 	}
 }
 
