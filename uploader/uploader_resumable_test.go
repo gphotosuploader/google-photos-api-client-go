@@ -1,20 +1,21 @@
-package gphotos_test
+package uploader_test
 
 import (
 	"context"
 	"fmt"
-	"github.com/gphotosuploader/google-photos-api-client-go/v3"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
 func TestNewResumableUploader(t *testing.T) {
-	u, err := gphotos.NewResumableUploader(http.DefaultClient)
+	u, err := uploader.NewResumableUploader(http.DefaultClient)
 	if err != nil {
 		t.Fatalf("error was not expected at this point: %s", err)
 	}
-	want := gphotos.DefaultEndpoint
+	want := "https://photoslibrary.googleapis.com/v1/uploads"
+
 	if want != u.BaseURL {
 		t.Errorf("want: %s, got: %s", want, u.BaseURL)
 	}
@@ -29,15 +30,25 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 		errExpected    bool
 	}{
 		{"Should be successful when file is uploaded", "testdata/upload-success", false, "apiToken", false},
-		{"Should be successful when file is resuming upload ", "testdata/upload-resume-success", true, "apiToken", false},
+		{"Should be successful when file is resuming createOrResumeUpload ", "testdata/upload-resume-success", true, "apiToken", false},
 		{"Should fail when file is not uploaded", "testdata/upload-should-fail", false, "", true},
 		{"Should fail if file doesn't exist", "non-existent", false, "", true},
 	}
-	srv := NewMockedGooglePhotosServer()
+	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
-	u, err := gphotos.NewResumableUploader(http.DefaultClient)
-	u.BaseURL = srv.URL("/uploads")
+	store := NewMockStore()
+
+	logger := &MockedLogger{
+		LogFn: func(args ...interface{}) {
+			//fmt.Fprintln(os.Stderr, args...)
+		},
+	}
+
+	u, err := uploader.NewResumableUploader(http.DefaultClient)
+	u.BaseURL = srv.URL() + "/v1/uploads"
+	u.Store = store
+	u.Logger = logger
 
 	if err != nil {
 		t.Fatalf("error was not expected at this point, err: %s", err)
@@ -45,98 +56,47 @@ func TestResumableUploader_UploadFile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			//sessionStorerData = []byte{}
-			if tc.alreadyStarted {
-				//sessionStorerData = []byte(srv.URL("/upload-session/started"))
-			}
 			got, err := u.UploadFile(context.Background(), tc.path)
-			assertExpectedError(tc.errExpected, err, t)
-			if err == nil && gphotos.UploadToken(tc.want) != got {
+			if tc.errExpected && err == nil {
+				t.Fatalf("error was expected, but not produced")
+			}
+			if !tc.errExpected && err != nil {
+				t.Fatalf("error was not expected, err: %s", err)
+			}
+			if err == nil && uploader.UploadToken(tc.want) != got {
 				t.Errorf("want: %s, got: %s", tc.want, got)
 			}
 		})
 	}
 }
 
-func assertExpectedError(errExpected bool, err error, t *testing.T) {
-	if errExpected && err == nil {
-		t.Fatalf("error was expected, but not produced")
-	}
-	if !errExpected && err != nil {
-		t.Fatalf("error was not expected, err: %s", err)
-	}
+type MockStore struct {
+	m map[string]string
 }
 
-// MockedGooglePhotosServer mock the Google Photos Service for uploads.
-type MockedGooglePhotosServer struct {
-	server  *httptest.Server
-	baseURL string
-}
-
-func NewMockedGooglePhotosServer() *MockedGooglePhotosServer {
-	ms := &MockedGooglePhotosServer{}
-	mux := http.NewServeMux()
-	ms.server = httptest.NewServer(mux)
-	ms.baseURL = ms.server.URL
-	mux.HandleFunc("/uploads", ms.handleUploads)
-	mux.HandleFunc("/upload-session/started", ms.handleExistingUploadSession)
-	mux.HandleFunc("/upload-session/upload-success", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("apiToken"))
-	})
-	return ms
-}
-
-func (ms MockedGooglePhotosServer) URL(endpoint string) string {
-	return ms.baseURL + endpoint
-}
-
-func (ms MockedGooglePhotosServer) Close() {
-	ms.server.Close()
-}
-
-func (ms MockedGooglePhotosServer) handleExistingUploadSession(w http.ResponseWriter, r *http.Request) {
-	switch r.Header.Get("X-Goog-Upload-Command") {
-	case "query":
-		w.Header().Add("X-Goog-Upload-Status", "active")
-		w.Header().Add("X-Goog-Upload-Size-Received", "1000")
-	case "upload, finalize":
-		_, _ = w.Write([]byte("apiToken"))
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
+func NewMockStore() uploader.Store {
+	return &MockStore{
+		make(map[string]string),
 	}
 }
 
-func (ms MockedGooglePhotosServer) handleUploads(w http.ResponseWriter, r *http.Request) {
-	if "start" != r.Header.Get("X-Goog-Upload-Command") {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+func (s *MockStore) Get(fingerprint string) (string, bool) {
+	url, ok := s.m[fingerprint]
+	return url, ok
+}
+
+func (s *MockStore) Set(fingerprint, url string) {
+	s.m[fingerprint] = url
+}
+
+func (s *MockStore) Delete(fingerprint string) {
+	delete(s.m, fingerprint)
+}
+
+func (s *MockStore) Close() {
+	for k := range s.m {
+		delete(s.m, k)
 	}
-
-	switch r.Header.Get("X-Goog-Upload-File-Name") {
-	case "upload-should-fail":
-		w.WriteHeader(http.StatusInternalServerError)
-	default:
-		w.Header().Add("X-Goog-Upload-URL", ms.URL("/upload-session/upload-success"))
-	}
-}
-
-// MockedSessionStorer mocks a service to Store resumable upload data.
-type MockedSessionStorer struct {
-	GetFn    func(f string) []byte
-	SetFn    func(f string, u []byte)
-	DeleteFn func(f string)
-}
-
-func (s MockedSessionStorer) Get(f string) []byte {
-	return s.GetFn(f)
-}
-
-func (s MockedSessionStorer) Set(f string, u []byte) {
-	s.SetFn(f, u)
-}
-
-func (s MockedSessionStorer) Delete(f string) {
-	s.DeleteFn(f)
 }
 
 // MockedLogger mocks a logger.

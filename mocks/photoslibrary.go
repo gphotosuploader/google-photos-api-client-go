@@ -75,6 +75,16 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	router.Post("/v1/mediaItems:batchCreate", ms.mediaItemsBatchCreate)
 	router.Get("/v1/mediaItems/{mediaItemId}", ms.mediaItemsGet)
 	router.Post("/v1/mediaItems:search", ms.mediaItemsSearch)
+	// Uploads methods
+	router.Post("/v1/uploads", ms.uploads)
+	router.Post("/v1/upload-session/started", ms.handleExistingUploadSession)
+	router.Post("/v1/upload-session/upload-success", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		_, _ = w.Write([]byte("apiToken"))
+	})
 
 	ms.server = httptest.NewServer(router)
 	ms.baseURL = ms.server.URL
@@ -82,12 +92,12 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 }
 
 // Close closes the HTTP server.
-func (ms MockedGooglePhotosService) Close() {
+func (ms *MockedGooglePhotosService) Close() {
 	ms.server.Close()
 }
 
 // URL returns the HTTP server url.
-func (ms MockedGooglePhotosService) URL() string {
+func (ms *MockedGooglePhotosService) URL() string {
 	return ms.baseURL
 }
 
@@ -97,7 +107,7 @@ func (ms MockedGooglePhotosService) URL() string {
 //
 // "flatPath": "v1/albums",
 // "httpMethod": "POST",
-func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -134,7 +144,7 @@ func (ms MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http.
 //
 // "flatPath": "v1/albums/{albumsId}",
 // "httpMethod": "GET",
-func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -165,7 +175,7 @@ func (ms MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Req
 //
 // "flatPath": "v1/albums",
 // "httpMethod": "GET",
-func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -188,7 +198,7 @@ func (ms MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (ms MockedGooglePhotosService) paginationOptions(r *http.Request) (pageSize int64, pageToken string) {
+func (ms *MockedGooglePhotosService) paginationOptions(r *http.Request) (pageSize int64, pageToken string) {
 	pt := r.URL.Query().Get("pageToken")
 	ps, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
 	if err != nil {
@@ -259,7 +269,7 @@ func createFakeAlbums(numberOfItems int) []*photoslibrary.Album {
 //
 // "flatPath": "v1/albums/{albumsId}:batchAddMediaItems",
 // "httpMethod": "POST",
-func (ms MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -307,7 +317,7 @@ func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
 //
 // "flatPath": "v1/mediaItems:batchCreate",
 // "httpMethod": "POST",
-func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -367,7 +377,7 @@ func (ms MockedGooglePhotosService) mediaItemsBatchCreate(w http.ResponseWriter,
 //
 // "flatPath": "v1/mediaItems/{mediaItemId}",
 // "httpMethod": "GET",
-func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -398,7 +408,7 @@ func (ms MockedGooglePhotosService) mediaItemsGet(w http.ResponseWriter, r *http
 //
 // "flatPath": "v1/mediaItems:search",
 // "httpMethod": "POST",
-func (ms MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *http.Request) {
+func (ms *MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -490,4 +500,68 @@ func createFakeMediaItems(numberOfItems int64) []*photoslibrary.MediaItem {
 		}
 	}
 	return mediaItemsResult
+}
+
+func (ms *MockedGooglePhotosService) uploads(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if "resumable" == r.Header.Get("X-Goog-Upload-Protocol") {
+		ms.handleResumableUpload(w, r)
+	}
+
+	ms.handleSimpleUpload(w, r)
+}
+
+func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r *http.Request) {
+	switch r.Header.Get("X-Goog-Upload-File-Name") {
+	case "upload-failure":
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		var bodyContent []byte
+		bodyLength, err := r.Body.Read(bodyContent)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		expectedLength, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+		if expectedLength != bodyLength {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write([]byte("apiToken"))
+	}
+}
+
+func (ms *MockedGooglePhotosService) handleResumableUpload(w http.ResponseWriter, r *http.Request) {
+	if "start" != r.Header.Get("X-Goog-Upload-Command") {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	switch r.Header.Get("X-Goog-Upload-File-Name") {
+	case "upload-should-fail":
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.Header().Add("X-Goog-Upload-URL", ms.URL()+"/v1/upload-session/upload-success")
+	}
+}
+
+func (ms *MockedGooglePhotosService) handleExistingUploadSession(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	switch r.Header.Get("X-Goog-Upload-Command") {
+	case "query":
+		w.Header().Add("X-Goog-Upload-Status", "active")
+		w.Header().Add("X-Goog-Upload-Size-Received", "1000")
+	case "upload, finalize":
+		_, _ = w.Write([]byte("apiToken"))
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }

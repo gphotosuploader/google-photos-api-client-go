@@ -1,13 +1,15 @@
-package gphotos
+package uploader
 
 import (
 	"context"
 	"fmt"
+	"google.golang.org/api/googleapi"
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
-	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 )
 
 // SimpleUploader implements a simple uploader to Google Photos.
@@ -22,48 +24,62 @@ type SimpleUploader struct {
 	Logger log.Logger
 }
 
-// NewSimpleUploader returns a new client to upload data to Google Photos.
+// NewSimpleUploader returns a new client to upload files to Google Photos.
 // API methods require authentication, provide an [net/http.Client]
 // that will perform the authentication for you (such as that provided
 // by the [golang.org/x/oauth2] library).
 func NewSimpleUploader(httpClient HttpClient) (*SimpleUploader, error) {
-	var defaultLogger = &log.DiscardLogger{}
+	defaultLogger := &log.DiscardLogger{}
 
 	u := &SimpleUploader{
 		client:  httpClient,
-		BaseURL: DefaultEndpoint,
+		BaseURL: defaultEndpoint,
 		Logger:  defaultLogger,
 	}
 
 	return u, nil
 }
 
-// UploadFile upload bytes to Google Photos using upload requests.
+// UploadFile uploads a file to Google Photos using upload request.
 // A successful upload request returns an upload token. Use this upload
 // token to create a media item with [media_items.Create].
-func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (string, error) {
-	token, err := u.upload(ctx, uploader.FileUploadItem(filePath))
-	return string(token), err
-}
-
-func (u *SimpleUploader) upload(ctx context.Context, uploadItem UploadItem) (UploadToken, error) {
-	req, err := u.prepareUploadRequest(uploadItem)
+func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (UploadToken, error) {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
 
-	u.Logger.Debugf("Uploading %s (%d kB)", uploadItem.Name(), uploadItem.Size()/1024)
-
-	res, err := u.client.Do(req)
+	upload, err := NewUploadFromFile(f)
 	if err != nil {
-		u.Logger.Errorf("Error while uploading %s: %s", uploadItem, err)
+		return "", err
+	}
+
+	return u.upload(ctx, upload)
+}
+
+func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (UploadToken, error) {
+	req, err := http.NewRequest("POST", u.BaseURL, upload.stream)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", upload.EncodedMetadata())
+	req.Header.Set("X-Goog-Upload-Protocol", "raw")
+
+	u.Logger.Debugf("Uploading %s (%d kB)", upload.EncodedMetadata(), upload.size/1024)
+
+	res, err := u.doRequest(ctx, req)
+	if err != nil {
+		u.Logger.Errorf("Error while uploading %s: %s", upload, err)
 		return "", err
 	}
 	defer res.Body.Close()
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		u.Logger.Errorf("Error while uploading %s: %s: could not read body: %s", uploadItem, res.Status, err)
+		u.Logger.Errorf("Error while uploading %s: %s: could not read body: %s", upload, res.Status, err)
 		return "", err
 	}
 	body := string(b)
@@ -76,24 +92,18 @@ func (u *SimpleUploader) upload(ctx context.Context, uploadItem UploadItem) (Upl
 
 }
 
-// prepareUploadRequest returns an HTTP request to upload item.
-//
-// See: https://developers.google.com/photos/library/guides/upload-media#uploading-bytes.
-func (u *SimpleUploader) prepareUploadRequest(item UploadItem) (*http.Request, error) {
-	r, size, err := item.Open()
+// doRequest executes the request call.
+// Exactly one of *httpResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *httpResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header.
+func (u *SimpleUploader) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	res, err := u.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-
-	req, err := http.NewRequest("POST", u.BaseURL, r)
-	if err != nil {
+	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Length", fmt.Sprintf("%d", size))
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", item.Name())
-	req.Header.Set("X-Goog-Upload-Protocol", "raw")
-
-	return req, nil
+	return res, nil
 }

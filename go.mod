@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/go-chi/chi/v5 v5.0.8 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/mediocregopher/radix/v3 v3.2.0 // indirect

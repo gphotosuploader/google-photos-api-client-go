@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"net/http"
 )
 
@@ -57,13 +58,13 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 		return nil, err
 	}
 
-	uploader, err := NewSimpleUploader(httpClient)
+	simpleUploader, err := uploader.NewSimpleUploader(httpClient)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		Uploader:   uploader,
+		Uploader:   simpleUploader,
 		Albums:     albumsService,
 		MediaItems: mediaItemsService,
 	}, nil

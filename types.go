@@ -2,6 +2,7 @@ package gphotos
 
 import (
 	"context"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/albums"
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/media_items"
@@ -49,5 +50,5 @@ type MediaItemsService interface {
 
 // MediaUploader represents a Google Photos client fo media upload.
 type MediaUploader interface {
-	UploadFile(ctx context.Context, filePath string) (uploadToken string, err error)
+	UploadFile(ctx context.Context, filePath string) (uploader.UploadToken, error)
 }
