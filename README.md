@@ -81,23 +81,28 @@ See the [oauth2 docs](https://godoc.org/golang.org/x/oauth2) for complete instru
 
 ## Features
 
-The package could be consumed using three different services in isolation or a `gphotos.Client`. It implements [Google Photos error handling best practices](https://developers.google.com/photos/library/guides/best-practices#error-handling). It uses an exponential backoff policy with a maximum of 5 retries.
+### Retries following best practices
 
-### Albums manager
+- Follows [Google Photos error handling best practices](https://developers.google.com/photos/library/guides/best-practices#error-handling), using an exponential backoff retrier with a maximum of 3 retries.
+- Returns a specific error type, `ErrDailyQuotaExceeded`, if the 'All requests' per day quota has been exceeded. See [Rate Limiting](#rate-limiting).
 
+### Albums service
+
+- Offers an independent `albums.Service` implementing the [Google Photos Albums API](https://developers.google.com/photos/library/reference/rest#rest-resource:-v1.albums).
+- The client accepts a customized albums service using `client.Albums`.
 - Consider implementing a [caching strategy](https://developers.google.com/photos/library/guides/best-practices#caching) to avoid [Rate Limiting](#rate-limiting).
-- It can be customized using `gphotos.Config.AlbumManager`.
 
-### Media Items manager
+### Media Items service
 
-- It can be customized using `gphotos.Config.MediaItemManager`.
+- Offers an independent `albums.Service` implementing the [Google Photos MediaItems API](https://developers.google.com/photos/library/reference/rest#rest-resource:-v1.mediaitems).
+- The client accepts a customized media items service using `client.MediaItems`.
 
 ### Uploader
 
-- Offers **two uploaders** implementing the `/v1/uploads` endpoint.
-    - `BasicUploader` is a simple HTTP uploader.
-    - `ResumableUploader` is an uploader implementing resumable uploads. It could be used for large files, like videos. See [documentation][iDocumentation].
-- It can be customized using `gphotos.Config.Uploader`.
+- Offers **two uploaders** implementing the [Google Photos Uploads API](https://developers.google.com/photos/library/guides/upload-media).
+    - `uploader.SimpleUploader` is a simple HTTP uploader.
+    - `uploader.ResumableUploader` is an uploader implementing resumable uploads. It could be used for large files, like videos. See [documentation](https://developers.google.com/photos/library/guides/resumable-uploads).
+- The client accepts a customized media items service using `client.Uploader`.
 
 ## Limitations
 Only images and videos can be uploaded. If you attempt to upload non-videos or images or formats that Google Photos doesn't understand, Google Photos will give an error when creating media item.
