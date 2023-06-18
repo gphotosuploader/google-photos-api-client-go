@@ -21,7 +21,10 @@ func NewUpload(reader io.Reader, size int64, name string, fingerprint string) *U
 
 	if !ok {
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(reader)
+		_, err := buf.ReadFrom(reader)
+		if err != nil {
+			return nil
+		}
 		stream = bytes.NewReader(buf.Bytes())
 	}
 	return &Upload{

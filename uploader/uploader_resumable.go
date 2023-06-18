@@ -115,10 +115,7 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 }
 
 func (u *ResumableUploader) isResumeEnabled() bool {
-	if u.Store != nil {
-		return true
-	}
-	return false
+	return u.Store != nil
 }
 
 func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {

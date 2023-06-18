@@ -533,7 +533,7 @@ func (ms *MockedGooglePhotosService) handleUploads(w http.ResponseWriter, r *htt
 
 func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r *http.Request) {
 	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
-		http.Error(w, fmt.Sprintf("upload should fail"), http.StatusInternalServerError)
+		http.Error(w, "upload should fail", http.StatusInternalServerError)
 		return
 	}
 
@@ -545,7 +545,7 @@ func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r
 	}
 	expectedLength, _ := strconv.Atoi(r.Header.Get("Content-Length"))
 	if expectedLength != bodyLength {
-		http.Error(w, fmt.Sprintf("different length"), http.StatusBadRequest)
+		http.Error(w, "different length", http.StatusBadRequest)
 		return
 	}
 
@@ -555,7 +555,7 @@ func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r
 
 func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r *http.Request) {
 	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
-		http.Error(w, fmt.Sprintf("upload should fail"), http.StatusInternalServerError)
+		http.Error(w, "upload should fail", http.StatusInternalServerError)
 		return
 	}
 
