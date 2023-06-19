@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -569,7 +570,8 @@ func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r 
 	}
 
 	if "start" != r.Header.Get("X-Goog-Upload-Command") {
-		http.Error(w, fmt.Sprintf("unexpected upload command: %s", r.Header.Get("X-Goog-Upload-Command")), http.StatusBadRequest)
+		command := sanitize(r.Header.Get("X-Goog-Upload-Command"))
+		http.Error(w, fmt.Sprintf("unexpected upload command: %s", command), http.StatusBadRequest)
 		return
 	}
 
@@ -596,8 +598,13 @@ func (ms *MockedGooglePhotosService) handleResumeUpload(w http.ResponseWriter, r
 		return
 
 	default:
-		http.Error(w, fmt.Sprintf("unexpected upload command: %s", r.Header.Get("X-Goog-Upload-Command")), http.StatusBadRequest)
+		command := sanitize(r.Header.Get("X-Goog-Upload-Command"))
+		http.Error(w, fmt.Sprintf("unexpected upload command: %s", command), http.StatusBadRequest)
 	}
+}
+
+func sanitize(input string) string {
+	return html.EscapeString(input)
 }
 
 const SampleGoogleRequestPerDayExceededBodyResponse = `
