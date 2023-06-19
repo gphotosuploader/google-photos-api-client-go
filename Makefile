@@ -5,7 +5,7 @@ COVERAGE_FILE := $(TMP_DIR)/coverage.txt
 COVERAGE_HTML_FILE := $(TMP_DIR)/coverage.html
 
 # golangci-lint version to use on this project.
-GOLANGCI_VERSION ?= 1.53.1
+GOLANGCI_VERSION ?= v1.53.1
 GOLANGCI := $(TMP_DIR)/golangci-lint
 
 UNAME_OS := $(shell uname -s)
@@ -49,13 +49,13 @@ clean: ## Clean all built artifacts
 	@go mod tidy -v
 
 $(GOLANGCI):
-	@echo "--> Installing golangci v$(GOLANGCI_VERSION)..."
+	@echo "--> Installing golangci $(GOLANGCI_VERSION)..."
 	@mkdir -p $(dir $(GOLANGCI))
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI)) v$(GOLANGCI_VERSION)
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI)) $(GOLANGCI_VERSION)
 
 .PHONY: lint
 lint: $(GOLANGCI) ## Run linter
-	@echo "--> Running linter golangci v$(GOLANGCI_VERSION)..."
+	@echo "--> Running linter golangci $(GOLANGCI_VERSION)..."
 	@$(GOLANGCI) run
 
 .PHONY: ci
