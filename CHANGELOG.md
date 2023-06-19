@@ -38,7 +38,6 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 - **[BREAKING CHANGE]** Removed `gphotos.Client` optional options. Use `ghotos.Client` direct assignment to configure it after creation.
 - All service mocks in favor of the `MockedGooglePhotosService` implementing Google Photos API for testing.
 - Unused OAuth scopes have been removed: `DrivePhotosReadonlyScope` and `PhotoslibrarySharingScope`.
-- 
 
 ## 2.4.1
 ### Changed
