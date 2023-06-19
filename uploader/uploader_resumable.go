@@ -61,13 +61,13 @@ func NewResumableUploader(httpClient HttpClient) (*ResumableUploader, error) {
 func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (uploadToken string, err error) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("uploading file %s: %w", filePath, err)
 	}
 	defer f.Close()
 
 	upload, err := NewUploadFromFile(f)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("uploading file %s: %w", filePath, err)
 	}
 
 	u.Logger.Debugf("Starting resumable upload for file [%s].", filePath)
@@ -79,10 +79,14 @@ func (u *ResumableUploader) createOrResumeUpload(ctx context.Context, upload *Up
 	uploadToken, err = u.resumeUpload(ctx, upload)
 
 	if err == nil {
-		return uploadToken, err
+		return uploadToken, nil
 	}
 
-	return u.createUpload(ctx, upload)
+	uploadToken, err = u.createUpload(ctx, upload)
+	if err != nil {
+		return "", fmt.Errorf("resuming upload: %w", err)
+	}
+	return uploadToken, nil
 }
 
 func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
@@ -99,7 +103,7 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 
 	res, err := u.doRequest(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("creating upload: %w", err)
+		return "", err
 	}
 	defer res.Body.Close()
 

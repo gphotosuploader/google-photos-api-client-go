@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
-	"google.golang.org/api/googleapi"
 	"net/http"
 )
 
@@ -133,7 +132,7 @@ func (s *Service) CreateManyToAlbum(ctx context.Context, albumId string, mediaIt
 	}
 	result, err := s.photos.BatchCreate(req).Context(ctx).Do()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating media items: %w", err)
 	}
 	mediaItemsResult := make([]*MediaItem, len(result.NewMediaItemResults))
 	for i, res := range result.NewMediaItemResults {
@@ -155,15 +154,10 @@ func (s *Service) CreateManyToAlbum(ctx context.Context, albumId string, mediaIt
 }
 
 // Get returns the media item specified based on a given media item id.
-//
-// Returns [ErrMediaItemNotFound] if the media item id does not exist.
 func (s *Service) Get(ctx context.Context, mediaItemId string) (*MediaItem, error) {
 	result, err := s.photos.Get(mediaItemId).Context(ctx).Do()
-	if err != nil && err.(*googleapi.Error).Code == http.StatusNotFound {
-		return nil, fmt.Errorf("%s: %w", mediaItemId, ErrMediaItemNotFound)
-	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", mediaItemId, err)
+		return nil, fmt.Errorf("getting media item %s: %w", mediaItemId, err)
 	}
 	m := toMediaItem(result)
 	return &m, nil
@@ -189,7 +183,7 @@ func (s *Service) ListByAlbum(ctx context.Context, albumId string) ([]*MediaItem
 	}
 
 	if err := s.photos.Search(req).Pages(ctx, appendResultsFn); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing media items for album %s: %w", albumId, err)
 	}
 
 	mediaItems := make([]*MediaItem, len(photosMediaItems))
@@ -205,7 +199,7 @@ func (s *Service) ListByAlbum(ctx context.Context, albumId string) ([]*MediaItem
 func New(config Config) (*Service, error) {
 	s, err := photoslibrary.New(config.Client)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating service: %w", err)
 	}
 
 	if config.BaseURL != "" {

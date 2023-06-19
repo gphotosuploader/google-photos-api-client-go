@@ -190,12 +190,12 @@ func TestAlbumsService_List(t *testing.T) {
 	}
 	s, err := albums.New(c)
 	if err != nil {
-		t.Fatalf("error was not expected at this point")
+		t.Fatalf("error was not expected at this point: %v", err)
 	}
 
 	res, err := s.List(context.Background())
 	if err != nil {
-		t.Fatal("error was not expected at this point")
+		t.Fatalf("error was not expected at this point: %v", err)
 	}
 
 	if len(res) != mocks.AvailableAlbums {

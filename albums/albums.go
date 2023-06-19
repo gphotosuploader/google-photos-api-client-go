@@ -74,7 +74,7 @@ type PhotosLibraryClient interface {
 func New(config Config) (*Service, error) {
 	s, err := photoslibrary.New(config.Client)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating service: %w", err)
 	}
 
 	if config.BaseURL != "" {
@@ -101,7 +101,11 @@ func (s *Service) AddMediaItems(ctx context.Context, albumID string, mediaItemID
 		MediaItemIds: mediaItemIDs,
 	}
 	_, err := s.photos.BatchAddMediaItems(albumID, req).Context(ctx).Do()
-	return err
+	if err != nil {
+		return fmt.Errorf("adding media items to album: %w", err)
+	}
+	return nil
+
 }
 
 // Create creates an album in Google Photos.
@@ -111,19 +115,17 @@ func (s *Service) Create(ctx context.Context, title string) (*Album, error) {
 	}
 	res, err := s.photos.Create(req).Context(ctx).Do()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating album: %w", err)
 	}
 	album := toAlbum(res)
 	return &album, nil
 }
 
 // GetById returns the album specified by the given album id.
-//
-// Returns [ErrAlbumNotFound] if the album does not exist.
 func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 	res, err := s.photos.Get(albumID).Context(ctx).Do()
 	if err != nil {
-		return nil, fmt.Errorf("getById %s: %w", albumID, ErrAlbumNotFound)
+		return nil, fmt.Errorf("getting album by id: %w", errors.Join(ErrAlbumNotFound, err))
 	}
 	album := toAlbum(res)
 	return &album, nil
@@ -151,7 +153,7 @@ func (s *Service) GetByTitle(ctx context.Context, title string) (*Album, error) 
 	}); errors.Is(err, errAlbumWasFound) {
 		return result, nil
 	}
-	return nil, fmt.Errorf("getByTitle %s: %w", title, ErrAlbumNotFound)
+	return nil, fmt.Errorf("getting album by title: %w", ErrAlbumNotFound)
 }
 
 // List lists all albums in created by this app.
@@ -164,7 +166,11 @@ func (s *Service) List(ctx context.Context) ([]Album, error) {
 		}
 		return nil
 	})
-	return result, err
+	if err != nil {
+		var emptyResult []Album
+		return emptyResult, fmt.Errorf("listing albums: %w", err)
+	}
+	return result, nil
 }
 
 func findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
