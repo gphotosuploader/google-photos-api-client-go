@@ -28,8 +28,11 @@ const (
 	// UploadToken is sent when the upload was successful.
 	UploadToken = "valid-upload-token"
 
-	// ResumableUploadURLPrefix is the relative URL to resume the upload.
-	ResumableUploadURLPrefix = "/v1/upload-session/started"
+	// ShouldResumeUpload is the URL to resume an upload.
+	ShouldResumeUpload = "/v1/upload-session/started"
+
+	// ShouldReachDailyQuota used as album ID will return daily quota exceeded error.
+	ShouldReachDailyQuota = "should-reach-daily-quota"
 )
 
 const (
@@ -84,7 +87,7 @@ func NewMockedGooglePhotosService() *MockedGooglePhotosService {
 	router.Post("/v1/mediaItems:search", ms.mediaItemsSearch)
 	// Uploads methods
 	router.Post("/v1/uploads", ms.handleUploads)
-	router.Post("/v1/upload-session/started", ms.handleResumeUpload)
+	router.Post(ShouldResumeUpload, ms.handleResumeUpload)
 	router.Post("/v1/upload-session/upload-success", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -166,6 +169,12 @@ func (ms *MockedGooglePhotosService) albumsGet(w http.ResponseWriter, r *http.Re
 	}
 
 	albumId := chi.URLParam(r, "albumId")
+
+	// implements the 'All request' per day quota exceeded response.
+	if ShouldReachDailyQuota == albumId {
+		http.Error(w, SampleGoogleRequestPerDayExceededBodyResponse, http.StatusTooManyRequests)
+		return
+	}
 
 	if albumId == ShouldFailAlbum.Id {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -565,7 +574,7 @@ func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r 
 	}
 
 	// success: sent the URL to resume the upload
-	w.Header().Set("X-Goog-Upload-URL", ms.URL()+ResumableUploadURLPrefix)
+	w.Header().Set("X-Goog-Upload-URL", ms.URL()+ShouldResumeUpload)
 }
 
 func (ms *MockedGooglePhotosService) handleResumeUpload(w http.ResponseWriter, r *http.Request) {
@@ -590,3 +599,43 @@ func (ms *MockedGooglePhotosService) handleResumeUpload(w http.ResponseWriter, r
 		http.Error(w, fmt.Sprintf("unexpected upload command: %s", r.Header.Get("X-Goog-Upload-Command")), http.StatusBadRequest)
 	}
 }
+
+const SampleGoogleRequestPerDayExceededBodyResponse = `
+{
+  "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'All requests' and limit 'All requests per day' of service 'photoslibrary.googleapis.com' for consumer 'project_number:844831818923'.",
+    "errors": [
+      {
+        "message": "Quota exceeded for quota metric 'All requests' and limit 'All requests per day' of service 'photoslibrary.googleapis.com' for consumer 'project_number:844831818923'.",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "RATE_LIMIT_EXCEEDED",
+        "domain": "googleapis.com",
+        "metadata": {
+          "quota_limit_value": "10000",
+          "consumer": "projects/844831818923",
+          "service": "photoslibrary.googleapis.com",
+          "quota_limit": "ApiCallsPerProjectPerDay",
+          "quota_location": "global",
+          "quota_metric": "photoslibrary.googleapis.com/all_requests"
+        }
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Request a higher quota limit.",
+            "url": "https://cloud.google.com/docs/quota#requesting_higher_quota"
+          }
+        ]
+      }
+    ]
+  }
+`

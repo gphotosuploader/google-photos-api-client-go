@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"io"
 	"net/http"
 	"strings"
@@ -46,7 +47,7 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 		},
 		{
 			name:            "TooManyRequest for 'Daily requests per day exceeded' response should not retry",
-			body:            sampleGoogleRequestPerDayExceededBodyResponse,
+			body:            mocks.SampleGoogleRequestPerDayExceededBodyResponse,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: false,
 		},
@@ -73,10 +74,10 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 	}
 }
 
-func TestErrDailyQuotaExceeded_Error(t *testing.T) {
+func TestErrDailyQuotaExceeded_Retry(t *testing.T) {
 	res := &http.Response{
 		StatusCode: http.StatusTooManyRequests,
-		Body:       io.NopCloser(strings.NewReader(sampleGoogleRequestPerDayExceededBodyResponse)),
+		Body:       io.NopCloser(strings.NewReader(mocks.SampleGoogleRequestPerDayExceededBodyResponse)),
 	}
 
 	shouldBeRetried, err := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), res, nil)
@@ -95,46 +96,6 @@ func TestErrDailyQuotaExceeded_Error(t *testing.T) {
 	}
 }
 
-const sampleGoogleRequestPerDayExceededBodyResponse = `
-{
-  "error": {
-    "code": 429,
-    "message": "Quota exceeded for quota metric 'All requests' and limit 'All requests per day' of service 'photoslibrary.googleapis.com' for consumer 'project_number:844831818923'.",
-    "errors": [
-      {
-        "message": "Quota exceeded for quota metric 'All requests' and limit 'All requests per day' of service 'photoslibrary.googleapis.com' for consumer 'project_number:844831818923'.",
-        "domain": "global",
-        "reason": "rateLimitExceeded"
-      }
-    ],
-    "status": "RESOURCE_EXHAUSTED",
-    "details": [
-      {
-        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-        "reason": "RATE_LIMIT_EXCEEDED",
-        "domain": "googleapis.com",
-        "metadata": {
-          "quota_limit_value": "10000",
-          "consumer": "projects/844831818923",
-          "service": "photoslibrary.googleapis.com",
-          "quota_limit": "ApiCallsPerProjectPerDay",
-          "quota_location": "global",
-          "quota_metric": "photoslibrary.googleapis.com/all_requests"
-        }
-      },
-      {
-        "@type": "type.googleapis.com/google.rpc.Help",
-        "links": [
-          {
-            "description": "Request a higher quota limit.",
-            "url": "https://cloud.google.com/docs/quota#requesting_higher_quota"
-          }
-        ]
-      }
-    ]
-  }
-}
-`
 const sampleGoogleWriteRequestsPerMinuteExceededBodyResponse = `
 {
   "error": {
