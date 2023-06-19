@@ -125,7 +125,7 @@ func (s *Service) Create(ctx context.Context, title string) (*Album, error) {
 func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 	res, err := s.photos.Get(albumID).Context(ctx).Do()
 	if err != nil {
-		return nil, fmt.Errorf("getting album by id: %w", errors.Join(ErrAlbumNotFound, err))
+		return nil, fmt.Errorf("getting album by id: %w", ErrAlbumNotFound)
 	}
 	album := toAlbum(res)
 	return &album, nil
