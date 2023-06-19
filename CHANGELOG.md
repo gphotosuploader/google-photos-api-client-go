@@ -3,7 +3,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 3.0.0
+
+> Note: This is a major version update and is **NOT BACKWARDS COMPATIBLE**.
+
+```go
+// New module path
+import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
+```
+
+
+
+### Added
+- Possibility to set custom `BaseURL` and `UserAgent` in `albums` and `media_items` services.
+- The `MockedGooglePhotosService` implements the Google Photos API for testing purposes. 
+- A new `ErrDailyQuotaExceeded` error has been implemented to detect errors when the Google Photos 'All request' daily quota has been exceeded.
+
+### Changed
+- **[BREAKING CHANGE]** Updated constructors for `albums.Service` and `media_items.Service` to utilize the Config struct for customizations.
+- **[BREAKING CHANGE]** Google Photos 'All request' daily quota exceeded will not be retried. A `ErrDailyQuotaExceeded` will be raised instead.
+- **[BREAKING CHANGE]** Uploaders have been moved to `uploader.SimpleUplader` and `uploader.ResumableUploader`.
+- **[BREAKING CHANGE]** The `uploader.NewResumableUploader` doesn't require a `uploader.Store` anymore. If it's not set, it will just work as an `uploader.SimpleUploader`.
+- Reducing the number of retries for failed request to Google Photos API to 3,
+- Simplified code in the `albums` and `media_items` modules by removing the repository abstraction, resulting in improved code readability.
+- Module documentation has been improved adding examples of how to use this module.
+
+### Fixed
+- **[BREAKING CHANGE]** Implemented a retry policy that excludes retries when the Google Photos quota per day has been reached. Instead, it returns an error `ErrDailyQuotaExceeded`.
+- Optimized the Albums Service to reduce the number of requests by fixing caching issues.
+- The HTTP Client is now optional when the Album Manager, Media Item Manager, and Uploader are set.
+
+### Removed
+- **[BREAKING CHANGE]** Removed the previous `CachedAlbumsService` service, which was not working properly. We encourage implementing caching strategies at consumer side.
+- **[BREAKING CHANGE]** Removed `gphotos.Client` optional options. Use `ghotos.Client` direct assignment to configure it after creation.
+- All service mocks in favor of the `MockedGooglePhotosService` implementing Google Photos API for testing.
+- Unused OAuth scopes have been removed: `DrivePhotosReadonlyScope` and `PhotoslibrarySharingScope`.
+- 
+
+## 2.4.1
 ### Changed
 - Supported `Go` versions are `1.18`, `1.19` and `1.20`.
 - Upgraded several dependencies to remove vulnerabilities.
