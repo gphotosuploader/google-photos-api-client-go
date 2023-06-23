@@ -31,6 +31,7 @@ type AlbumsService interface {
 	GetById(ctx context.Context, id string) (*albums.Album, error)
 	GetByTitle(ctx context.Context, title string) (*albums.Album, error)
 	List(ctx context.Context) ([]albums.Album, error)
+	PaginatedList(ctx context.Context, options *albums.PaginatedListOptions) (albums []albums.Album, nextPageToken string, err error)
 }
 
 // MediaItemsService represents a Google Photos client for media management.
