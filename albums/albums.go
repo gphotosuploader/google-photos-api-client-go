@@ -135,7 +135,7 @@ func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 // Fewer albums might be returned than the specified number.
 //
 // See https://developers.google.com/photos/library/guides/list#pagination.
-const maxAlbumsPerPage = 50
+const maxAlbumsPerPage int64 = 50
 
 // GetByTitle look for an album with the specified album id into the list of all albums.
 // It lists paginates all albums until finding one with the matching title.
@@ -173,6 +173,32 @@ func (s *Service) List(ctx context.Context) ([]Album, error) {
 	return result, nil
 }
 
+type PaginatedListOptions struct {
+	Limit     int64
+	PageToken string
+}
+
+// PaginatedList retrieves a specific page of albums, allowing for efficient retrieval of albums in or pages.
+// Each page contains the predetermined number of albums.
+func (s *Service) PaginatedList(ctx context.Context, options *PaginatedListOptions) (albums []Album, nextPageToken string, err error) {
+	var pageToken string
+	limit := maxAlbumsPerPage
+
+	if options != nil {
+		limit = options.Limit
+		pageToken = options.PageToken
+	}
+
+	listAlbumsResponse, err := s.photos.List().PageSize(limit).PageToken(pageToken).ExcludeNonAppCreatedData().Context(ctx).Do()
+
+	if err != nil {
+		var emptyResult []Album
+		return emptyResult, "", fmt.Errorf("listing albums by page: %w", err)
+	}
+
+	return toAlbums(listAlbumsResponse.Albums), listAlbumsResponse.NextPageToken, nil
+}
+
 func findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
 	for _, a := range albums {
 		if a.Title == title {
@@ -183,13 +209,21 @@ func findByTitle(title string, albums []*photoslibrary.Album) (*Album, bool) {
 	return nil, false
 }
 
-func toAlbum(a *photoslibrary.Album) Album {
+func toAlbum(pa *photoslibrary.Album) Album {
 	return Album{
-		ID:                a.Id,
-		Title:             a.Title,
-		ProductURL:        a.ProductUrl,
-		IsWriteable:       a.IsWriteable,
-		TotalMediaItems:   a.TotalMediaItems,
-		CoverPhotoBaseURL: a.CoverPhotoBaseUrl,
+		ID:                pa.Id,
+		Title:             pa.Title,
+		ProductURL:        pa.ProductUrl,
+		IsWriteable:       pa.IsWriteable,
+		TotalMediaItems:   pa.TotalMediaItems,
+		CoverPhotoBaseURL: pa.CoverPhotoBaseUrl,
 	}
+}
+
+func toAlbums(pa []*photoslibrary.Album) []Album {
+	var albums []Album
+	for _, album := range pa {
+		albums = append(albums, toAlbum(album))
+	}
+	return albums
 }

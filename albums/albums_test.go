@@ -203,6 +203,61 @@ func TestAlbumsService_List(t *testing.T) {
 	}
 }
 
+func TestService_PaginatedList(t *testing.T) {
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
+
+	c := albums.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := albums.New(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point: %v", err)
+	}
+
+	limitPerPage := 10
+
+	t.Run("When token is not set, first page is get", func(t *testing.T) {
+		options := &albums.PaginatedListOptions{
+			Limit:     int64(limitPerPage),
+			PageToken: "",
+		}
+		res, pageToken, err := s.PaginatedList(context.Background(), options)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %v", err)
+		}
+
+		if len(res) != limitPerPage {
+			t.Errorf("want: %d, got: %d", 10, len(res))
+		}
+
+		if "next-page-token-1" != pageToken {
+			t.Errorf("want: %s, got: %s", "next-page-token-1", pageToken)
+		}
+	})
+
+	t.Run("When token is set, the proper page is get", func(t *testing.T) {
+		options := &albums.PaginatedListOptions{
+			Limit:     int64(limitPerPage),
+			PageToken: "next-page-token-2",
+		}
+		res, pageToken, err := s.PaginatedList(context.Background(), options)
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %v", err)
+		}
+
+		if len(res) != limitPerPage {
+			t.Errorf("want: %d, got: %d", 10, len(res))
+		}
+
+		if "next-page-token-3" != pageToken {
+			t.Errorf("want: %s, got: %s", "next-page-token-3", pageToken)
+		}
+	})
+
+}
+
 func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
 	if isErrExpected && err == nil {
 		t.Fatalf("error was expected, but not produced")
