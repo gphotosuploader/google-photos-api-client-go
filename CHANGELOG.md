@@ -15,6 +15,7 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 
 
 ### Added
+- `albums.PaginatedList` retrieves a specific page of albums, allowing for efficient retrieval of albums in or pages. ([#65][i65])
 - Possibility to set custom `BaseURL` and `UserAgent` in `albums` and `media_items` services.
 - The `MockedGooglePhotosService` implements the Google Photos API for testing purposes. 
 - A new `ErrDailyQuotaExceeded` error has been implemented to detect errors when the Google Photos 'All request' daily quota has been exceeded.
@@ -38,6 +39,8 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 - **[BREAKING CHANGE]** Removed `gphotos.Client` optional options. Use `ghotos.Client` direct assignment to configure it after creation.
 - All service mocks in favor of the `MockedGooglePhotosService` implementing Google Photos API for testing.
 - Unused OAuth scopes have been removed: `DrivePhotosReadonlyScope` and `PhotoslibrarySharingScope`.
+
+[i65]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/65
 
 ## 2.4.1
 ### Changed
