@@ -34,6 +34,9 @@ const (
 
 	// ShouldReachDailyQuota used as album ID will return daily quota exceeded error.
 	ShouldReachDailyQuota = "should-reach-daily-quota"
+
+	// PageTokenShouldFail makes fail a paginated call.
+	PageTokenShouldFail = "should-fail"
 )
 
 const (
@@ -65,6 +68,16 @@ const (
 	AvailableMediaItems = 150
 	// AvailableAlbums is the number of media items in the fake collection. It should be bigger than `maxItemsPerPage`.
 	AvailableAlbums = 75
+)
+
+var (
+	// ExistingAlbum is an existing album used for testing purposes.
+	ExistingAlbum = &photoslibrary.Album{
+		CoverPhotoBaseUrl: "fooCoverPhotoBaseUrl",
+		Id:                "fooId",
+		ProductUrl:        "fooProductUrl",
+		Title:             "fooTitle",
+	}
 )
 
 // MockedGooglePhotosService mocks the Google Photos service.
@@ -120,7 +133,7 @@ var (
 	}
 )
 
-// albumsCreate implements 'albums.create' method .
+// albumsCreate implements 'albums.create' method.
 // - Album creation with title == ShouldFailAlbum.Title will respond http.StatusInternalServerError.
 // - Any other case will respond http.StatusOK.
 //
@@ -144,9 +157,10 @@ func (ms *MockedGooglePhotosService) albumsCreate(w http.ResponseWriter, r *http
 	}
 
 	album := photoslibrary.Album{
-		Id:         req.Album.Title + "Id",
-		Title:      req.Album.Title + "Title",
-		ProductUrl: req.Album.Title + "ProductUrl",
+		Id:                req.Album.Title + "Id",
+		Title:             req.Album.Title + "Title",
+		ProductUrl:        req.Album.Title + "ProductUrl",
+		CoverPhotoBaseUrl: req.Album.Title + "CoverPhotoBaseUrl",
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -206,10 +220,16 @@ func (ms *MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	albums := createFakeAlbums(AvailableAlbums)
+	albums := getFakeAlbums(AvailableAlbums)
 
 	pageSize, pageToken := ms.paginationOptions(r)
 	p := newAlbumsPaginator(pageSize, albums)
+
+	if PageTokenShouldFail == pageToken {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	items, nextPageToken := p.page(pageToken)
 
 	w.WriteHeader(http.StatusOK)
@@ -278,9 +298,10 @@ func getPageNumberFromToken(token string, maxPages int64) int64 {
 	return int64(pageNumber)
 }
 
-func createFakeAlbums(numberOfItems int) []*photoslibrary.Album {
+func getFakeAlbums(numberOfItems int) []*photoslibrary.Album {
 	albumsResult := make([]*photoslibrary.Album, numberOfItems)
-	for i := 0; i < numberOfItems; i++ {
+	albumsResult[0] = ExistingAlbum
+	for i := 1; i < numberOfItems; i++ {
 		albumsResult[i] = &photoslibrary.Album{
 			Id:         fmt.Sprintf("fooId-%d", i),
 			ProductUrl: fmt.Sprintf("fooProductUrl-%d", i),
@@ -323,14 +344,20 @@ func (ms *MockedGooglePhotosService) albumsBatchAddMediaItems(w http.ResponseWri
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 	}
 
 	w.WriteHeader(http.StatusOK)
+	res := photoslibrary.AlbumBatchAddMediaItemsResponse{}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // findAlbumById returns if AvailableAlbums has an album with the specified Id.
 func findAlbumById(albumId string) (*photoslibrary.Album, bool) {
-	for _, a := range createFakeAlbums(AvailableAlbums) {
+	for _, a := range getFakeAlbums(AvailableAlbums) {
 		if albumId == a.Id {
 			return a, true
 		}

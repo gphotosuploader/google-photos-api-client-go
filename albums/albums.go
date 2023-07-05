@@ -95,7 +95,7 @@ func New(config Config) (*Service, error) {
 // AddMediaItems add one or more existing media items to an existing Album.
 func (s *Service) AddMediaItems(ctx context.Context, albumID string, mediaItemIDs []string) error {
 
-	// TODO: There's a limit of 50 media items per call. Split in multiple calls if more are provided.
+	// TODO: There's a limitPerPage of 50 media items per call. Split in multiple calls if more are provided.
 
 	req := &photoslibrary.AlbumBatchAddMediaItemsRequest{
 		MediaItemIds: mediaItemIDs,
@@ -173,20 +173,25 @@ func (s *Service) List(ctx context.Context) ([]Album, error) {
 	return result, nil
 }
 
+// PaginatedListOptions set the options for the PaginatedList call.
 type PaginatedListOptions struct {
 	Limit     int64
 	PageToken string
 }
 
-// PaginatedList retrieves a specific page of albums, allowing for efficient retrieval of albums in or pages.
+// PaginatedList retrieves a specific page of albums, allowing for efficient retrieval of albums in pages.
 // Each page contains the predetermined number of albums.
 func (s *Service) PaginatedList(ctx context.Context, options *PaginatedListOptions) (albums []Album, nextPageToken string, err error) {
 	var pageToken string
-	limit := maxAlbumsPerPage
+	var limit int64
 
 	if options != nil {
 		limit = options.Limit
 		pageToken = options.PageToken
+	}
+
+	if limit == 0 {
+		limit = maxAlbumsPerPage
 	}
 
 	listAlbumsResponse, err := s.photos.List().PageSize(limit).PageToken(pageToken).ExcludeNonAppCreatedData().Context(ctx).Do()

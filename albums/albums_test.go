@@ -47,9 +47,9 @@ func TestAlbumsService_AddMediaItems(t *testing.T) {
 		mediaItems    []string
 		isErrExpected bool
 	}{
-		{"Should add media items to album", "foo", []string{"mediaItem1", "mediaItem2"}, true},
+		{"Should add media items to album", mocks.ExistingAlbum.Id, []string{"mediaItem1", "mediaItem2"}, false},
 		{"Should return error if album does not exist", "non-existent", []string{"mediaItem1", "mediaItem2"}, true},
-		{"Should return error if media item is invalid", "foo", []string{mocks.ShouldMakeAPIFailMediaItem, "mediaItem2"}, true},
+		{"Should return error if media item is invalid", mocks.ExistingAlbum.Id, []string{mocks.ShouldMakeAPIFailMediaItem, "mediaItem2"}, true},
 		{"Should return error if API fails", mocks.ShouldFailAlbum.Id, []string{"mediaItem1", "mediaItem2"}, true},
 	}
 
@@ -113,7 +113,7 @@ func TestAlbumsService_GetById(t *testing.T) {
 		input         string
 		expectedError error
 	}{
-		{"Should return the album on success", "fooId-0", nil},
+		{"Should return the album on success", mocks.ExistingAlbum.Id, nil},
 		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if albums does not exist", "non-existent", albums.ErrAlbumNotFound},
 	}
@@ -150,7 +150,7 @@ func TestAlbumsService_GetByTitle(t *testing.T) {
 		want          string
 		expectedError error
 	}{
-		{"Should return the album on success", "fooTitle-0", "fooId-0", nil},
+		{"Should return the album on success", mocks.ExistingAlbum.Title, mocks.ExistingAlbum.Id, nil},
 		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "", albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", "", albums.ErrAlbumNotFound},
 	}
@@ -204,6 +204,49 @@ func TestAlbumsService_List(t *testing.T) {
 }
 
 func TestService_PaginatedList(t *testing.T) {
+
+	testCases := []struct {
+		name              string
+		limitPerPage      int64
+		initialPageToken  string
+		expectedItems     int
+		expectedPageToken string
+		isErrExpected     bool
+	}{
+		{
+			name:              "Should return the first page with specified page size",
+			limitPerPage:      10,
+			initialPageToken:  "",
+			expectedItems:     10,
+			expectedPageToken: "next-page-token-1",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should return the first page with max page size",
+			limitPerPage:      0,
+			initialPageToken:  "",
+			expectedItems:     50,
+			expectedPageToken: "next-page-token-1",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should return the second page with specified page size",
+			limitPerPage:      10,
+			initialPageToken:  "next-page-token-1",
+			expectedItems:     10,
+			expectedPageToken: "next-page-token-2",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should fail",
+			limitPerPage:      10,
+			initialPageToken:  mocks.PageTokenShouldFail,
+			expectedItems:     0,
+			expectedPageToken: "",
+			isErrExpected:     true,
+		},
+	}
+
 	srv := mocks.NewMockedGooglePhotosService()
 	defer srv.Close()
 
@@ -216,46 +259,26 @@ func TestService_PaginatedList(t *testing.T) {
 		t.Fatalf("error was not expected at this point: %v", err)
 	}
 
-	limitPerPage := 10
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			options := &albums.PaginatedListOptions{
+				Limit:     tc.limitPerPage,
+				PageToken: tc.initialPageToken,
+			}
+			res, pageToken, err := s.PaginatedList(context.Background(), options)
+			assertExpectedError(tc.isErrExpected, err, t)
 
-	t.Run("When token is not set, first page is get", func(t *testing.T) {
-		options := &albums.PaginatedListOptions{
-			Limit:     int64(limitPerPage),
-			PageToken: "",
-		}
-		res, pageToken, err := s.PaginatedList(context.Background(), options)
-		if err != nil {
-			t.Fatalf("error was not expected at this point: %v", err)
-		}
+			if !tc.isErrExpected {
+				if len(res) != tc.expectedItems {
+					t.Errorf("want: %d, got: %d", tc.expectedItems, len(res))
+				}
 
-		if len(res) != limitPerPage {
-			t.Errorf("want: %d, got: %d", 10, len(res))
-		}
-
-		if "next-page-token-1" != pageToken {
-			t.Errorf("want: %s, got: %s", "next-page-token-1", pageToken)
-		}
-	})
-
-	t.Run("When token is set, the proper page is get", func(t *testing.T) {
-		options := &albums.PaginatedListOptions{
-			Limit:     int64(limitPerPage),
-			PageToken: "next-page-token-2",
-		}
-		res, pageToken, err := s.PaginatedList(context.Background(), options)
-		if err != nil {
-			t.Fatalf("error was not expected at this point: %v", err)
-		}
-
-		if len(res) != limitPerPage {
-			t.Errorf("want: %d, got: %d", 10, len(res))
-		}
-
-		if "next-page-token-3" != pageToken {
-			t.Errorf("want: %s, got: %s", "next-page-token-3", pageToken)
-		}
-	})
-
+				if tc.expectedPageToken != pageToken {
+					t.Errorf("want: %s, got: %s", tc.expectedPageToken, pageToken)
+				}
+			}
+		})
+	}
 }
 
 func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
