@@ -66,6 +66,8 @@ type SimpleMediaItem struct {
 	// UploadToken: Token identifying the media bytes which have been
 	// uploaded to Google.
 	UploadToken string
+
+	Filename string
 }
 
 // Config holds the configuration parameters for the service.
@@ -169,6 +171,40 @@ func (s *Service) Get(ctx context.Context, mediaItemId string) (*MediaItem, erro
 // See https://developers.google.com/photos/library/guides/list#pagination.
 const maxMediaItemsPerPage = 100
 
+type PaginatedListByAlbumOptions struct {
+	Limit     int64
+	PageToken string
+}
+
+// PaginatedListByAlbum retrieves a specific page of media items, allowing for efficient retrieval of media item in pages.
+// Each page contains a predetermined number of media items.
+func (s *Service) PaginatedListByAlbum(ctx context.Context, albumId string, options *PaginatedListByAlbumOptions) (mediaItems []MediaItem, nextPageToken string, err error) {
+	var pageToken string
+	var limit int64
+
+	if options != nil {
+		limit = options.Limit
+		pageToken = options.PageToken
+	}
+
+	if limit == 0 {
+		limit = maxMediaItemsPerPage
+	}
+
+	req := &photoslibrary.SearchMediaItemsRequest{
+		AlbumId:   albumId,
+		PageSize:  limit,
+		PageToken: pageToken,
+	}
+
+	response, err := s.photos.Search(req).Context(ctx).Do()
+	if err != nil {
+		return nil, "", fmt.Errorf("listing media items for album %s: %w", albumId, err)
+	}
+
+	return toMediaItems(response.MediaItems), response.NextPageToken, nil
+}
+
 // ListByAlbum list all media items in the specified album.
 func (s *Service) ListByAlbum(ctx context.Context, albumId string) ([]*MediaItem, error) {
 	req := &photoslibrary.SearchMediaItemsRequest{
@@ -230,4 +266,12 @@ func toMediaItem(item *photoslibrary.MediaItem) MediaItem {
 			Height:       item.MediaMetadata.Height,
 		},
 	}
+}
+
+func toMediaItems(mi []*photoslibrary.MediaItem) []MediaItem {
+	var mediaItems []MediaItem
+	for _, mediaItem := range mi {
+		mediaItems = append(mediaItems, toMediaItem(mediaItem))
+	}
+	return mediaItems
 }

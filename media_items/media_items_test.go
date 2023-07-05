@@ -254,6 +254,85 @@ func TestMediaItemsService_ListByAlbum(t *testing.T) {
 	}
 }
 
+func TestService_PaginatedListByAlbum(t *testing.T) {
+
+	testCases := []struct {
+		name              string
+		albumId           string
+		limitPerPage      int64
+		initialPageToken  string
+		expectedItems     int
+		expectedPageToken string
+		isErrExpected     bool
+	}{
+		{
+			name:              "Should return the first page with specified page size",
+			limitPerPage:      10,
+			initialPageToken:  "",
+			expectedItems:     10,
+			expectedPageToken: "next-page-token-1",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should return the first page with max page size",
+			limitPerPage:      0,
+			initialPageToken:  "",
+			expectedItems:     100,
+			expectedPageToken: "next-page-token-1",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should return the second page with specified page size",
+			limitPerPage:      10,
+			initialPageToken:  "next-page-token-1",
+			expectedItems:     10,
+			expectedPageToken: "next-page-token-2",
+			isErrExpected:     false,
+		},
+		{
+			name:              "Should fail",
+			limitPerPage:      10,
+			initialPageToken:  mocks.PageTokenShouldFail,
+			expectedItems:     0,
+			expectedPageToken: "",
+			isErrExpected:     true,
+		},
+	}
+
+	srv := mocks.NewMockedGooglePhotosService()
+	defer srv.Close()
+
+	c := media_items.Config{
+		Client:  http.DefaultClient,
+		BaseURL: srv.URL(),
+	}
+	s, err := media_items.New(c)
+	if err != nil {
+		t.Fatalf("error was not expected at this point: %v", err)
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			options := &media_items.PaginatedListByAlbumOptions{
+				Limit:     tc.limitPerPage,
+				PageToken: tc.initialPageToken,
+			}
+			res, pageToken, err := s.PaginatedListByAlbum(context.Background(), tc.albumId, options)
+			assertExpectedError(tc.isErrExpected, err, t)
+
+			if !tc.isErrExpected {
+				if len(res) != tc.expectedItems {
+					t.Errorf("want: %d, got: %d", tc.expectedItems, len(res))
+				}
+
+				if tc.expectedPageToken != pageToken {
+					t.Errorf("want: %s, got: %s", tc.expectedPageToken, pageToken)
+				}
+			}
+		})
+	}
+}
+
 func assertExpectedError(isErrExpected bool, err error, t *testing.T) {
 	if isErrExpected && err == nil {
 		t.Fatalf("error was expected, but not produced")

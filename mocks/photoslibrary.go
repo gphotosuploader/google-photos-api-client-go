@@ -222,7 +222,7 @@ func (ms *MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.R
 
 	albums := getFakeAlbums(AvailableAlbums)
 
-	pageSize, pageToken := ms.paginationOptions(r)
+	pageSize, pageToken := ms.paginationOptions(r, maxAlbumsPerPage)
 	p := newAlbumsPaginator(pageSize, albums)
 
 	if PageTokenShouldFail == pageToken {
@@ -243,11 +243,11 @@ func (ms *MockedGooglePhotosService) albumsList(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (ms *MockedGooglePhotosService) paginationOptions(r *http.Request) (pageSize int64, pageToken string) {
+func (ms *MockedGooglePhotosService) paginationOptions(r *http.Request, itemsPerPage int64) (pageSize int64, pageToken string) {
 	pt := r.URL.Query().Get("pageToken")
 	ps, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
 	if err != nil {
-		return maxAlbumsPerPage, pt
+		return itemsPerPage, pt
 	}
 	return int64(ps), pt
 }
@@ -471,21 +471,31 @@ func (ms *MockedGooglePhotosService) mediaItemsSearch(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	albumId := req.AlbumId
+	pageSize := req.PageSize
+	pageToken := req.PageToken
 
-	if ShouldFailAlbum.Id == req.AlbumId {
+	if ShouldFailAlbum.Id == albumId {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	mediaItems := createFakeMediaItems(AvailableMediaItems)
-	p := newMediaItemsPaginator(req.PageSize, mediaItems)
-	items, nextPageToken := p.page(req.PageToken)
+	mediaItems := getFakeMediaItems(AvailableMediaItems)
+
+	p := newMediaItemsPaginator(pageSize, mediaItems)
+
+	if PageTokenShouldFail == pageToken {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	items, nextPageToken := p.page(pageToken)
+
+	w.WriteHeader(http.StatusOK)
 	res := photoslibrary.SearchMediaItemsResponse{
 		MediaItems:    items,
 		NextPageToken: nextPageToken,
 	}
-
-	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -526,7 +536,7 @@ func (p *mediaItemsPaginator) page(pageToken string) (results []*photoslibrary.M
 
 // findMediaItemById returns if fake mediaItems collection has a media item with the specified Id.
 func findMediaItemById(mediaItemId string) (*photoslibrary.MediaItem, bool) {
-	for _, a := range createFakeMediaItems(AvailableMediaItems) {
+	for _, a := range getFakeMediaItems(AvailableMediaItems) {
 		if mediaItemId == a.Id {
 			return a, true
 		}
@@ -534,8 +544,8 @@ func findMediaItemById(mediaItemId string) (*photoslibrary.MediaItem, bool) {
 	return &photoslibrary.MediaItem{}, false
 }
 
-// createFakeMediaItems returns a collection of MediaItems with the specified number of it.
-func createFakeMediaItems(numberOfItems int64) []*photoslibrary.MediaItem {
+// getFakeMediaItems returns a collection of MediaItems with the specified number of it.
+func getFakeMediaItems(numberOfItems int64) []*photoslibrary.MediaItem {
 	mediaItemsResult := make([]*photoslibrary.MediaItem, numberOfItems)
 	for i := int64(0); i < numberOfItems; i++ {
 		mediaItemsResult[i] = &photoslibrary.MediaItem{
