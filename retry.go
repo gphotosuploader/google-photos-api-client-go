@@ -16,21 +16,21 @@ import (
 var (
 	// A regular expression to match the error returned by net/http when the
 	// configured number of redirects is exhausted. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// specifically, so we resort to matching on the error string.
 	redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
 
 	// A regular expression to match the error returned by net/http when the
 	// scheme specified in the BaseURL is invalid. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// specifically, so we resort to matching on the error string.
 	schemeErrorRe = regexp.MustCompile(`unsupported protocol scheme`)
 
 	// A regular expression to match the error returned by Google Photos when
-	// the requests quota limit has been exceeded. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// the request quota limit has been exceeded. This error isn't typed
+	// specifically, so we resort to matching on the error string.
 	requestQuotaErrorRe = regexp.MustCompile(`Quota exceeded for quota metric 'All requests' and limit 'All requests per day'`)
 )
 
-// addRetryHandler returns a HTTP client with a retry policy.
+// addRetryHandler returns an HTTP client with a retry policy.
 func addRetryHandler(client *http.Client) *http.Client {
 	c := retryablehttp.Client{
 		HTTPClient: client,
@@ -61,7 +61,7 @@ func GooglePhotosServiceRetryPolicy(ctx context.Context, resp *http.Response, er
 
 	var e *ErrDailyQuotaExceeded
 	if errors.As(err, &e) {
-		return shouldRetry, err
+		return false, err
 	}
 
 	// don't propagate other errors
@@ -70,15 +70,16 @@ func GooglePhotosServiceRetryPolicy(ctx context.Context, resp *http.Response, er
 
 func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 	if err != nil {
-		if v, ok := err.(*url.Error); ok {
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
 			// Don't retry if the error was due to too many redirects.
-			if redirectsErrorRe.MatchString(v.Error()) {
-				return false, v
+			if redirectsErrorRe.MatchString(urlErr.Error()) {
+				return false, urlErr
 			}
 
 			// Don't retry if the error was due to an invalid protocol scheme.
-			if schemeErrorRe.MatchString(v.Error()) {
-				return false, v
+			if schemeErrorRe.MatchString(urlErr.Error()) {
+				return false, urlErr
 			}
 		}
 
@@ -88,9 +89,9 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 
 	// 429 Too Many Requests can be recoverable. Sometimes the server puts
 	// a Retry-After response header to indicate when the server is
-	// available to start processing request from client.
-	// If the write requests per minute per user quota is exceeded, the error is recoverable.
-	// If the daily API quota is exceeded, the error is not recoverable.
+	// available to start processing request from a client.
+	// If the 'write requests per minute per user' quota is exceeded, the error is recoverable.
+	// If the 'daily API' quota is exceeded, the error is not recoverable.
 	if resp.StatusCode == http.StatusTooManyRequests {
 		slurp, ioerr := io.ReadAll(resp.Body)
 		if ioerr != nil {

@@ -7,8 +7,10 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
@@ -17,6 +19,7 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 		body            string
 		statusCode      int
 		shouldBeRetried bool
+		expectedError   error
 	}{
 		// SHOULD BE RETRIED
 		{
@@ -24,38 +27,43 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 			body:            ` `,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: true,
+			expectedError:   nil,
 		},
 		{
 			name:            "TooManyRequest for 'Write requests per minute exceeded' response should retry",
 			body:            sampleGoogleWriteRequestsPerMinuteExceededBodyResponse,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: true,
+			expectedError:   nil,
 		},
 		{
 			name:            "InternalServerError response should retry",
 			body:            ` `,
 			statusCode:      http.StatusInternalServerError,
 			shouldBeRetried: true,
+			expectedError:   nil,
 		},
-
 		// SHOULD NOT BE RETRIED
 		{
 			name:            "Ok response should not retry",
 			body:            ` `,
 			statusCode:      http.StatusOK,
 			shouldBeRetried: false,
+			expectedError:   nil,
 		},
 		{
 			name:            "TooManyRequest for 'Daily requests per day exceeded' response should not retry",
 			body:            mocks.SampleGoogleRequestPerDayExceededBodyResponse,
 			statusCode:      http.StatusTooManyRequests,
 			shouldBeRetried: false,
+			expectedError:   &gphotos.ErrDailyQuotaExceeded{},
 		},
 		{
 			name:            "BadRequest response should not retry",
 			body:            ` `,
 			statusCode:      http.StatusBadRequest,
 			shouldBeRetried: false,
+			expectedError:   nil,
 		},
 	}
 
@@ -65,7 +73,10 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 				StatusCode: tc.statusCode,
 				Body:       io.NopCloser(strings.NewReader(tc.body)),
 			}
-			got, _ := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), res, nil)
+			got, err := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), res, nil)
+			if !errors.Is(err, tc.expectedError) {
+				t.Fatalf("expected error")
+			}
 
 			if tc.shouldBeRetried != got {
 				t.Errorf("want: %t, got: %t", tc.shouldBeRetried, got)
@@ -74,25 +85,57 @@ func TestGooglePhotoServiceRetryPolicy(t *testing.T) {
 	}
 }
 
-func TestErrDailyQuotaExceeded_Retry(t *testing.T) {
-	res := &http.Response{
-		StatusCode: http.StatusTooManyRequests,
-		Body:       io.NopCloser(strings.NewReader(mocks.SampleGoogleRequestPerDayExceededBodyResponse)),
-	}
+func TestContextErr_Retry(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
 
-	shouldBeRetried, err := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), res, nil)
+	time.Sleep(5 * time.Millisecond)
+
+	// ctx was already cancelled.
+	shouldRetry, err := gphotos.GooglePhotosServiceRetryPolicy(ctx, &http.Response{}, nil)
 	if err == nil {
 		t.Fatalf("error was expected at this point but not happened")
 	}
 
-	if shouldBeRetried {
-		t.Errorf("it should not retry if the 'All request' per day quota has been exceeded")
+	if shouldRetry {
+		t.Errorf("should not retry")
+	}
+}
+
+func TestURLErrors_Retry(t *testing.T) {
+	testCases := []struct {
+		name            string
+		err             error
+		shouldBeRetried bool
+	}{
+		{
+			name:            "Too many redirects should not retry",
+			err:             &url.Error{Err: errors.New("stopped after 10 redirects")},
+			shouldBeRetried: false,
+		},
+		{
+			name:            "Invalid URL schema should not retry",
+			err:             &url.Error{Err: errors.New("unsupported protocol scheme")},
+			shouldBeRetried: false,
+		},
+		{
+			name:            "Any other error should be retried",
+			err:             &url.Error{Err: errors.New("a different error")},
+			shouldBeRetried: true,
+		},
 	}
 
-	// returned error should be ErrDailyQuotaExceeded
-	var e *gphotos.ErrDailyQuotaExceeded
-	if !errors.As(err, &e) {
-		t.Errorf("unexpected error type: %v", err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := gphotos.GooglePhotosServiceRetryPolicy(context.Background(), &http.Response{}, tc.err)
+			if err != nil {
+				t.Fatalf("error was not expected at this point: %v", err)
+			}
+
+			if tc.shouldBeRetried != got {
+				t.Errorf("want: %t, got: %t", tc.shouldBeRetried, got)
+			}
+		})
 	}
 }
 
