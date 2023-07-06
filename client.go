@@ -30,8 +30,18 @@ type Client struct {
 // that will perform the authentication for you (such as that provided
 // by the [golang.org/x/oauth2] library).
 func NewClient(httpClient *http.Client) (*Client, error) {
+	return NewClientWithBaseURL(httpClient, defaultBaseURL)
+}
+
+// NewClientWithBaseURL returns a new Google Photos API client with a custom baseURL.
+// See [NewClient] for more details.
+func NewClientWithBaseURL(httpClient *http.Client, baseURL string) (*Client, error) {
 	if httpClient == nil {
 		return nil, errors.New("client is nil")
+	}
+
+	if baseURL == "" {
+		return nil, errors.New("baseURL is empty")
 	}
 
 	httpClient = addRetryHandler(httpClient)
@@ -39,7 +49,7 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 	// Create the Albums Service using default values.
 	albumsConfig := albums.Config{
 		Client:    httpClient,
-		BaseURL:   defaultBaseURL,
+		BaseURL:   baseURL,
 		UserAgent: defaultUserAgent,
 	}
 	albumsService, err := albums.New(albumsConfig)
@@ -50,7 +60,7 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 	// Create the Media Items Service using default values.
 	mediaItemsConfig := media_items.Config{
 		Client:    httpClient,
-		BaseURL:   defaultBaseURL,
+		BaseURL:   baseURL,
 		UserAgent: defaultUserAgent,
 	}
 	mediaItemsService, err := media_items.New(mediaItemsConfig)
@@ -68,5 +78,4 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 		Albums:     albumsService,
 		MediaItems: mediaItemsService,
 	}, nil
-
 }
