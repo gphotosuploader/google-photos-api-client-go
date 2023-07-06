@@ -125,7 +125,7 @@ func (s *Service) Create(ctx context.Context, title string) (*Album, error) {
 func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 	res, err := s.photos.Get(albumID).Context(ctx).Do()
 	if err != nil {
-		return nil, fmt.Errorf("getting album by id: %w", ErrAlbumNotFound)
+		return nil, fmt.Errorf("getting album by id: %w; %w", ErrAlbumNotFound, err)
 	}
 	album := toAlbum(res)
 	return &album, nil
@@ -144,16 +144,17 @@ const maxAlbumsPerPage int64 = 50
 func (s *Service) GetByTitle(ctx context.Context, title string) (*Album, error) {
 	errAlbumWasFound := errors.New("album was found")
 	var result *Album
-	if err := s.photos.List().ExcludeNonAppCreatedData().PageSize(maxAlbumsPerPage).Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
+	err := s.photos.List().ExcludeNonAppCreatedData().PageSize(maxAlbumsPerPage).Pages(ctx, func(response *photoslibrary.ListAlbumsResponse) error {
 		if album, found := findByTitle(title, response.Albums); found {
 			result = album
 			return errAlbumWasFound
 		}
 		return nil
-	}); errors.Is(err, errAlbumWasFound) {
+	})
+	if errors.Is(err, errAlbumWasFound) {
 		return result, nil
 	}
-	return nil, fmt.Errorf("getting album by title: %w", ErrAlbumNotFound)
+	return nil, fmt.Errorf("getting album by title: %w; %w", ErrAlbumNotFound, err)
 }
 
 // List lists all albums in created by this app.
