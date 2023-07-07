@@ -21,7 +21,6 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 - A new `ErrDailyQuotaExceeded` error has been implemented to detect errors when the Google Photos 'All request' daily quota has been exceeded. ([#62][i62])
 
 ### Changed
-- Due to the implementation of multiple - Supported `Go` versions are `1.18`, `1.19` and `1.20`.
 - **[BREAKING CHANGE]** Updated constructors for `albums.Service` and `media_items.Service` to utilize the Config struct for customizations.
 - **[BREAKING CHANGE]** Google Photos 'All request' daily quota exceeded will not be retried. A `ErrDailyQuotaExceeded` will be raised instead. ([#62][i62])
 - **[BREAKING CHANGE]** Uploaders have been moved to `uploader.SimpleUplader` and `uploader.ResumableUploader`.
