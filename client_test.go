@@ -4,51 +4,45 @@ import (
 	"net/http"
 	"testing"
 
-	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v2"
-	"github.com/gphotosuploader/google-photos-api-client-go/v2/mocks"
+	gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 )
 
 func TestNewClient(t *testing.T) {
-	t.Run("WithoutOptions", func(t *testing.T) {
+	t.Run("Should success with httpClient", func(t *testing.T) {
 		_, err := gphotos.NewClient(http.DefaultClient)
 		if err != nil {
 			t.Fatalf("error was not expected at this point: %s", err)
 		}
 	})
+
+	t.Run("Should fail without httpClient", func(t *testing.T) {
+		_, err := gphotos.NewClient(nil)
+		if err == nil {
+			t.Errorf("error was expected but not produced")
+		}
+	})
 }
 
-func TestWithAlbumsService(t *testing.T) {
-	want := &mocks.MockedAlbumsService{}
+func TestNewClientWithBaseURL(t *testing.T) {
+	t.Run("Should success", func(t *testing.T) {
+		_, err := gphotos.NewClientWithBaseURL(http.DefaultClient, "https://foo.bar")
+		if err != nil {
+			t.Fatalf("error was not expected at this point: %s", err)
+		}
+	})
 
-	got, err := gphotos.NewClient(http.DefaultClient, gphotos.WithAlbumsService(want))
-	if err != nil {
-		t.Fatalf("error was not expected at this point: %s", err)
-	}
-	if got.Albums != want {
-		t.Errorf("want: %v, got: %v", want, got)
-	}
-}
+	t.Run("Should fail without httpClient", func(t *testing.T) {
+		_, err := gphotos.NewClientWithBaseURL(nil, "https://foo.bar")
+		if err == nil {
+			t.Errorf("error was expected but not produced")
+		}
+	})
 
-func TestWithMediaItemsService(t *testing.T) {
-	want := &mocks.MockedMediaItemsService{}
+	t.Run("Should fail without baseURL", func(t *testing.T) {
+		_, err := gphotos.NewClientWithBaseURL(http.DefaultClient, "")
+		if err == nil {
+			t.Errorf("error was expected but not produced")
+		}
+	})
 
-	got, err := gphotos.NewClient(http.DefaultClient, gphotos.WithMediaItemsService(want))
-	if err != nil {
-		t.Fatalf("error was not expected at this point: %s", err)
-	}
-	if got.MediaItems != want {
-		t.Errorf("want: %v, got: %v", want, got)
-	}
-}
-
-func TestWithUploader(t *testing.T) {
-	want := &mocks.MockedUploader{}
-
-	got, err := gphotos.NewClient(http.DefaultClient, gphotos.WithUploader(want))
-	if err != nil {
-		t.Fatalf("error was not expected at this point: %s", err)
-	}
-	if got.Uploader != want {
-		t.Errorf("want: %v, got: %v", want, got)
-	}
 }

@@ -3,75 +3,83 @@ package gphotos
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
+	"errors"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
 )
 
 var (
 	// A regular expression to match the error returned by net/http when the
 	// configured number of redirects is exhausted. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// specifically, so we resort to matching on the error string.
 	redirectsErrorRe = regexp.MustCompile(`stopped after \d+ redirects\z`)
 
 	// A regular expression to match the error returned by net/http when the
-	// scheme specified in the URL is invalid. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// scheme specified in the BaseURL is invalid. This error isn't typed
+	// specifically, so we resort to matching on the error string.
 	schemeErrorRe = regexp.MustCompile(`unsupported protocol scheme`)
 
 	// A regular expression to match the error returned by Google Photos when
-	// the requests quota limit has been exceeded. This error isn't typed
-	// specifically so we resort to matching on the error string.
+	// the request quota limit has been exceeded. This error isn't typed
+	// specifically, so we resort to matching on the error string.
 	requestQuotaErrorRe = regexp.MustCompile(`Quota exceeded for quota metric 'All requests' and limit 'All requests per day'`)
-
-	// A regular expression to match the error returned by Google Photos when
-	// the storage quota limit has been exceeded. This error isn't typed
-	// specifically so we resort to matching on the error string.
-	storageQuotaErrorRe = regexp.MustCompile(`The remaining storage in the user's account is not enough to perform this operation`)
 )
 
-// defaultGPhotosRetryPolicy provides a default callback for Client.CheckRetry, which
-// will retry on connection errors and server errors.
-func defaultGPhotosRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+// addRetryHandler returns an HTTP client with a retry policy.
+func addRetryHandler(client *http.Client) *http.Client {
+	c := retryablehttp.Client{
+		HTTPClient: client,
+
+		RetryWaitMin: 1 * time.Second,
+		RetryWaitMax: 30 * time.Second,
+		RetryMax:     3,
+
+		CheckRetry: GooglePhotosServiceRetryPolicy,
+
+		Backoff: retryablehttp.DefaultBackoff,
+	}
+
+	return c.StandardClient()
+}
+
+// GooglePhotosServiceRetryPolicy provides a retry policy implementing Google Photos
+// best practices.
+//
+// See: https://developers.google.com/photos/library/guides/best-practices#error-handling
+func GooglePhotosServiceRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	// do not retry on context.Canceled or context.DeadlineExceeded
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}
 
+	shouldRetry, err := baseRetryPolicy(resp, err)
+
+	var e *ErrDailyQuotaExceeded
+	if errors.As(err, &e) {
+		return false, err
+	}
+
 	// don't propagate other errors
-	shouldRetry, _ := baseRetryPolicy(resp, err)
 	return shouldRetry, nil
 }
 
 func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 	if err != nil {
-		if v, ok := err.(*url.Error); ok {
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
 			// Don't retry if the error was due to too many redirects.
-			if redirectsErrorRe.MatchString(v.Error()) {
-				return false, v
+			if redirectsErrorRe.MatchString(urlErr.Error()) {
+				return false, urlErr
 			}
 
 			// Don't retry if the error was due to an invalid protocol scheme.
-			if schemeErrorRe.MatchString(v.Error()) {
-				return false, v
-			}
-
-			// Don't retry if the error was due to a requests quota limit exceed.
-			if requestQuotaErrorRe.MatchString(v.Error()) {
-				return false, v
-			}
-
-			// Don't retry if the error was due to a storage quota limit exceed.
-			if storageQuotaErrorRe.MatchString(v.Error()) {
-				return false, v
-			}
-
-			// Don't retry if the error was due to TLS cert verification failure.
-			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
-				return false, v
+			if schemeErrorRe.MatchString(urlErr.Error()) {
+				return false, urlErr
 			}
 		}
 
@@ -81,9 +89,9 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 
 	// 429 Too Many Requests can be recoverable. Sometimes the server puts
 	// a Retry-After response header to indicate when the server is
-	// available to start processing request from client.
-	// If the write requests per minute per user quota is exceeded, the error is recoverable.
-	// If the daily API quota is exceeded, the error is not recoverable.
+	// available to start processing request from a client.
+	// If the 'write requests per minute per user' quota is exceeded, the error is recoverable.
+	// If the 'daily API' quota is exceeded, the error is not recoverable.
 	if resp.StatusCode == http.StatusTooManyRequests {
 		slurp, ioerr := io.ReadAll(resp.Body)
 		if ioerr != nil {
@@ -92,8 +100,9 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 
 		resp.Body = io.NopCloser(bytes.NewBuffer(slurp))
 
+		// Don't retry if the 'All request' per day quota has been exceeded.
 		if requestQuotaErrorRe.MatchString(string(slurp)) {
-			return false, fmt.Errorf("daily quota exceeded")
+			return false, &ErrDailyQuotaExceeded{}
 		}
 
 		return true, nil
