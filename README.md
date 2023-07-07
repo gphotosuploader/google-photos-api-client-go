@@ -36,7 +36,7 @@ Construct a new Google Photos client, then use the various services on the clien
 For example:
 
 ```go
-// httpClient has been previoulsy authenticated using oAuth authenticated
+// httpClient has been previously authenticated using oAuth authenticated
 client := gphotos.NewClient(httpClient)
 
 // list all albums for the authenticated user
