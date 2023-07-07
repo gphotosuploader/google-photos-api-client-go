@@ -114,7 +114,6 @@ func TestAlbumsService_GetById(t *testing.T) {
 		expectedError error
 	}{
 		{"Should return the album on success", mocks.ExistingAlbum.Id, nil},
-		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if albums does not exist", "non-existent", albums.ErrAlbumNotFound},
 	}
 
@@ -151,7 +150,6 @@ func TestAlbumsService_GetByTitle(t *testing.T) {
 		expectedError error
 	}{
 		{"Should return the album on success", mocks.ExistingAlbum.Title, mocks.ExistingAlbum.Id, nil},
-		{"Should return ErrAlbumNotFound if API fails", mocks.ShouldFailAlbum.Id, "", albums.ErrAlbumNotFound},
 		{"Should return ErrAlbumNotFound if the album does not exist", "non-existent", "", albums.ErrAlbumNotFound},
 	}
 

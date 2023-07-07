@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
+	"google.golang.org/api/googleapi"
 	"net/http"
 )
 
@@ -124,11 +125,25 @@ func (s *Service) Create(ctx context.Context, title string) (*Album, error) {
 // GetById returns the album specified by the given album id.
 func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 	res, err := s.photos.Get(albumID).Context(ctx).Do()
-	if err != nil {
-		return nil, fmt.Errorf("getting album by id: %w; %w", ErrAlbumNotFound, err)
+	if err == nil {
+		album := toAlbum(res)
+		return &album, nil
 	}
-	album := toAlbum(res)
-	return &album, nil
+
+	return nil, fmt.Errorf("getting album by id: %w", translateGoogleAPIError(err))
+}
+
+func translateGoogleAPIError(err error) error {
+	// Check if the error is of type *googleapi.Error
+	var apiErr *googleapi.Error
+	if errors.As(err, &apiErr) {
+		// Check if the underlying error code is a not found error code
+		if apiErr.Code == http.StatusNotFound {
+			return ErrAlbumNotFound
+		}
+	}
+
+	return err
 }
 
 // maxAlbumsPerPage is the maximum number of albums per pages.
@@ -137,8 +152,8 @@ func (s *Service) GetById(ctx context.Context, albumID string) (*Album, error) {
 // See https://developers.google.com/photos/library/guides/list#pagination.
 const maxAlbumsPerPage int64 = 50
 
-// GetByTitle look for an album with the specified album id into the list of all albums.
-// It lists paginates all albums until finding one with the matching title.
+// GetByTitle searches for an album with the specified title in the list of all albums.
+// It paginates through all albums until finding one with the matching title.
 //
 // Returns [ErrAlbumNotFound] if the album does not exist.
 func (s *Service) GetByTitle(ctx context.Context, title string) (*Album, error) {
@@ -151,10 +166,19 @@ func (s *Service) GetByTitle(ctx context.Context, title string) (*Album, error) 
 		}
 		return nil
 	})
+
+	// A matching album was found.
 	if errors.Is(err, errAlbumWasFound) {
 		return result, nil
 	}
-	return nil, fmt.Errorf("getting album by title: %w; %w", ErrAlbumNotFound, err)
+
+	// All albums where checked against the title and no one matched.
+	if err == nil {
+		return result, fmt.Errorf("getting album by title: %w", ErrAlbumNotFound)
+	}
+
+	// An error happened before checking all the albums.
+	return nil, fmt.Errorf("getting album by title: %w", err)
 }
 
 // List lists all albums in created by this app.
