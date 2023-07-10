@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.1
+### Changed
+- Bump `google.golang.org/api` dependency.
+
 ## 3.0.0
 
 > Note: This is a major version update and is **NOT BACKWARDS COMPATIBLE**.
@@ -14,7 +18,7 @@ import gphotos "github.com/gphotosuploader/google-photos-api-client-go/v3"
 
 ### Added
 - `albums.PaginatedList` retrieves a specific page of albums, allowing for efficient retrieval of albums in pages. ([#65][i65])
-- `media_items.PaginatedListByAlbum` retrieves a specific page of media items, allowing for efficient retrieval of media items in pages. ([#65][i65])
+- `media_items.PaginatedList` retrieves a specific page of media items, allowing for efficient retrieval of media items in pages. ([#65][i65])
 - Possibility to set custom `BaseURL` and `UserAgent` in `albums` and `media_items` services.
 - Possibility to set custom `BaseURL` in `albums` and `media_items` services using the `NewClientWithBaseURL`.
 - The `MockedGooglePhotosService` implements the Google Photos API for testing purposes. 
