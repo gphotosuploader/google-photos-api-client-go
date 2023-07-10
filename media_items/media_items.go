@@ -171,20 +171,23 @@ func (s *Service) Get(ctx context.Context, mediaItemId string) (*MediaItem, erro
 // See https://developers.google.com/photos/library/guides/list#pagination.
 const maxMediaItemsPerPage = 100
 
-type PaginatedListByAlbumOptions struct {
+type PaginatedListOptions struct {
+	AlbumID   string
 	Limit     int64
 	PageToken string
 }
 
-// PaginatedListByAlbum retrieves a specific page of media items, allowing for efficient retrieval of media item in pages.
+// PaginatedList retrieves a specific page of media items, allowing for efficient retrieval of media item in pages.
 // Each page contains a predetermined number of media items.
-func (s *Service) PaginatedListByAlbum(ctx context.Context, albumId string, options *PaginatedListByAlbumOptions) (mediaItems []MediaItem, nextPageToken string, err error) {
+func (s *Service) PaginatedList(ctx context.Context, options *PaginatedListOptions) (mediaItems []MediaItem, nextPageToken string, err error) {
 	var pageToken string
 	var limit int64
+	var albumID string
 
 	if options != nil {
 		limit = options.Limit
 		pageToken = options.PageToken
+		albumID = options.AlbumID
 	}
 
 	if limit == 0 {
@@ -192,14 +195,14 @@ func (s *Service) PaginatedListByAlbum(ctx context.Context, albumId string, opti
 	}
 
 	req := &photoslibrary.SearchMediaItemsRequest{
-		AlbumId:   albumId,
+		AlbumId:   albumID,
 		PageSize:  limit,
 		PageToken: pageToken,
 	}
 
 	response, err := s.photos.Search(req).Context(ctx).Do()
 	if err != nil {
-		return nil, "", fmt.Errorf("listing media items for album %s: %w", albumId, err)
+		return nil, "", fmt.Errorf("listing media items: %w", err)
 	}
 
 	return toMediaItems(response.MediaItems), response.NextPageToken, nil

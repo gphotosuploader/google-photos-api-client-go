@@ -42,7 +42,7 @@ type MediaItemsService interface {
 	CreateManyToAlbum(ctx context.Context, albumId string, mediaItems []media_items.SimpleMediaItem) ([]*media_items.MediaItem, error)
 	Get(ctx context.Context, mediaItemId string) (*media_items.MediaItem, error)
 	ListByAlbum(ctx context.Context, albumId string) ([]*media_items.MediaItem, error)
-	PaginatedListByAlbum(ctx context.Context, albumId string, options *media_items.PaginatedListByAlbumOptions) (mediaItems []media_items.MediaItem, nextPageToken string, err error)
+	PaginatedList(ctx context.Context, options *media_items.PaginatedListOptions) (mediaItems []media_items.MediaItem, nextPageToken string, err error)
 }
 
 // MediaUploader represents a Google Photos client fo media upload.
