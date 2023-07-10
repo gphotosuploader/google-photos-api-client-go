@@ -254,11 +254,11 @@ func TestMediaItemsService_ListByAlbum(t *testing.T) {
 	}
 }
 
-func TestService_PaginatedListByAlbum(t *testing.T) {
+func TestService_PaginatedList(t *testing.T) {
 
 	testCases := []struct {
 		name              string
-		albumId           string
+		albumID           string
 		limitPerPage      int64
 		initialPageToken  string
 		expectedItems     int
@@ -290,6 +290,18 @@ func TestService_PaginatedListByAlbum(t *testing.T) {
 			isErrExpected:     false,
 		},
 		{
+			name:              "Should return the first page with specified album ID",
+			albumID:           mocks.ExistingAlbum.Id,
+			expectedItems:     100,
+			expectedPageToken: "next-page-token-1",
+			isErrExpected:     false,
+		},
+		{
+			name:          "Should return error if album ID does not exist",
+			albumID:       mocks.ShouldFailAlbum.Id,
+			isErrExpected: true,
+		},
+		{
 			name:              "Should fail",
 			limitPerPage:      10,
 			initialPageToken:  mocks.PageTokenShouldFail,
@@ -313,11 +325,12 @@ func TestService_PaginatedListByAlbum(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			options := &media_items.PaginatedListByAlbumOptions{
+			options := &media_items.PaginatedListOptions{
+				AlbumID:   tc.albumID,
 				Limit:     tc.limitPerPage,
 				PageToken: tc.initialPageToken,
 			}
-			res, pageToken, err := s.PaginatedListByAlbum(context.Background(), tc.albumId, options)
+			res, pageToken, err := s.PaginatedList(context.Background(), options)
 			assertExpectedError(tc.isErrExpected, err, t)
 
 			if !tc.isErrExpected {
