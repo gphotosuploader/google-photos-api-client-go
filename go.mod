@@ -1,3 +1,4 @@
+// Deprecated: use github.com/gphotosuploader/google-photos-api-client-go/v3 instead.
 module github.com/gphotosuploader/google-photos-api-client-go/v2
 
 go 1.18
