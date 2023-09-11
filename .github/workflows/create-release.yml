@@ -13,6 +13,6 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create GitHub release from tag
         uses: softprops/action-gh-release@v1
