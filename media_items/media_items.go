@@ -258,11 +258,12 @@ func New(config Config) (*Service, error) {
 
 func toMediaItem(item *photoslibrary.MediaItem) MediaItem {
 	return MediaItem{
-		ID:         item.Id,
-		ProductURL: item.ProductUrl,
-		BaseURL:    item.BaseUrl,
-		MimeType:   item.MimeType,
-		Filename:   item.Filename,
+		ID:          item.Id,
+		ProductURL:  item.ProductUrl,
+		BaseURL:     item.BaseUrl,
+		Description: item.Description,
+		MimeType:    item.MimeType,
+		Filename:    item.Filename,
 		MediaMetadata: MediaMetadata{
 			CreationTime: item.MediaMetadata.CreationTime,
 			Width:        item.MediaMetadata.Width,
