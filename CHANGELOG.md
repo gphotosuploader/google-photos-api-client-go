@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.2
+
+### Fixed
+- The missing mapping for `MediaItem.Description`, leaving all Descriptions empty when retrieving from the API. Thanks, @timjonischkat ([#105][i105])
+
+### Changed
+- Update supported `Go` versions to `1.19`, `1.20` and `1.21`.
+- Bump `github.com/go-chi/chi/v5` from 5.0.8 to 5.0.10 ([#102][i102])
+- Bump `google.golang.org/api` from 0.130.0 to 0.143.0 ([#113][i113])
+- [CI] Bump `actions/checkout` from 3 to 4 ([#110][i110])
+- [CI] Bump `golangci` from 1.53.1 to 1.54.2
+
+[i102]: https://github.com/gphotosuploader/google-photos-api-client-go/pull/102
+[i105]: https://github.com/gphotosuploader/google-photos-api-client-go/pull/105
+[i110]: https://github.com/gphotosuploader/google-photos-api-client-go/pull/110
+[i113]: https://github.com/gphotosuploader/google-photos-api-client-go/pull/113
+
 ## 3.0.1
 ### Changed
 - Bump `google.golang.org/api` dependency.
