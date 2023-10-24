@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.3
+### Fixed
+- Filename metadata field in Google Photos UI was not set properly ([#116][i116])
+
+### Changed
+- Bump `google.golang.org/api` from 0.145.0 to 0.148.0
+
+[i116]: https://github.com/gphotosuploader/google-photos-api-client-go/issues/116
+
 ## 3.0.2
 
 ### Fixed
