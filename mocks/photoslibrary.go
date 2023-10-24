@@ -579,7 +579,7 @@ func (ms *MockedGooglePhotosService) handleUploads(w http.ResponseWriter, r *htt
 }
 
 func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r *http.Request) {
-	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
+	if UploadShouldFail == r.Header.Get("X-Goog-Upload-File-Name") {
 		http.Error(w, "upload should fail", http.StatusInternalServerError)
 		return
 	}
@@ -601,7 +601,7 @@ func (ms *MockedGooglePhotosService) handleSimpleUpload(w http.ResponseWriter, r
 }
 
 func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r *http.Request) {
-	if UploadShouldFail == r.Header.Get("X-Goog-Upload-Name") {
+	if UploadShouldFail == r.Header.Get("X-Goog-Upload-File-Name") {
 		http.Error(w, "upload should fail", http.StatusInternalServerError)
 		return
 	}
