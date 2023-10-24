@@ -97,7 +97,7 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 	req.Header.Set("Content-Length", "0")
 	req.Header.Set("X-Goog-Upload-Command", "start")
 	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-Name", upload.Name)
+	req.Header.Set("X-Goog-Upload-File-Name", upload.Name)
 	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
 	req.Header.Set("X-Goog-Upload-Raw-Size", strconv.FormatInt(upload.size, 10))
 

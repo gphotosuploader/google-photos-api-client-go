@@ -64,7 +64,7 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToke
 	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-Name", upload.Name)
+	req.Header.Set("X-Goog-Upload-File-Name", upload.Name)
 	req.Header.Set("X-Goog-Upload-Protocol", "raw")
 
 	u.Logger.Debugf("Uploading %s (%d kB)", upload.Name, upload.size/1024)
