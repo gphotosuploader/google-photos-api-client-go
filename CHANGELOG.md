@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.4
+### Changed
+- Bump `google.golang.org/api` to version 0.155.0
+- Bump `github.com/hashicorp/go-retryablehttp` to version 0.7.5
+- Bump `github.com/go-chi/chi/v5` to version 5.0.11
+
 ## 3.0.3
 ### Fixed
 - Filename metadata field in Google Photos UI was not set properly ([#116][i116])
