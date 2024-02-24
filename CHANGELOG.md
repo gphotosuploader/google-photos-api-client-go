@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+# Copilot can you help me to write the changelog with the changes from the last release?
+
+## 3.0.5
+### Changed
+- Updated supported `Go` versions to `1.20`-`1.21`.
+- Updated `github.com/go-chi/chi/v5` to version 5.0.12.
+- Updated `github.com/gphotosuploader/googlemirror` to version 0.5.0.
+- Updated `github.com/hashicorp/go-retryablehttp` to version 0.7.5.
+- Updated `google.golang.org/api` to version 0.167.0.
+- [CI] Updated `golangci` to 'v1.56.2'.
+
 ## 3.0.4
 ### Changed
 - Bump `google.golang.org/api` to version 0.155.0

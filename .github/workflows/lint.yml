@@ -15,7 +15,7 @@ permissions:
     
 env:
     # it should match the version in the Makefile file.
-    GOLANGCI_LINT_VERSION: 'v1.54.2'
+    GOLANGCI_LINT_VERSION: 'v1.56.2'
 
 jobs:
     golangci:
