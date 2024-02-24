@@ -90,16 +90,10 @@ func (u *ResumableUploader) createOrResumeUpload(ctx context.Context, upload *Up
 }
 
 func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
-	req, err := http.NewRequest("POST", u.BaseURL, nil)
+	req, err := u.createUploadRequest(upload)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Content-Length", "0")
-	req.Header.Set("X-Goog-Upload-Command", "start")
-	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
-	req.Header.Set("X-Goog-Upload-File-Name", upload.Name)
-	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
-	req.Header.Set("X-Goog-Upload-Raw-Size", strconv.FormatInt(upload.size, 10))
 
 	res, err := u.doRequest(ctx, req)
 	if err != nil {
@@ -116,6 +110,21 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 	}
 
 	return u.resumeUpload(ctx, upload)
+}
+
+func (u *ResumableUploader) createUploadRequest(upload *Upload) (*http.Request, error) {
+	req, err := http.NewRequest("POST", u.BaseURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Length", "0")
+	req.Header.Set("X-Goog-Upload-Command", "start")
+	req.Header.Set("X-Goog-Upload-Content-Type", "application/octet-stream")
+	req.Header.Set("X-Goog-Upload-File-Name", upload.Name)
+	req.Header.Set("X-Goog-Upload-Protocol", "resumable")
+	req.Header.Set("X-Goog-Upload-Raw-Size", strconv.FormatInt(upload.size, 10))
+
+	return req, nil
 }
 
 func (u *ResumableUploader) isResumeEnabled() bool {
@@ -141,6 +150,10 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 		return "", err
 	}
 
+	return u.finalizeUpload(ctx, url, upload, offset)
+}
+
+func (u *ResumableUploader) finalizeUpload(ctx context.Context, url string, upload *Upload, offset int64) (uploadToken string, err error) {
 	req, err := http.NewRequest("POST", url, upload.stream)
 	if err != nil {
 		return "", err
