@@ -57,9 +57,25 @@ func (u *SimpleUploader) UploadFile(ctx context.Context, filePath string) (uploa
 }
 
 func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
-	req, err := http.NewRequest("POST", u.BaseURL, upload.stream)
+	req, err := u.createUploadRequest(upload)
 	if err != nil {
 		return "", err
+	}
+
+	res, err := u.doRequest(ctx, req)
+	if err != nil {
+		u.Logger.Errorf("Error while uploading %s: %s", upload, err)
+		return "", err
+	}
+	defer res.Body.Close()
+
+	return u.readUploadResponse(res, upload)
+}
+
+func (u *SimpleUploader) createUploadRequest(upload *Upload) (*http.Request, error) {
+	req, err := http.NewRequest("POST", u.BaseURL, upload.stream)
+	if err != nil {
+		return nil, err
 	}
 	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
 	req.Header.Set("Content-Type", "application/octet-stream")
@@ -69,13 +85,10 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToke
 
 	u.Logger.Debugf("Uploading %s (%d kB)", upload.Name, upload.size/1024)
 
-	res, err := u.doRequest(ctx, req)
-	if err != nil {
-		u.Logger.Errorf("Error while uploading %s: %s", upload, err)
-		return "", err
-	}
-	defer res.Body.Close()
+	return req, nil
+}
 
+func (u *SimpleUploader) readUploadResponse(res *http.Response, upload *Upload) (uploadToken string, err error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		u.Logger.Errorf("Error while uploading %s: %s: could not read body: %s", upload, res.Status, err)
@@ -83,7 +96,6 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToke
 	}
 
 	return string(body), nil
-
 }
 
 // doRequest executes the request call.
