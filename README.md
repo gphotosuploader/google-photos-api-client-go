@@ -1,7 +1,7 @@
 # Google Photos API client for Go
 [![Go Reference](https://pkg.go.dev/badge/github.com/gphotosuploader/google-photos-api-client-go/v3.svg)](https://pkg.go.dev/github.com/gphotosuploader/google-photos-api-client-go/v3)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gphotosuploader/google-photos-api-client-go)](https://goreportcard.com/report/github.com/gphotosuploader/google-photos-api-client-go)
-[![codebeat badge](https://codebeat.co/badges/c0ab08dd-11b3-406e-bbcc-b9d4a90aedf6)](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-main)
+[![codebeat badge](https://codebeat.co/badges/e11c71e4-bcdc-4aff-91c4-75807cf75e9a)](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-main)
 [![codecov](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go/branch/main/graph/badge.svg)](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go)
 [![GitHub release](https://img.shields.io/github/release/gphotosuploader/google-photos-api-client-go.svg)](https://github.com/gphotosuploader/google-photos-api-client-go/releases/latest)
 [![GitHub](https://img.shields.io/github/license/gphotosuploader/google-photos-api-client-go.svg)](LICENSE)
