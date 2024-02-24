@@ -36,34 +36,18 @@ func NewClient(httpClient *http.Client) (*Client, error) {
 // NewClientWithBaseURL returns a new Google Photos API client with a custom baseURL.
 // See [NewClient] for more details.
 func NewClientWithBaseURL(httpClient *http.Client, baseURL string) (*Client, error) {
-	if httpClient == nil {
-		return nil, errors.New("client is nil")
-	}
-
-	if baseURL == "" {
-		return nil, errors.New("baseURL is empty")
+	if err := validateInputs(httpClient, baseURL); err != nil {
+		return nil, err
 	}
 
 	httpClient = addRetryHandler(httpClient)
 
-	// Create the Albums Service using default values.
-	albumsConfig := albums.Config{
-		Client:    httpClient,
-		BaseURL:   baseURL,
-		UserAgent: defaultUserAgent,
-	}
-	albumsService, err := albums.New(albumsConfig)
+	albumsService, err := createAlbumsService(httpClient, baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create the Media Items Service using default values.
-	mediaItemsConfig := media_items.Config{
-		Client:    httpClient,
-		BaseURL:   baseURL,
-		UserAgent: defaultUserAgent,
-	}
-	mediaItemsService, err := media_items.New(mediaItemsConfig)
+	mediaItemsService, err := createMediaItemsService(httpClient, baseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -78,4 +62,34 @@ func NewClientWithBaseURL(httpClient *http.Client, baseURL string) (*Client, err
 		Albums:     albumsService,
 		MediaItems: mediaItemsService,
 	}, nil
+}
+
+func validateInputs(httpClient *http.Client, baseURL string) error {
+	if httpClient == nil {
+		return errors.New("client is nil")
+	}
+
+	if baseURL == "" {
+		return errors.New("baseURL is empty")
+	}
+
+	return nil
+}
+
+func createAlbumsService(httpClient *http.Client, baseURL string) (AlbumsService, error) {
+	albumsConfig := albums.Config{
+		Client:    httpClient,
+		BaseURL:   baseURL,
+		UserAgent: defaultUserAgent,
+	}
+	return albums.New(albumsConfig)
+}
+
+func createMediaItemsService(httpClient *http.Client, baseURL string) (MediaItemsService, error) {
+	mediaItemsConfig := media_items.Config{
+		Client:    httpClient,
+		BaseURL:   baseURL,
+		UserAgent: defaultUserAgent,
+	}
+	return media_items.New(mediaItemsConfig)
 }
