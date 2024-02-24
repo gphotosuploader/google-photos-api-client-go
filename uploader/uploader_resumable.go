@@ -59,20 +59,39 @@ func NewResumableUploader(httpClient HttpClient) (*ResumableUploader, error) {
 // UploadFile returns the Google Photos upload token after uploading a file.
 // Any non-2xx status code is an error. Response headers are in error.(*googleapi.Error).Header.
 func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (uploadToken string, err error) {
+	upload, err := u.prepareUpload(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	return u.executeUpload(ctx, upload)
+}
+
+func (u *ResumableUploader) prepareUpload(filePath string) (*Upload, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		return "", fmt.Errorf("uploading file %s: %w", filePath, err)
+		return nil, fmt.Errorf("uploading file %s: %w", filePath, err)
 	}
 	defer f.Close()
 
 	upload, err := NewUploadFromFile(f)
 	if err != nil {
-		return "", fmt.Errorf("uploading file %s: %w", filePath, err)
+		return nil, fmt.Errorf("uploading file %s: %w", filePath, err)
 	}
 
 	u.Logger.Debugf("Starting resumable upload for file [%s].", filePath)
 
-	return u.createOrResumeUpload(ctx, upload)
+	return upload, nil
+}
+
+func (u *ResumableUploader) executeUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
+	uploadToken, err = u.createOrResumeUpload(ctx, upload)
+
+	if err != nil {
+		return "", fmt.Errorf("resuming upload: %w", err)
+	}
+
+	return uploadToken, nil
 }
 
 func (u *ResumableUploader) createOrResumeUpload(ctx context.Context, upload *Upload) (uploadToken string, err error) {
@@ -154,14 +173,10 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 }
 
 func (u *ResumableUploader) finalizeUpload(ctx context.Context, url string, upload *Upload, offset int64) (uploadToken string, err error) {
-	req, err := http.NewRequest("POST", url, upload.stream)
+	req, err := u.createFinalizeUploadRequest(url, upload, offset)
 	if err != nil {
 		return "", err
 	}
-
-	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
-	req.Header.Set("X-Goog-Upload-Offset", strconv.FormatInt(offset, 10))
-	req.Header.Set("X-Goog-Upload-Command", "upload, finalize")
 
 	res, err := u.doRequest(ctx, req)
 	if err != nil {
@@ -170,6 +185,23 @@ func (u *ResumableUploader) finalizeUpload(ctx context.Context, url string, uplo
 	}
 	defer res.Body.Close()
 
+	return u.handleFinalizeUploadResponse(res, upload)
+}
+
+func (u *ResumableUploader) createFinalizeUploadRequest(url string, upload *Upload, offset int64) (*http.Request, error) {
+	req, err := http.NewRequest("POST", url, upload.stream)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Length", strconv.FormatInt(upload.size, 10))
+	req.Header.Set("X-Goog-Upload-Offset", strconv.FormatInt(offset, 10))
+	req.Header.Set("X-Goog-Upload-Command", "upload, finalize")
+
+	return req, nil
+}
+
+func (u *ResumableUploader) handleFinalizeUploadResponse(res *http.Response, upload *Upload) (uploadToken string, err error) {
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		u.Logger.Errorf("Failed to read response: %s", err)
