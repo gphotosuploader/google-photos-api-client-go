@@ -3,8 +3,6 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
-# Copilot can you help me to write the changelog with the changes from the last release?
-
 ## 3.0.5
 ### Changed
 - Updated supported `Go` versions to `1.20`-`1.21`.
