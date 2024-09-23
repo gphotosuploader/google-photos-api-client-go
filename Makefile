@@ -5,7 +5,7 @@ COVERAGE_FILE := $(TMP_DIR)/coverage.txt
 COVERAGE_HTML_FILE := $(TMP_DIR)/coverage.html
 
 # golangci-lint version to use on this project.
-GOLANGCI_VERSION ?= v1.56.2
+GOLANGCI_VERSION ?= v1.61.0
 GOLANGCI := $(TMP_DIR)/golangci-lint
 
 UNAME_OS := $(shell uname -s)

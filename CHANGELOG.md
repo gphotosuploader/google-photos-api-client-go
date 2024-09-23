@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.6
+### Changed
+- Updated supported `Go` versions to `1.21`-`1.23`.
+- [CI] Updated `golangci` to 'v1.61.0'.
+
 ## 3.0.5
 ### Changed
 - Updated supported `Go` versions to `1.20`-`1.21`.
