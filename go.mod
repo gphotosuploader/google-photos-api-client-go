@@ -1,6 +1,6 @@
 module github.com/gphotosuploader/google-photos-api-client-go/v3
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-chi/chi/v5 v5.0.12
