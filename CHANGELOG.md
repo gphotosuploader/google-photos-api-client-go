@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ### Changed
 - Updated supported `Go` versions to `1.21`-`1.23`.
 - [CI] Updated `golangci` to 'v1.61.0'.
+- Updated `github.com/go-chi/chi/v5` to version 5.1.0.
+- Updated `github.com/hashicorp/go-retryablehttp` to version 0.7.7.
+- Updated `google.golang.org/api` to version 0.198.0.
 
 ## 3.0.5
 ### Changed
