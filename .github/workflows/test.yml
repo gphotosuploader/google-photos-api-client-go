@@ -43,6 +43,6 @@ jobs:
               
             - name: Send code coverage to Codecov
               if: success() && matrix.go == env.LATEST_GO_VERSION && matrix.os == 'ubuntu-latest'
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
