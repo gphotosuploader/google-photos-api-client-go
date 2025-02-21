@@ -26,7 +26,7 @@ jobs:
                 # The module is tested with last three major releases (unless there are pressing vulnerabilities)
                 # As we depend on `golang.org/x/` libraries which only support last 2 Go releases we could have situations when
                 # we derive from last three major releases promise.
-                go: ['1.21', '1.22', '1.23']
+                go: ['1.22', '1.23', '1.24']
         name: ${{ matrix.os }} @ Go ${{ matrix.go }}
         runs-on: ${{ matrix.os }}
         steps:
@@ -43,6 +43,6 @@ jobs:
               
             - name: Send code coverage to Codecov
               if: success() && matrix.go == env.LATEST_GO_VERSION && matrix.os == 'ubuntu-latest'
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

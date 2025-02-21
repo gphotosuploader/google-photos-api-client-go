@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.7
+### Changed
+- Updated supported `Go` versions to `1.22`-`1.24`.
+- [CI] Updated `golangci` to 'v1.64.5'.
+- Updated `github.com/go-chi/chi/v5` to version 5.2.1.
+- Updated `google.golang.org/api` to version 0.222.0.
+
 ## 3.0.6
 ### Changed
 - Updated supported `Go` versions to `1.21`-`1.23`.
