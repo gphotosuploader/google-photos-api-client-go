@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.8
+### Changed
+- Updated `google.golang.org/api` to version 0.235.0.
+
 ## 3.0.7
 ### Changed
 - Updated supported `Go` versions to `1.22`-`1.24`.
