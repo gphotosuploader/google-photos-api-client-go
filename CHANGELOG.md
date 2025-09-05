@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.9
+### Changed
+- Updated supported `Go` versions to `1.23`-`1.25`.
+- [CI] Updated `golangci` to 'v2.4.0'.
+- Updated `github.com/go-chi/chi/v5` to version 5.2.3.
+- Updated `github.com/hashicorp/go-retryablehttp` to version 0.7.8.
+- Updated `google.golang.org/api` to version 0.248.0.
+
+### Removed
+- Removed support for `Go` version `1.22`.
+
 ## 3.0.8
 ### Changed
 - Updated `google.golang.org/api` to version 0.235.0.

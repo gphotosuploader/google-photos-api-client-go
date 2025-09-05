@@ -1,7 +1,6 @@
 # Google Photos API client for Go
 [![Go Reference](https://pkg.go.dev/badge/github.com/gphotosuploader/google-photos-api-client-go/v3.svg)](https://pkg.go.dev/github.com/gphotosuploader/google-photos-api-client-go/v3)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gphotosuploader/google-photos-api-client-go)](https://goreportcard.com/report/github.com/gphotosuploader/google-photos-api-client-go)
-[![codebeat badge](https://codebeat.co/badges/e11c71e4-bcdc-4aff-91c4-75807cf75e9a)](https://codebeat.co/projects/github-com-gphotosuploader-google-photos-api-client-go-main)
 [![codecov](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go/branch/main/graph/badge.svg)](https://codecov.io/gh/gphotosuploader/google-photos-api-client-go)
 [![GitHub release](https://img.shields.io/github/release/gphotosuploader/google-photos-api-client-go.svg)](https://github.com/gphotosuploader/google-photos-api-client-go/releases/latest)
 [![GitHub](https://img.shields.io/github/license/gphotosuploader/google-photos-api-client-go.svg)](LICENSE)
@@ -15,7 +14,7 @@ The package offers access to these Google Photos services:
 - `MediaItems` is a service to manage media items (Photos and Videos).
 - `Uploader` is a service to upload items.
 
-> This project will maintain compatibility with the last three major published [published](https://golang.org/doc/devel/release.html) versions of Go.
+> This project will maintain compatibility with the last three major [published](https://golang.org/doc/devel/release.html) versions of Go.
 
 ## Installation
 
@@ -45,7 +44,7 @@ albums, err := client.Albums.List(context.Background())
 
 The services of a client divide the API into logical chunks and correspond to the structure of the Google Photos API documentation at https://developers.google.com/photos/library/reference/rest.
 
-**NOTE**: Using the [context](https://godoc.org/context) package, one can easily pass cancelation signals and deadlines to various services of the client for handling a request. In case there is no context available, then `context.Background()` can be used as a starting point.
+**NOTE**: Using the [context](https://godoc.org/context) package, one can easily pass cancellation signals and deadlines to various services of the client for handling a request. In case there is no context available, then `context.Background()` can be used as a starting point.
 
 ## Authentication
 The gphotos library **does not directly handle authentication**. Instead, when creating a new client, pass a `net/http.Client` that can handle authentication for you. The easiest and recommended way to do this is using the [oauth2](https://github.com/golang/oauth2) library, but you can always use any other library that provides a `net/http.Client`.
@@ -99,7 +98,7 @@ See the [oauth2 docs](https://godoc.org/golang.org/x/oauth2) for complete instru
 
 ### Uploader
 
-- Offers **two uploaders** implementing the [Google Photos Uploads API](https://developers.google.com/photos/library/guides/upload-media).
+- Offers **two upload clients** implementing the [Google Photos Uploads API](https://developers.google.com/photos/library/guides/upload-media).
     - `uploader.SimpleUploader` is a simple HTTP uploader.
     - `uploader.ResumableUploader` is an uploader implementing resumable uploads. It could be used for large files, like videos. See [documentation](https://developers.google.com/photos/library/guides/resumable-uploads).
 - The client accepts a customized media items service using `client.Uploader`.
@@ -121,5 +120,5 @@ Google Photos imposes a rate limit on all API clients. **The quota limit for req
 
 ## Used by
 
-* [gphotos-uploader-cli](https://github.com/gphotosuploader/gphotos-uploader-cli): A command line to sync your pictures and videos with Google Photos. Supporting linux/macOs.
+* [gphotos-uploader-cli](https://github.com/gphotosuploader/gphotos-uploader-cli): A command line to sync your pictures and videos with Google Photos. Supporting linux/macOS.
 * [Send To Google Photos app](https://github.com/arran4/send-to-google-photos): A simple "Send To" extension for sending images to Google Photos
