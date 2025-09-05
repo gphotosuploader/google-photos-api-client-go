@@ -2,11 +2,13 @@ package uploader
 
 import (
 	"context"
-	"google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/utils"
+	"google.golang.org/api/googleapi"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
 )
@@ -74,7 +76,7 @@ func (u *SimpleUploader) upload(ctx context.Context, upload *Upload) (uploadToke
 		u.Logger.Errorf("Error while uploading %s: %s", upload, err)
 		return "", err
 	}
-	defer res.Body.Close()
+	defer utils.CloseOrLog(res.Body, "simple upload response body - upload")
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
