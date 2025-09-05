@@ -1,0 +1,13 @@
+ignore:
+    - "mocks/"
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 0%
+        base: auto
+        informational: true
+    patch:
+      default:
+        informational: true
