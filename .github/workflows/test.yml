@@ -15,7 +15,7 @@ permissions:
     
 env:
     # run coverage only with the latest Go version
-    LATEST_GO_VERSION: '1.23' 
+    LATEST_GO_VERSION: '1.25'
 
 jobs:
     test:
@@ -26,7 +26,7 @@ jobs:
                 # The module is tested with last three major releases (unless there are pressing vulnerabilities)
                 # As we depend on `golang.org/x/` libraries which only support last 2 Go releases we could have situations when
                 # we derive from last three major releases promise.
-                go: ['1.22', '1.23', '1.24']
+                go: ['1.23', '1.24', '1.25']
         name: ${{ matrix.os }} @ Go ${{ matrix.go }}
         runs-on: ${{ matrix.os }}
         steps:
