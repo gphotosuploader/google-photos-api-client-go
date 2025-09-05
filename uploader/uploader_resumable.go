@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/utils"
 	"google.golang.org/api/googleapi"
 
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/internal/log"
@@ -63,7 +64,7 @@ func (u *ResumableUploader) UploadFile(ctx context.Context, filePath string) (up
 	if err != nil {
 		return "", fmt.Errorf("uploading file %s: %w", filePath, err)
 	}
-	defer f.Close()
+	defer utils.CloseOrLog(f, filePath)
 
 	upload, err := NewUploadFromFile(f)
 	if err != nil {
@@ -105,7 +106,7 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 	if err != nil {
 		return "", err
 	}
-	defer res.Body.Close()
+	defer utils.CloseOrLog(res.Body, "resumable upload response body - createUpload")
 
 	if http.StatusOK == res.StatusCode {
 		location := res.Header.Get("X-Goog-Upload-URL")
@@ -155,7 +156,7 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 		u.Logger.Errorf("Failed to resume upload: %s", err)
 		return "", fmt.Errorf("resuming upload: %w", err)
 	}
-	defer res.Body.Close()
+	defer utils.CloseOrLog(res.Body, "resumable upload response body - resumeUpload")
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -182,7 +183,7 @@ func (u *ResumableUploader) getUploadOffset(ctx context.Context, url string) (in
 	if err != nil {
 		return -1, err
 	}
-	defer res.Body.Close()
+	defer utils.CloseOrLog(res.Body, "resumable upload response body - getUploadOffset")
 
 	if res.Header.Get("X-Goog-Upload-Status") != "active" {
 		// Other known statuses "final" and "canceled" are both considered as already completed.

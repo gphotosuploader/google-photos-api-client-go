@@ -3,12 +3,13 @@ package mocks
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"html"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/gphotosuploader/googlemirror/api/photoslibrary/v1"
 )
@@ -570,7 +571,7 @@ func (ms *MockedGooglePhotosService) handleUploads(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if "resumable" == r.Header.Get("X-Goog-Upload-Protocol") {
+	if r.Header.Get("X-Goog-Upload-Protocol") == "resumable" {
 		ms.handleStartUpload(w, r)
 		return
 	}
@@ -606,7 +607,7 @@ func (ms *MockedGooglePhotosService) handleStartUpload(w http.ResponseWriter, r 
 		return
 	}
 
-	if "start" != r.Header.Get("X-Goog-Upload-Command") {
+	if r.Header.Get("X-Goog-Upload-Command") != "start" {
 		command := sanitize(r.Header.Get("X-Goog-Upload-Command"))
 		http.Error(w, fmt.Sprintf("unexpected upload command: %s", command), http.StatusBadRequest)
 		return
