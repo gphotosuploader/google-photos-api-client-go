@@ -5,8 +5,34 @@ import (
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/mocks"
 	"github.com/gphotosuploader/google-photos-api-client-go/v3/uploader"
 	"net/http"
+	"os"
 	"testing"
 )
+
+func TestResumableUploaderRejectsUntrustedStoredURL(t *testing.T) {
+	store := NewMockStore().(*MockStore)
+	f, err := os.Open("testdata/upload-success")
+	if err != nil {
+		t.Fatal(err)
+	}
+	upload, err := uploader.NewUploadFromFile(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.Set(upload.Fingerprint, "https://attacker.example/upload")
+	u, err := uploader.NewResumableUploader(http.DefaultClient)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u.Store = store
+	if _, err := u.UploadFile(context.Background(), "testdata/upload-success"); err == nil {
+		t.Fatal("untrusted resumable URL was accepted")
+	}
+	if _, found := store.Get(upload.Fingerprint); found {
+		t.Fatal("untrusted URL was not removed")
+	}
+}
 
 func TestNewResumableUploader(t *testing.T) {
 	u, err := uploader.NewResumableUploader(http.DefaultClient)

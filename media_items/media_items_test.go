@@ -46,6 +46,7 @@ func TestMediaItemsService_Create(t *testing.T) {
 		isErrExpected bool
 	}{
 		{"Should return error if API fails", mocks.ShouldMakeAPIFailMediaItem, true},
+		{"Should return error for HTTP 200 with a failed item status", mocks.ShouldReturnEmptyMediaItem, true},
 		{"Should return success on success", "foo", false},
 	}
 

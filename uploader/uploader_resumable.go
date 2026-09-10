@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -29,6 +30,9 @@ type ResumableUploader struct {
 
 	// Store maps an upload's fingerprint with the corresponding upload URL.
 	Store Store
+
+	// BytesPerSecond limits upload throughput. Zero disables pacing.
+	BytesPerSecond int64
 }
 
 // Store represents a service to map upload's fingerprint with
@@ -110,6 +114,9 @@ func (u *ResumableUploader) createUpload(ctx context.Context, upload *Upload) (u
 
 	if http.StatusOK == res.StatusCode {
 		location := res.Header.Get("X-Goog-Upload-URL")
+		if err := u.validateUploadURL(location); err != nil {
+			return "", err
+		}
 
 		if u.isResumeEnabled() {
 			u.Store.Set(upload.Fingerprint, location)
@@ -132,6 +139,10 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 	if !found {
 		return "", ErrUploadNotFound
 	}
+	if err := u.validateUploadURL(url); err != nil {
+		u.Store.Delete(upload.Fingerprint)
+		return "", err
+	}
 
 	offset, err := u.getUploadOffset(ctx, url)
 	if err != nil {
@@ -142,7 +153,7 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", url, upload.stream)
+	req, err := http.NewRequest("POST", url, newRateLimitedReader(upload.stream, u.BytesPerSecond))
 	if err != nil {
 		return "", err
 	}
@@ -169,6 +180,21 @@ func (u *ResumableUploader) resumeUpload(ctx context.Context, upload *Upload) (u
 	}
 
 	return string(b), nil
+}
+
+func (u *ResumableUploader) validateUploadURL(candidate string) error {
+	base, err := url.Parse(u.BaseURL)
+	if err != nil || base.Scheme == "" || base.Host == "" {
+		return fmt.Errorf("invalid upload base URL")
+	}
+	target, err := url.Parse(candidate)
+	if err != nil || target.Scheme == "" || target.Host == "" {
+		return fmt.Errorf("invalid resumable upload URL")
+	}
+	if target.Scheme != base.Scheme || target.Host != base.Host || target.User != nil {
+		return fmt.Errorf("untrusted resumable upload URL host")
+	}
+	return nil
 }
 
 func (u *ResumableUploader) getUploadOffset(ctx context.Context, url string) (int64, error) {
@@ -220,4 +246,9 @@ func (u *ResumableUploader) doRequest(ctx context.Context, req *http.Request) (*
 func (u *ResumableUploader) IsResumeEnabled() bool {
 	return u.isResumeEnabled()
 
+}
+
+// SetBytesPerSecond configures an upload throughput cap. Zero disables pacing.
+func (u *ResumableUploader) SetBytesPerSecond(bytesPerSecond int64) {
+	u.BytesPerSecond = bytesPerSecond
 }
