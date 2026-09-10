@@ -136,21 +136,23 @@ func (s *Service) CreateManyToAlbum(ctx context.Context, albumId string, mediaIt
 	if err != nil {
 		return nil, fmt.Errorf("creating media items: %w", err)
 	}
+	if len(result.NewMediaItemResults) != len(mediaItems) {
+		return nil, fmt.Errorf("creating media items: Google returned %d results for %d requests", len(result.NewMediaItemResults), len(mediaItems))
+	}
+
 	mediaItemsResult := make([]*MediaItem, len(result.NewMediaItemResults))
 	for i, res := range result.NewMediaItemResults {
-		// #54: MediaItem is populated if no errors occurred and the media item was
-		// created successfully.
-		// If an error occurs, res.Status should have more data about the error.
-		// In any case, we skip failed MediaItems.
-		//
-		// TODO: Log a message when res.MediaItem is nil. The res.Status should have the reason.
-		//
-		// See: https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#NewMediaItemResult.
-		if res.MediaItem != nil {
-			mi := toMediaItem(res.MediaItem)
-			mediaItemsResult[i] = &mi
+		if res == nil {
+			return nil, fmt.Errorf("creating media item %d: Google returned an empty result", i)
 		}
-
+		if res.Status != nil && res.Status.Code != 0 {
+			return nil, fmt.Errorf("creating media item %d: Google status code %d: %s", i, res.Status.Code, res.Status.Message)
+		}
+		if res.MediaItem == nil || res.MediaItem.Id == "" {
+			return nil, fmt.Errorf("creating media item %d: Google returned no media item ID", i)
+		}
+		mi := toMediaItem(res.MediaItem)
+		mediaItemsResult[i] = &mi
 	}
 	return mediaItemsResult, nil
 }

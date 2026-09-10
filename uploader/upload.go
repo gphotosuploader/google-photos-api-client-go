@@ -2,9 +2,13 @@ package uploader
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strconv"
 )
 
 type Upload struct {
@@ -13,6 +17,7 @@ type Upload struct {
 
 	Name        string
 	Fingerprint string
+	SHA256      string
 }
 
 // NewUpload creates a new upload from an io.Reader.
@@ -43,7 +48,17 @@ func NewUploadFromFile(f *os.File) (*Upload, error) {
 		return nil, err
 	}
 
-	fingerprint := fmt.Sprintf("%s-%d-%s", fi.Name(), fi.Size(), fi.ModTime())
-
-	return NewUpload(f, fi.Size(), fi.Name(), fingerprint), nil
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return nil, fmt.Errorf("hashing upload: %w", err)
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("rewinding upload: %w", err)
+	}
+	contentHash := hex.EncodeToString(h.Sum(nil))
+	fingerprintInput := filepath.Clean(f.Name()) + "\x00" + strconv.FormatInt(fi.Size(), 10) + "\x00" + contentHash
+	fingerprintHash := sha256.Sum256([]byte(fingerprintInput))
+	upload := NewUpload(f, fi.Size(), fi.Name(), hex.EncodeToString(fingerprintHash[:]))
+	upload.SHA256 = contentHash
+	return upload, nil
 }
